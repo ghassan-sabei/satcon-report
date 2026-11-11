@@ -203,7 +203,7 @@ function render(){
   if(day.pauses.length){
     h+='<div class="done-list" style="margin-top:8px">';
     day.pauses.forEach(function(p,i){
-      h+='<div class="it"><span>'+esc(p.reason)+' &nbsp; <span dir="ltr">'+hm(p.start)+' - '+(p.end?hm(p.end):'...')+'</span></span>'+
+      h+='<div class="it"><span>'+esc(p.reason)+' &nbsp; <span dir="ltr">'+hm(p.start)+' - '+(p.end?hm(p.end):'...')+'</span> &nbsp; <b>'+durTxt((p.end||Date.now())-p.start)+'</b></span>'+
          '<button class="small" data-delp="'+i+'">حذف</button></div>';
     });
     h+='</div>';
@@ -371,9 +371,28 @@ function renderSettings(app){
 
 /* ---------- print ---------- */
 function m1(v){var x=parseFloat(v);return isNaN(x)?esc(v):x.toFixed(1)+"m"}
+function durTxt(ms){var m=Math.round(ms/60000);if(m<60)return m+" د";var h=Math.floor(m/60),r=m%60;return h+" س"+(r?" "+r+" د":"")}
+function pauseNotes(day,piles){
+  var map={};
+  day.pauses.forEach(function(pa){
+    var t=pa.start,best=null;
+    piles.forEach(function(p){
+      var st=p.drillStart||p.concOrder||p.pourStart;if(!st||st>t)return;
+      var en=p.pourEnd||Infinity;if(en<t)return;
+      if(!best||st>(best.drillStart||best.concOrder||best.pourStart))best=p;
+    });
+    if(!best){piles.forEach(function(p){var st=p.drillStart||p.concOrder||p.pourStart;if(st&&st>=t&&(!best||st<(best.drillStart||best.concOrder||best.pourStart)))best=p})}
+    if(!best&&piles.length)best=piles[piles.length-1];
+    var key=best?best.id:"_";
+    map[key]=map[key]||{};
+    map[key][pa.reason]=(map[key][pa.reason]||0)+((pa.end||Date.now())-pa.start);
+  });
+  var out={};
+  Object.keys(map).forEach(function(k){out[k]=Object.keys(map[k]).map(function(r){return r+" "+durTxt(map[k][r])}).join("، ")});
+  return out;
+}
 function buildSheet(day){
   var s=S.settings,t=totals(day);
-  var notesExtra=day.pauses.map(function(p){return p.reason+" ("+hm(p.start)+"-"+(p.end?hm(p.end):"")+")"}).join("، ");
   var h='<div class="sheet"><table dir="ltr">'+
    '<tr><td class="logo" colspan="2">SATCON</td><td class="ttl" colspan="4" dir="rtl">'+esc(s.project)+'</td><td colspan="2"><b>Daily Report</b><br><span dir="rtl">تقرير يومي</span></td></tr>'+
    '<tr><td colspan="2"><b>Day and Date</b></td><td colspan="4">'+dayName(day.date)+' &nbsp; '+fmtDate(day.date)+'</td><td colspan="2" dir="rtl"><b>اليوم والتاريخ</b></td></tr>'+
@@ -384,16 +403,17 @@ function buildSheet(day){
   h+='<table class="grid" dir="rtl" style="margin-top:-1px"><tr>'+
    '<th>العدد</th><th>رقم الحفرة</th><th>وقت بدء الحفر</th><th>وقت إنتهاء الحفر</th><th>وقت طلب الكونكريت</th><th>وقت وصول الكونكريت</th><th>وقت بدء الصب</th><th>وقت إنتهاء الصب</th><th>كمية الصب m3</th><th style="width:18%">الملاحظات</th></tr>';
   var piles=day.piles.slice().sort(function(a,b){return(a.drillStart||9e15)-(b.drillStart||9e15)});
+  var pn=pauseNotes(day,piles);
   var rows=Math.max(12,piles.length);
   for(var i=0;i<rows;i++){
     var p=piles[i];
     h+='<tr><td>'+(i+1)+'</td>';
-    if(p){h+='<td>'+esc(p.no)+'</td>';STEPS.forEach(function(st){h+='<td>'+hm(p[st.k])+'</td>'});h+='<td>'+esc(p.vol)+'</td><td>'+esc(p.note)+'</td>'}
+    if(p){h+='<td>'+esc(p.no)+'</td>';STEPS.forEach(function(st){h+='<td>'+hm(p[st.k])+'</td>'});var nt=[p.note,pn[p.id]].filter(function(x){return x}).join(" - ");h+='<td>'+esc(p.vol)+'</td><td>'+esc(nt)+'</td>'}
     else h+='<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
     h+='</tr>';
   }
   h+='</table>';
-  if(notesExtra)h+='<div class="foot" dir="rtl"><b>التوقفات:</b> '+esc(notesExtra)+'</div>';
+  if(pn["_"])h+='<div class="foot" dir="rtl"><b>توقفات:</b> '+esc(pn["_"])+'</div>';
   h+='</div>';
   return h;
 }
