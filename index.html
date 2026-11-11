@@ -57,7 +57,7 @@ button:active{transform:scale(.97)}
 #printArea{display:none}
 
 /* ===== print sheet ===== */
-@page{size:A4 portrait;margin:8mm}
+@page{margin:8mm}
 @media print{
   body{background:#fff}
   header.top,main,.modal{display:none!important}
@@ -73,11 +73,7 @@ button:active{transform:scale(.97)}
 .sheet .grid td{font-size:15px;padding:0 4px}
 .sheet .grid td.nt{font-size:12px;line-height:1.2}
 .sheet .pgno{text-align:center;font-size:11px;margin-top:4px}
-@media print{
-  .pp{width:733px;height:1062px;position:relative;overflow:hidden;page-break-after:always;break-after:page}
-  .pp:last-child{page-break-after:auto;break-after:auto}
-  .pp .sheet.page{position:absolute;top:0;left:0;height:733px;transform-origin:top left;transform:translateX(733px) rotate(90deg)}
-}
+@media print{.sheet.page{page-break-after:always;break-after:page}.sheet.page:last-child{page-break-after:auto;break-after:auto}}
 .sheet .foot{margin-top:6px;text-align:right;font-size:11px}
 </style>
 </head>
@@ -443,7 +439,7 @@ function sheetPages(day){
   return pages;
 }
 function doPrint(day){
-  document.getElementById("printArea").innerHTML=sheetPages(day).map(function(x){return'<div class="pp">'+x+'</div>'}).join("");
+  document.getElementById("printArea").innerHTML=sheetPages(day).join("");
   try{window.print()}catch(e){}
 }
 var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
