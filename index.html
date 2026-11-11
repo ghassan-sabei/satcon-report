@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2b3a67">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>التقرير اليومي - SATCON</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif;background:#eef1f6;color:#1d2433;font-size:16px}
+header.top{background:#2b3a67;color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+header.top h1{font-size:18px;margin:0}
+header.top .d{font-size:14px;opacity:.85}
+main{padding:12px;max-width:680px;margin:0 auto}
+.box{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.box h2{font-size:16px;margin:0 0 10px;color:#2b3a67}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.row label{min-width:110px;font-size:14px;color:#555}
+input[type=text],input[type=number],input[type=time],input[type=date],select,textarea{font:inherit;padding:10px;border:1px solid #c8cfdb;border-radius:8px;flex:1;min-width:0;background:#fff}
+button{font:inherit;border:0;border-radius:10px;padding:12px 14px;cursor:pointer;background:#dfe5f0;color:#1d2433}
+button:active{transform:scale(.97)}
+.big{width:100%;padding:16px;font-size:18px;font-weight:600}
+.pri{background:#2f6fd6;color:#fff}
+.ok{background:#1f9d55;color:#fff}
+.warn{background:#e08a00;color:#fff}
+.dan{background:#d64545;color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat div{background:#f3f6fb;border-radius:8px;padding:8px 4px}
+.stat b{display:block;font-size:20px;color:#2b3a67}
+.stat span{font-size:12px;color:#666}
+.tm{font-size:13px;color:#555;margin-top:4px;text-align:center}
+.paused{background:#fff4e0;border:2px solid #e08a00}
+.card{border:2px solid #2f6fd6}
+.card .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card .hd b{font-size:18px}
+.steps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.step{padding:10px 6px;text-align:center;line-height:1.3;font-size:14px;background:#eef1f6;color:#888}
+.step .t{display:block;font-size:20px;font-weight:700;direction:ltr}
+.step.done{background:#d8f0e1;color:#14532d}
+.step.next{background:#2f6fd6;color:#fff;box-shadow:0 0 0 3px #b7cdf3}
+.hint{font-size:12px;color:#777;margin:6px 0 0}
+.done-list .it{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:14px}
+.done-list .it:last-child{border:0}
+.small{padding:8px 10px;font-size:14px}
+.muted{color:#888;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.show{display:flex}
+.modal .in{background:#fff;border-radius:14px;padding:16px;width:100%;max-width:420px}
+.modal h3{margin:0 0 12px;font-size:17px}
+.modal .acts{display:flex;gap:8px;margin-top:12px}
+.modal .acts button{flex:1}
+.reasons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#printArea{display:none}
+
+/* ===== print sheet ===== */
+@page{size:A4 landscape;margin:8mm}
+@media print{
+  body{background:#fff}
+  header.top,main,.modal{display:none!important}
+  #printArea{display:block}
+}
+.sheet{font-family:Arial,Tahoma,sans-serif;color:#000;width:100%;font-size:12px}
+.sheet table{border-collapse:collapse;width:100%}
+.sheet td,.sheet th{border:1px solid #1f2a5a;padding:3px 4px;text-align:center;height:28px}
+.sheet .blue{background:#5b9bd5;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet .logo{background:#2b3a67;color:#fff;font-size:20px;letter-spacing:4px;font-weight:300;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet .ttl{font-size:16px;font-weight:700}
+.sheet .grid th{font-weight:700;font-size:11px}
+.sheet .grid td{height:34px;font-size:13px}
+.sheet .foot{margin-top:6px;text-align:right;font-size:11px}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>التقرير اليومي</h1>
+  <div class="d" id="hdDate"></div>
+</header>
+
+<main id="app"></main>
+<div id="printArea"></div>
+
+<div class="modal" id="modal"><div class="in" id="modalIn"></div></div>
+
+<script>
+(function(){
+"use strict";
+var KEY="satcon_daily_v1";
+var STEPS=[
+ {k:"drillStart",n:"بدء الحفر"},
+ {k:"drillEnd",n:"انتهاء الحفر"},
+ {k:"concOrder",n:"طلب الكونكريت"},
+ {k:"concArrive",n:"وصول الكونكريت"},
+ {k:"pourStart",n:"بدء الصب"},
+ {k:"pourEnd",n:"انتهاء الصب"}
+];
+var REASONS=["عطل","انتظار كونكريت","طقس","غيره"];
+var DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+
+var S=load();
+function blankDay(){
+  var d=new Date();
+  return {date:isoDate(d),block:S&&S.cur?S.cur.block:"",workStart:null,workEnd:null,mortar:"",
+          pauses:[],piles:[],nextId:1};
+}
+function load(){
+  var s=null;
+  try{s=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+  if(!s)s={settings:{project:"مشروع مدينة الاخوة السكني - بغداد",depth:"20.0",steel:"12.0"},cur:null,archive:[]};
+  return s;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+if(!S.cur){S.cur=blankDay();save();}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+
+function pad(n){return(n<10?"0":"")+n}
+function isoDate(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function hm(ts){if(!ts)return"";var d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())}
+function dayName(iso){var p=iso.split("-");var d=new Date(+p[0],+p[1]-1,+p[2]);return DAYS[d.getDay()]}
+function fmtDate(iso){var p=iso.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function num(v){var x=parseFloat(v);return isNaN(x)?0:x}
+
+function delayMs(day){
+  var t=0,now=Date.now();
+  day.pauses.forEach(function(p){t+=(p.end||now)-p.start});
+  return t;
+}
+function delayHours(day){return Math.round(delayMs(day)/360000)/10}
+function activePause(day){var p=day.pauses[day.pauses.length-1];return p&&!p.end?p:null}
+function isDone(p){return p.pourEnd&&p.vol!==""&&p.vol!=null}
+function totals(day){
+  var n=0,v=0;
+  day.piles.forEach(function(p){if(p.pourEnd){n++;v+=num(p.vol)}});
+  return{n:n,v:Math.round(v*100)/100};
+}
+
+/* ---------- modal helpers ---------- */
+var M=document.getElementById("modal"),MI=document.getElementById("modalIn");
+function openModal(html){MI.innerHTML=html;M.classList.add("show")}
+function closeModal(){M.classList.remove("show");MI.innerHTML=""}
+M.addEventListener("click",function(e){if(e.target===M)closeModal()});
+function confirmBox(msg,yes,cb){
+  openModal('<h3>'+esc(msg)+'</h3><div class="acts"><button id="mY" class="dan">'+esc(yes)+'</button><button id="mN">إلغاء</button></div>');
+  document.getElementById("mY").onclick=function(){closeModal();cb()};
+  document.getElementById("mN").onclick=closeModal;
+}
+function timeEdit(title,ts,cb){
+  var v=ts?hm(ts):hm(Date.now());
+  openModal('<h3>'+esc(title)+'</h3><input type="time" id="mT" value="'+v+'" style="width:100%;font-size:22px;direction:ltr">'+
+   '<div class="acts"><button id="mS" class="pri">حفظ</button>'+(ts?'<button id="mC" class="dan">مسح</button>':'')+'<button id="mN">إلغاء</button></div>');
+  document.getElementById("mS").onclick=function(){
+    var val=document.getElementById("mT").value;if(!val)return;
+    var base=ts?new Date(ts):new Date();var pr=val.split(":");
+    base.setHours(+pr[0],+pr[1],0,0);closeModal();cb(base.getTime());
+  };
+  if(ts)document.getElementById("mC").onclick=function(){closeModal();cb(null)};
+  document.getElementById("mN").onclick=closeModal;
+}
+
+/* long press */
+function bindPress(el,tap,long){
+  var t=null,fired=false;
+  function start(){fired=false;t=setTimeout(function(){fired=true;long()},600)}
+  function end(e){clearTimeout(t);if(!fired&&e.type!=="pointerleave"&&e.type!=="pointercancel")tap()}
+  el.addEventListener("pointerdown",start);
+  el.addEventListener("pointerup",end);
+  el.addEventListener("pointerleave",function(e){clearTimeout(t)});
+  el.addEventListener("pointercancel",function(e){clearTimeout(t)});
+  el.addEventListener("contextmenu",function(e){e.preventDefault()});
+}
+
+/* ---------- render ---------- */
+var view="main";
+function render(){
+  var day=S.cur;
+  document.getElementById("hdDate").textContent=dayName(day.date)+" "+fmtDate(day.date);
+  var app=document.getElementById("app");
+  if(view==="archive"){renderArchive(app);return}
+  if(view==="settings"){renderSettings(app);return}
+  var tt=totals(day),ap=activePause(day);
+  var open=day.piles.filter(function(p){return!isDone(p)});
+  var done=day.piles.filter(isDone);
+  var h="";
+
+  h+='<div class="box"><h2>معلومات اليوم</h2>'+
+     '<div class="row"><label>رقم البلوك</label><input type="text" id="block" value="'+esc(day.block)+'"></div>'+
+     '<div class="two">'+
+       '<div><button class="big '+(day.workStart?'':'ok')+'" data-id="ws">'+(day.workStart?'بدء العمل ✓':'بدء العمل')+'</button><div class="tm">'+(day.workStart?hm(day.workStart):'—')+'</div></div>'+
+       '<div><button class="big '+(day.workStart&&!day.workEnd?'dan':'')+'" data-id="we">'+(day.workEnd?'انتهاء العمل ✓':'انتهاء العمل')+'</button><div class="tm">'+(day.workEnd?hm(day.workEnd):'—')+'</div></div>'+
+     '</div><p class="hint">ضغطة مطوّلة على أي زر لتعديل الوقت</p></div>';
+
+  h+='<div class="box '+(ap?'paused':'')+'"><h2>التوقف</h2>';
+  if(ap){
+    h+='<p style="margin:0 0 8px">متوقف منذ <b>'+hm(ap.start)+'</b> — السبب: <b>'+esc(ap.reason)+'</b></p>'+
+       '<button class="big ok" id="resume">استئناف</button>';
+  }else{
+    h+='<button class="big warn" id="pause">توقف</button>';
+  }
+  if(day.pauses.length){
+    h+='<div class="done-list" style="margin-top:8px">';
+    day.pauses.forEach(function(p,i){
+      h+='<div class="it"><span>'+esc(p.reason)+' &nbsp; <span dir="ltr">'+hm(p.start)+' - '+(p.end?hm(p.end):'...')+'</span></span>'+
+         '<button class="small" data-delp="'+i+'">حذف</button></div>';
+    });
+    h+='</div>';
+  }
+  h+='<div class="tm">مجموع التأخير: <b>'+delayHours(day)+'</b> ساعة</div></div>';
+
+  h+='<button class="big pri" id="newPile" style="margin-bottom:12px">+ حفرة جديدة</button>';
+
+  open.forEach(function(p){
+    var nextIdx=-1;for(var i=0;i<STEPS.length;i++){if(!p[STEPS[i].k]){nextIdx=i;break}}
+    h+='<div class="box card"><div class="hd"><b>حفرة رقم '+esc(p.no)+'</b><button class="small" data-delpile="'+p.id+'">حذف</button></div><div class="steps">';
+    STEPS.forEach(function(s,i){
+      var cls=p[s.k]?"done":(i===nextIdx?"next":"");
+      h+='<button class="step '+cls+'" data-pile="'+p.id+'" data-step="'+s.k+'">'+s.n+'<span class="t">'+(p[s.k]?hm(p[s.k]):'--:--')+'</span></button>';
+    });
+    h+='</div><div class="row" style="margin-top:10px"><label>كمية الصب m3</label><input type="number" inputmode="decimal" step="0.1" data-vol="'+p.id+'" value="'+esc(p.vol)+'"></div>'+
+       '<div class="row"><label>ملاحظات</label><input type="text" data-note="'+p.id+'" value="'+esc(p.note)+'"></div>'+
+       (p.pourEnd&&(p.vol===""||p.vol==null)?'<p class="hint" style="color:#d64545">اكتب كمية الصب لإغلاق الحفرة</p>':'')+
+       '</div>';
+  });
+
+  h+='<div class="box"><h2>ملخص اليوم</h2><div class="stat">'+
+     '<div><b>'+tt.n+'</b><span>خوازيق منفذة</span></div>'+
+     '<div><b>'+tt.v+'</b><span>كونكريت m3</span></div>'+
+     '<div><b>'+delayHours(day)+'</b><span>تأخير (ساعة)</span></div></div>'+
+     '<div class="row" style="margin-top:10px"><label>المورتر m3</label><input type="number" inputmode="decimal" step="0.1" id="mortar" value="'+esc(day.mortar)+'"></div>';
+  if(done.length){
+    h+='<div class="done-list">';
+    done.forEach(function(p){
+      h+='<div class="it"><span><b>'+esc(p.no)+'</b> &nbsp; <span dir="ltr">'+hm(p.drillStart)+' → '+hm(p.pourEnd)+'</span> &nbsp; '+esc(p.vol)+' m3</span>'+
+         '<button class="small" data-reopen="'+p.id+'">فتح</button></div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
+  h+='<button class="big ok" id="print" style="margin-bottom:8px">🖨 طباعة التقرير</button>'+
+     '<div class="two" style="margin-bottom:24px"><button id="goArch">الأيام السابقة</button><button id="goSet">الإعدادات</button></div>'+
+     '<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>';
+
+  app.innerHTML=h;
+  wire(app);
+}
+
+function findPile(id){id=+id;for(var i=0;i<S.cur.piles.length;i++)if(S.cur.piles[i].id===id)return S.cur.piles[i];return null}
+
+function wire(app){
+  var day=S.cur;
+  document.getElementById("block").oninput=function(e){day.block=e.target.value;save()};
+  document.getElementById("mortar").oninput=function(e){day.mortar=e.target.value;save()};
+  bindPress(app.querySelector('[data-id=ws]'),function(){
+    if(!day.workStart){day.workStart=Date.now();save();render()}
+  },function(){timeEdit("وقت بدء العمل",day.workStart,function(t){day.workStart=t;save();render()})});
+  bindPress(app.querySelector('[data-id=we]'),function(){
+    if(!day.workEnd){day.workEnd=Date.now();var ap=activePause(day);if(ap)ap.end=day.workEnd;save();render()}
+  },function(){timeEdit("وقت انتهاء العمل",day.workEnd,function(t){day.workEnd=t;save();render()})});
+
+  var pb=document.getElementById("pause");
+  if(pb)pb.onclick=function(){
+    var h='<h3>سبب التوقف</h3><div class="reasons">';
+    REASONS.forEach(function(r){h+='<button class="big" data-r="'+esc(r)+'">'+esc(r)+'</button>'});
+    h+='</div><div class="acts"><button id="mN">إلغاء</button></div>';
+    openModal(h);
+    MI.querySelectorAll("[data-r]").forEach(function(b){b.onclick=function(){
+      var r=b.getAttribute("data-r");
+      if(r==="غيره"){
+        openModal('<h3>اكتب السبب</h3><input type="text" id="mR"><div class="acts"><button id="mS" class="pri">توقف</button><button id="mN">إلغاء</button></div>');
+        document.getElementById("mS").onclick=function(){var v=document.getElementById("mR").value.trim()||"غيره";closeModal();day.pauses.push({start:Date.now(),end:null,reason:v});save();render()};
+        document.getElementById("mN").onclick=closeModal;
+        return;
+      }
+      closeModal();day.pauses.push({start:Date.now(),end:null,reason:r});save();render();
+    }});
+    document.getElementById("mN").onclick=closeModal;
+  };
+  var rb=document.getElementById("resume");
+  if(rb)rb.onclick=function(){activePause(day).end=Date.now();save();render()};
+  app.querySelectorAll("[data-delp]").forEach(function(b){b.onclick=function(){
+    confirmBox("حذف هذا التوقف؟","حذف",function(){day.pauses.splice(+b.getAttribute("data-delp"),1);save();render()});
+  }});
+
+  document.getElementById("newPile").onclick=function(){
+    openModal('<h3>رقم الحفرة</h3><input type="text" id="mP" inputmode="text" style="font-size:22px"><div class="acts"><button id="mS" class="pri">إضافة</button><button id="mN">إلغاء</button></div>');
+    var inp=document.getElementById("mP");setTimeout(function(){inp.focus()},50);
+    document.getElementById("mS").onclick=function(){
+      var v=inp.value.trim();if(!v){inp.style.borderColor="#d64545";return}
+      day.piles.push({id:day.nextId++,no:v,drillStart:null,drillEnd:null,concOrder:null,concArrive:null,pourStart:null,pourEnd:null,vol:"",note:""});
+      if(!day.workStart)day.workStart=Date.now();
+      closeModal();save();render();
+    };
+    document.getElementById("mN").onclick=closeModal;
+  };
+
+  app.querySelectorAll(".step").forEach(function(b){
+    var p=findPile(b.getAttribute("data-pile")),k=b.getAttribute("data-step");
+    var name="";STEPS.forEach(function(s){if(s.k===k)name=s.n});
+    bindPress(b,function(){
+      if(p[k]){timeEdit(name+" - حفرة "+p.no,p[k],function(t){p[k]=t;save();render()});return}
+      p[k]=Date.now();save();render();
+    },function(){timeEdit(name+" - حفرة "+p.no,p[k],function(t){p[k]=t;save();render()})});
+  });
+  app.querySelectorAll("[data-vol]").forEach(function(i){
+    var p=findPile(i.getAttribute("data-vol"));
+    i.oninput=function(){p.vol=i.value;save()};
+    i.onchange=function(){save();render()};
+  });
+  app.querySelectorAll("[data-note]").forEach(function(i){
+    var p=findPile(i.getAttribute("data-note"));
+    i.oninput=function(){p.note=i.value;save()};
+  });
+  app.querySelectorAll("[data-delpile]").forEach(function(b){b.onclick=function(){
+    var p=findPile(b.getAttribute("data-delpile"));
+    confirmBox("حذف الحفرة رقم "+p.no+"؟","حذف",function(){day.piles=day.piles.filter(function(x){return x!==p});save();render()});
+  }});
+  app.querySelectorAll("[data-reopen]").forEach(function(b){b.onclick=function(){
+    var p=findPile(b.getAttribute("data-reopen"));p.vol="";save();render();
+  }});
+
+  document.getElementById("print").onclick=function(){doPrint(S.cur)};
+  document.getElementById("goArch").onclick=function(){view="archive";render();scrollTo(0,0)};
+  document.getElementById("goSet").onclick=function(){view="settings";render();scrollTo(0,0)};
+  document.getElementById("newDay").onclick=function(){
+    var openN=day.piles.filter(function(p){return!isDone(p)}).length;
+    confirmBox((openN?"في "+openN+" حفرة غير مكتملة. ":"")+"حفظ هذا اليوم بالأرشيف وبدء يوم جديد؟","يوم جديد",function(){
+      var ap=activePause(day);if(ap)ap.end=Date.now();
+      S.archive.unshift(day);if(S.archive.length>120)S.archive.length=120;
+      S.cur=blankDay();save();render();scrollTo(0,0);
+    });
+  };
+}
+
+function renderArchive(app){
+  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الأيام السابقة</h2>';
+  if(!S.archive.length)h+='<p class="muted">لا يوجد أيام محفوظة بعد</p>';
+  S.archive.forEach(function(d,i){
+    var t=totals(d);
+    h+='<div class="done-list"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' خازوق · '+t.v+' m3</span></span>'+
+       '<span><button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
+  });
+  h+='</div>';
+  app.innerHTML=h;
+  document.getElementById("back").onclick=function(){view="main";render()};
+  app.querySelectorAll("[data-pr]").forEach(function(b){b.onclick=function(){doPrint(S.archive[+b.getAttribute("data-pr")])}});
+  app.querySelectorAll("[data-da]").forEach(function(b){b.onclick=function(){
+    confirmBox("حذف هذا اليوم نهائياً؟","حذف",function(){S.archive.splice(+b.getAttribute("data-da"),1);save();render()});
+  }});
+}
+
+function renderSettings(app){
+  var s=S.settings;
+  app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
+   '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(s.project)+'"></div>'+
+   '<div class="row"><label>عمق الخازوق (m)</label><input type="number" inputmode="decimal" id="sD" value="'+esc(s.depth)+'"></div>'+
+   '<div class="row"><label>طول الحديد (m)</label><input type="number" inputmode="decimal" id="sS" value="'+esc(s.steel)+'"></div>'+
+   '<div class="row"><label>تاريخ اليوم الحالي</label><input type="date" id="sT" value="'+esc(S.cur.date)+'"></div>'+
+   '</div>';
+  document.getElementById("back").onclick=function(){view="main";render()};
+  document.getElementById("sP").oninput=function(e){s.project=e.target.value;save()};
+  document.getElementById("sD").oninput=function(e){s.depth=e.target.value;save()};
+  document.getElementById("sS").oninput=function(e){s.steel=e.target.value;save()};
+  document.getElementById("sT").onchange=function(e){if(e.target.value){S.cur.date=e.target.value;save();render()}};
+}
+
+/* ---------- print ---------- */
+function m1(v){var x=parseFloat(v);return isNaN(x)?esc(v):x.toFixed(1)+"m"}
+function doPrint(day){
+  var s=S.settings,t=totals(day);
+  var notesExtra=day.pauses.map(function(p){return p.reason+" ("+hm(p.start)+"-"+(p.end?hm(p.end):"")+")"}).join("، ");
+  var h='<div class="sheet"><table dir="ltr">'+
+   '<tr><td class="logo" colspan="2">SATCON</td><td class="ttl" colspan="4" dir="rtl">'+esc(s.project)+'</td><td colspan="2"><b>Daily Report</b><br><span dir="rtl">تقرير يومي</span></td></tr>'+
+   '<tr><td colspan="2"><b>Day and Date</b></td><td colspan="4">'+dayName(day.date)+' &nbsp; '+fmtDate(day.date)+'</td><td colspan="2" dir="rtl"><b>اليوم والتاريخ</b></td></tr>'+
+   '<tr><td class="blue">Block nb.:</td><td>'+esc(day.block)+'</td><td class="blue" colspan="2">Nb. of executed piles/ day:</td><td>'+t.n+'</td><td class="blue" colspan="2">work start time:</td><td>'+hm(day.workStart)+'</td></tr>'+
+   '<tr><td class="blue">Pile Depth (m):</td><td>'+m1(s.depth)+'</td><td class="blue" colspan="2">concrete Consumption (m3 /day):</td><td>'+(t.v||"")+'</td><td class="blue" colspan="2">work End time:</td><td>'+hm(day.workEnd)+'</td></tr>'+
+   '<tr><td class="blue">Steel Length (m):</td><td>'+m1(s.steel)+'</td><td class="blue" colspan="2">Mortar consumption (m3/ day):</td><td>'+esc(day.mortar)+'</td><td class="blue" colspan="2">Delays (hours):</td><td>'+(day.pauses.length?delayHours(day):"")+'</td></tr>'+
+   '</table>';
+  h+='<table class="grid" dir="rtl" style="margin-top:-1px"><tr>'+
+   '<th>العدد</th><th>رقم الحفرة</th><th>وقت بدء الحفر</th><th>وقت إنتهاء الحفر</th><th>وقت طلب الكونكريت</th><th>وقت وصول الكونكريت</th><th>وقت بدء الصب</th><th>وقت إنتهاء الصب</th><th>كمية الصب m3</th><th style="width:18%">الملاحظات</th></tr>';
+  var piles=day.piles.slice().sort(function(a,b){return(a.drillStart||9e15)-(b.drillStart||9e15)});
+  var rows=Math.max(12,piles.length);
+  for(var i=0;i<rows;i++){
+    var p=piles[i];
+    h+='<tr><td>'+(i+1)+'</td>';
+    if(p){h+='<td>'+esc(p.no)+'</td>';STEPS.forEach(function(st){h+='<td>'+hm(p[st.k])+'</td>'});h+='<td>'+esc(p.vol)+'</td><td>'+esc(p.note)+'</td>'}
+    else h+='<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
+    h+='</tr>';
+  }
+  h+='</table>';
+  if(notesExtra)h+='<div class="foot" dir="rtl"><b>التوقفات:</b> '+esc(notesExtra)+'</div>';
+  h+='</div>';
+  document.getElementById("printArea").innerHTML=h;
+  try{window.print()}catch(e){}
+}
+
+/* keep pause timer fresh */
+setInterval(function(){if(view==="main"&&activePause(S.cur)&&!M.classList.contains("show")){
+  var a=document.activeElement;if(!a||a.tagName!=="INPUT")render();
+}},60000);
+
+render();
+if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}
+})();
+</script>
+</body>
+</html>
