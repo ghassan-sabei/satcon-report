@@ -65,12 +65,15 @@ button:active{transform:scale(.97)}
 }
 .sheet{font-family:Arial,Tahoma,sans-serif;color:#000;width:100%;font-size:12px}
 .sheet table{border-collapse:collapse;width:100%}
-.sheet td,.sheet th{border:1px solid #1f2a5a;padding:3px 4px;text-align:center;height:28px}
+.sheet td,.sheet th{border:1px solid #1f2a5a;padding:3px 4px;text-align:center;height:26px}
 .sheet .blue{background:#5b9bd5;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet .logo{background:#2b3a67;color:#fff;font-size:20px;letter-spacing:4px;font-weight:300;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet .ttl{font-size:16px;font-weight:700}
 .sheet .grid th{font-weight:700;font-size:11px}
-.sheet .grid td{height:34px;font-size:13px}
+.sheet .grid td{font-size:15px;padding:0 4px}
+.sheet .grid td.nt{font-size:12px;line-height:1.2}
+.sheet .pgno{text-align:center;font-size:11px;margin-top:4px}
+@media print{.sheet.page{page-break-after:always;break-after:page}.sheet.page:last-child{page-break-after:auto;break-after:auto}}
 .sheet .foot{margin-top:6px;text-align:right;font-size:11px}
 </style>
 </head>
@@ -391,34 +394,54 @@ function pauseNotes(day,piles){
   Object.keys(map).forEach(function(k){out[k]=Object.keys(map[k]).map(function(r){return r+" "+durTxt(map[k][r])}).join("، ")});
   return out;
 }
-function buildSheet(day){
+var PAGE_W=1062,PAGE_H=733,MIN_ROW=26,MAX_ROW=46,MIN_ROWS=12;
+function sheetHead(day){
   var s=S.settings,t=totals(day);
-  var h='<div class="sheet"><table dir="ltr">'+
+  return '<table dir="ltr">'+
    '<tr><td class="logo" colspan="2">SATCON</td><td class="ttl" colspan="4" dir="rtl">'+esc(s.project)+'</td><td colspan="2"><b>Daily Report</b><br><span dir="rtl">تقرير يومي</span></td></tr>'+
    '<tr><td colspan="2"><b>Day and Date</b></td><td colspan="4">'+dayName(day.date)+' &nbsp; '+fmtDate(day.date)+'</td><td colspan="2" dir="rtl"><b>اليوم والتاريخ</b></td></tr>'+
    '<tr><td class="blue">Block nb.:</td><td>'+esc(day.block)+'</td><td class="blue" colspan="2">Nb. of executed piles/ day:</td><td>'+t.n+'</td><td class="blue" colspan="2">work start time:</td><td>'+hm(day.workStart)+'</td></tr>'+
    '<tr><td class="blue">Pile Depth (m):</td><td>'+m1(s.depth)+'</td><td class="blue" colspan="2">concrete Consumption (m3 /day):</td><td>'+(t.v||"")+'</td><td class="blue" colspan="2">work End time:</td><td>'+hm(day.workEnd)+'</td></tr>'+
    '<tr><td class="blue">Steel Length (m):</td><td>'+m1(s.steel)+'</td><td class="blue" colspan="2">Mortar consumption (m3/ day):</td><td>'+esc(day.mortar)+'</td><td class="blue" colspan="2">Delays (hours):</td><td>'+(day.pauses.length?delayHours(day):"")+'</td></tr>'+
-   '</table>';
-  h+='<table class="grid" dir="rtl" style="margin-top:-1px"><tr>'+
+   '</table>'+
+   '<table class="grid" dir="rtl" style="margin-top:-1px"><tr>'+
    '<th>العدد</th><th>رقم الحفرة</th><th>وقت بدء الحفر</th><th>وقت إنتهاء الحفر</th><th>وقت طلب الكونكريت</th><th>وقت وصول الكونكريت</th><th>وقت بدء الصب</th><th>وقت إنتهاء الصب</th><th>كمية الصب m3</th><th style="width:18%">الملاحظات</th></tr>';
+}
+function measureHead(day,withFoot){
+  var box=document.createElement("div");
+  box.style.cssText="position:fixed;left:-20000px;top:0;width:"+PAGE_W+"px";
+  box.innerHTML='<div class="sheet">'+sheetHead(day)+'</table>'+(withFoot?'<div class="foot">x</div>':'')+'</div>';
+  document.body.appendChild(box);var h=box.offsetHeight;document.body.removeChild(box);return h;
+}
+/* returns array of page HTML strings, each exactly one A4 landscape page */
+function sheetPages(day){
   var piles=day.piles.slice().sort(function(a,b){return(a.drillStart||9e15)-(b.drillStart||9e15)});
   var pn=pauseNotes(day,piles);
-  var rows=Math.max(12,piles.length);
-  for(var i=0;i<rows;i++){
-    var p=piles[i];
-    h+='<tr><td>'+(i+1)+'</td>';
-    if(p){h+='<td>'+esc(p.no)+'</td>';STEPS.forEach(function(st){h+='<td>'+hm(p[st.k])+'</td>'});var nt=[p.note,pn[p.id]].filter(function(x){return x}).join(" - ");h+='<td>'+esc(p.vol)+'</td><td>'+esc(nt)+'</td>'}
-    else h+='<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
-    h+='</tr>';
+  var foot=pn["_"]?'<div class="foot" dir="rtl"><b>توقفات:</b> '+esc(pn["_"])+'</div>':'';
+  var avail=PAGE_H-measureHead(day,!!foot)-4;
+  var total=Math.max(MIN_ROWS,piles.length);
+  if(total>Math.floor(avail/MIN_ROW))avail-=22;
+  var perPage=Math.max(1,Math.floor(avail/MIN_ROW));
+  var nPages=Math.ceil(total/perPage);
+  var rowsPer=Math.ceil(total/nPages);
+  var rowH=Math.min(MAX_ROW,Math.floor(avail/rowsPer));
+  var pages=[];
+  for(var pg=0;pg<nPages;pg++){
+    var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+sheetHead(day);
+    for(var i=pg*rowsPer;i<Math.min(total,(pg+1)*rowsPer);i++){
+      var p=piles[i];
+      h+='<tr style="height:'+rowH+'px"><td>'+(i+1)+'</td>';
+      if(p){h+='<td>'+esc(p.no)+'</td>';STEPS.forEach(function(st){h+='<td>'+hm(p[st.k])+'</td>'});var nt=[p.note,pn[p.id]].filter(function(x){return x}).join(" - ");h+='<td>'+esc(p.vol)+'</td><td class="nt">'+esc(nt)+'</td>'}
+      else h+='<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
+      h+='</tr>';
+    }
+    h+='</table>'+(pg===nPages-1?foot:'')+(nPages>1?'<div class="pgno">'+(pg+1)+' / '+nPages+'</div>':'')+'</div>';
+    pages.push(h);
   }
-  h+='</table>';
-  if(pn["_"])h+='<div class="foot" dir="rtl"><b>توقفات:</b> '+esc(pn["_"])+'</div>';
-  h+='</div>';
-  return h;
+  return pages;
 }
 function doPrint(day){
-  document.getElementById("printArea").innerHTML=buildSheet(day);
+  document.getElementById("printArea").innerHTML=sheetPages(day).join("");
   try{window.print()}catch(e){}
 }
 var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
@@ -429,14 +452,22 @@ function sharePdf(day){
   busy("جاري تجهيز PDF...");
   var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
   p.then(function(){
-    var box=document.createElement("div");
-    box.style.cssText="position:fixed;left:-20000px;top:0;width:1123px;background:#fff;padding:20px";
-    box.innerHTML=buildSheet(day);document.body.appendChild(box);
-    return window.html2canvas(box,{scale:2,backgroundColor:"#fff"}).then(function(cv){
-      document.body.removeChild(box);
-      var pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
-      var w=297,h=cv.height*w/cv.width;if(h>210){h=210;w=cv.width*h/cv.height}
-      pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",(297-w)/2,0,w,h);
+    var pages=sheetPages(day);
+    var pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    var chain=Promise.resolve();
+    pages.forEach(function(html,idx){
+      chain=chain.then(function(){
+        var box=document.createElement("div");
+        box.style.cssText="position:fixed;left:-20000px;top:0;width:"+PAGE_W+"px;height:"+PAGE_H+"px;background:#fff;overflow:hidden";
+        box.innerHTML=html;document.body.appendChild(box);
+        return window.html2canvas(box,{scale:2,backgroundColor:"#fff",width:PAGE_W,height:PAGE_H}).then(function(cv){
+          document.body.removeChild(box);
+          if(idx>0)pdf.addPage("a4","landscape");
+          pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",8,8,281,281*PAGE_H/PAGE_W);
+        });
+      });
+    });
+    return chain.then(function(){
       var name="report_"+day.date+(day.block?"_"+String(day.block).replace(/[^\w-]/g,""):"")+".pdf";
       var blob=pdf.output("blob");
       var file=new File([blob],name,{type:"application/pdf"});
