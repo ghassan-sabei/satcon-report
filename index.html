@@ -240,7 +240,7 @@ function render(){
   }
   h+='</div>';
 
-  h+='<button class="big ok" id="print" style="margin-bottom:8px">🖨 طباعة التقرير</button>'+
+  h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>'+
      '<div class="two" style="margin-bottom:24px"><button id="goArch">الأيام السابقة</button><button id="goSet">الإعدادات</button></div>'+
      '<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>';
 
@@ -323,6 +323,7 @@ function wire(app){
   }});
 
   document.getElementById("print").onclick=function(){doPrint(S.cur)};
+  document.getElementById("pdf").onclick=function(){sharePdf(S.cur)};
   document.getElementById("goArch").onclick=function(){view="archive";render();scrollTo(0,0)};
   document.getElementById("goSet").onclick=function(){view="settings";render();scrollTo(0,0)};
   document.getElementById("newDay").onclick=function(){
@@ -341,11 +342,12 @@ function renderArchive(app){
   S.archive.forEach(function(d,i){
     var t=totals(d);
     h+='<div class="done-list"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' خازوق · '+t.v+' m3</span></span>'+
-       '<span><button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
+       '<span><button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
   });
   h+='</div>';
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="main";render()};
+  app.querySelectorAll("[data-pdf]").forEach(function(b){b.onclick=function(){sharePdf(S.archive[+b.getAttribute("data-pdf")])}});
   app.querySelectorAll("[data-pr]").forEach(function(b){b.onclick=function(){doPrint(S.archive[+b.getAttribute("data-pr")])}});
   app.querySelectorAll("[data-da]").forEach(function(b){b.onclick=function(){
     confirmBox("حذف هذا اليوم نهائياً؟","حذف",function(){S.archive.splice(+b.getAttribute("data-da"),1);save();render()});
@@ -369,7 +371,7 @@ function renderSettings(app){
 
 /* ---------- print ---------- */
 function m1(v){var x=parseFloat(v);return isNaN(x)?esc(v):x.toFixed(1)+"m"}
-function doPrint(day){
+function buildSheet(day){
   var s=S.settings,t=totals(day);
   var notesExtra=day.pauses.map(function(p){return p.reason+" ("+hm(p.start)+"-"+(p.end?hm(p.end):"")+")"}).join("، ");
   var h='<div class="sheet"><table dir="ltr">'+
@@ -393,8 +395,41 @@ function doPrint(day){
   h+='</table>';
   if(notesExtra)h+='<div class="foot" dir="rtl"><b>التوقفات:</b> '+esc(notesExtra)+'</div>';
   h+='</div>';
-  document.getElementById("printArea").innerHTML=h;
+  return h;
+}
+function doPrint(day){
+  document.getElementById("printArea").innerHTML=buildSheet(day);
   try{window.print()}catch(e){}
+}
+var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
+function loadScript(u){return new Promise(function(res,rej){var s=document.createElement("script");s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+function busy(msg){openModal('<h3 style="text-align:center">'+esc(msg)+'</h3>')}
+function sharePdf(day){
+  busy("جاري تجهيز PDF...");
+  var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
+  p.then(function(){
+    var box=document.createElement("div");
+    box.style.cssText="position:fixed;left:-20000px;top:0;width:1123px;background:#fff;padding:20px";
+    box.innerHTML=buildSheet(day);document.body.appendChild(box);
+    return window.html2canvas(box,{scale:2,backgroundColor:"#fff"}).then(function(cv){
+      document.body.removeChild(box);
+      var pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+      var w=297,h=cv.height*w/cv.width;if(h>210){h=210;w=cv.width*h/cv.height}
+      pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",(297-w)/2,0,w,h);
+      var name="report_"+day.date+(day.block?"_"+String(day.block).replace(/[^\w-]/g,""):"")+".pdf";
+      var blob=pdf.output("blob");
+      var file=new File([blob],name,{type:"application/pdf"});
+      closeModal();
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        return navigator.share({files:[file],title:"التقرير اليومي "+fmtDate(day.date)}).catch(function(){});
+      }
+      var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+    });
+  }).catch(function(){
+    openModal('<h3>ما قدر يجهّز PDF</h3><p>أول مرة لازم يكون في إنترنت حتى ينزّل أدوات الـPDF، بعدها بيشتغل بدون نت.</p><div class="acts"><button id="mN">تمام</button></div>');
+    document.getElementById("mN").onclick=closeModal;
+  });
 }
 
 /* keep pause timer fresh */
