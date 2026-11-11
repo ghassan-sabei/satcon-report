@@ -440,7 +440,17 @@ function sheetPages(day){
 }
 function doPrint(day){
   document.getElementById("printArea").innerHTML=sheetPages(day).join("");
+  var opened=false;
+  function mark(){opened=true}
+  window.addEventListener("beforeprint",mark,{once:true});
   try{window.print()}catch(e){}
+  setTimeout(function(){
+    window.removeEventListener("beforeprint",mark);
+    if(opened)return;
+    openModal('<h3>الطباعة المباشرة ما فتحت</h3><p>رح جهّزلك التقرير PDF، اختار تطبيق PDF من القائمة وافتحه واطبع منه.</p><div class="acts"><button id="mS" class="pri">تجهيز PDF</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mS").onclick=function(){closeModal();sharePdf(day)};
+    document.getElementById("mN").onclick=closeModal;
+  },1500);
 }
 var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
           "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
