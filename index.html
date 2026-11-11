@@ -419,12 +419,10 @@ function sheetPages(day){
   var pn=pauseNotes(day,piles);
   var foot=pn["_"]?'<div class="foot" dir="rtl"><b>توقفات:</b> '+esc(pn["_"])+'</div>':'';
   var avail=PAGE_H-measureHead(day,!!foot)-4;
-  var total=Math.max(MIN_ROWS,piles.length);
-  if(total>Math.floor(avail/MIN_ROW))avail-=22;
-  var perPage=Math.max(1,Math.floor(avail/MIN_ROW));
-  var nPages=Math.ceil(total/perPage);
-  var rowsPer=Math.ceil(total/nPages);
-  var rowH=Math.min(MAX_ROW,Math.floor(avail/rowsPer));
+  var total=Math.max(MIN_ROWS,Math.ceil(piles.length/12)*12);
+  var rowsPer=12,nPages=total/12;
+  if(nPages>1)avail-=22;
+  var rowH=Math.floor(avail/rowsPer);
   var pages=[];
   for(var pg=0;pg<nPages;pg++){
     var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+sheetHead(day);
