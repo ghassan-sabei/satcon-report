@@ -356,7 +356,7 @@ function renderArchive(app){
   if(!S.archive.length)h+='<p class="muted">لا يوجد أيام محفوظة بعد</p>';
   S.archive.forEach(function(d,i){
     var t=totals(d);
-    h+='<div class="done-list"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' خازوق · '+t.v+' m3</span></span>'+
+    h+='<div class="done-list"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' بايل · '+t.v+' m3</span></span>'+
        '<span><button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
   });
   h+='</div>';
@@ -373,7 +373,7 @@ function renderSettings(app){
   var s=S.settings;
   app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
    '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(s.project)+'"></div>'+
-   '<div class="row"><label>عمق الخازوق (m)</label><input type="number" inputmode="decimal" id="sD" value="'+esc(s.depth)+'"></div>'+
+   '<div class="row"><label>عمق البايل (m)</label><input type="number" inputmode="decimal" id="sD" value="'+esc(s.depth)+'"></div>'+
    '<div class="row"><label>طول الحديد (m)</label><input type="number" inputmode="decimal" id="sS" value="'+esc(s.steel)+'"></div>'+
    '<div class="row"><label>تاريخ اليوم الحالي</label><input type="date" id="sT" value="'+esc(S.cur.date)+'"></div>'+
    '</div>';
