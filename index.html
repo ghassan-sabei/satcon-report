@@ -121,7 +121,8 @@ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 
 function pad(n){return(n<10?"0":"")+n}
 function isoDate(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
-function hm(ts){if(!ts)return"";var d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())}
+function hm(ts){if(!ts)return"";var d=new Date(ts),h=d.getHours(),ap=h<12?"ص":"م";h=h%12||12;return h+":"+pad(d.getMinutes())+" "+ap}
+function hm24(ts){var d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())}
 function dayName(iso){var p=iso.split("-");var d=new Date(+p[0],+p[1]-1,+p[2]);return DAYS[d.getDay()]}
 function fmtDate(iso){var p=iso.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
@@ -152,7 +153,7 @@ function confirmBox(msg,yes,cb){
   document.getElementById("mN").onclick=closeModal;
 }
 function timeEdit(title,ts,cb){
-  var v=ts?hm(ts):hm(Date.now());
+  var v=ts?hm24(ts):hm24(Date.now());
   openModal('<h3>'+esc(title)+'</h3><input type="time" id="mT" value="'+v+'" style="width:100%;font-size:22px;direction:ltr">'+
    '<div class="acts"><button id="mS" class="pri">حفظ</button>'+(ts?'<button id="mC" class="dan">مسح</button>':'')+'<button id="mN">إلغاء</button></div>');
   document.getElementById("mS").onclick=function(){
@@ -206,7 +207,7 @@ function render(){
   if(day.pauses.length){
     h+='<div class="done-list" style="margin-top:8px">';
     day.pauses.forEach(function(p,i){
-      h+='<div class="it"><span>'+esc(p.reason)+' &nbsp; <span dir="ltr">'+hm(p.start)+' - '+(p.end?hm(p.end):'...')+'</span> &nbsp; <b>'+durTxt((p.end||Date.now())-p.start)+'</b></span>'+
+      h+='<div class="it"><span>'+esc(p.reason)+' &nbsp; <span>'+hm(p.start)+' - '+(p.end?hm(p.end):'...')+'</span> &nbsp; <b>'+durTxt((p.end||Date.now())-p.start)+'</b></span>'+
          '<button class="small" data-delp="'+i+'">حذف</button></div>';
     });
     h+='</div>';
@@ -236,7 +237,7 @@ function render(){
   if(done.length){
     h+='<div class="done-list">';
     done.forEach(function(p){
-      h+='<div class="it"><span><b>'+esc(p.no)+'</b> &nbsp; <span dir="ltr">'+hm(p.drillStart)+' → '+hm(p.pourEnd)+'</span> &nbsp; '+esc(p.vol)+' m3</span>'+
+      h+='<div class="it"><span><b>'+esc(p.no)+'</b> &nbsp; <span>'+hm(p.drillStart)+' ← '+hm(p.pourEnd)+'</span> &nbsp; '+esc(p.vol)+' m3</span>'+
          '<button class="small" data-reopen="'+p.id+'">فتح</button></div>';
     });
     h+='</div>';
@@ -400,8 +401,8 @@ function sheetHead(day){
   return '<table dir="ltr">'+
    '<tr><td class="logo" colspan="2">SATCON</td><td class="ttl" colspan="4" dir="rtl">'+esc(s.project)+'</td><td colspan="2"><b>Daily Report</b><br><span dir="rtl">تقرير يومي</span></td></tr>'+
    '<tr><td colspan="2"><b>Day and Date</b></td><td colspan="4">'+dayName(day.date)+' &nbsp; '+fmtDate(day.date)+'</td><td colspan="2" dir="rtl"><b>اليوم والتاريخ</b></td></tr>'+
-   '<tr><td class="blue">Block nb.:</td><td>'+esc(day.block)+'</td><td class="blue" colspan="2">Nb. of executed piles/ day:</td><td>'+t.n+'</td><td class="blue" colspan="2">work start time:</td><td>'+hm(day.workStart)+'</td></tr>'+
-   '<tr><td class="blue">Pile Depth (m):</td><td>'+m1(s.depth)+'</td><td class="blue" colspan="2">concrete Consumption (m3 /day):</td><td>'+(t.v||"")+'</td><td class="blue" colspan="2">work End time:</td><td>'+hm(day.workEnd)+'</td></tr>'+
+   '<tr><td class="blue">Block nb.:</td><td>'+esc(day.block)+'</td><td class="blue" colspan="2">Nb. of executed piles/ day:</td><td>'+t.n+'</td><td class="blue" colspan="2">work start time:</td><td dir="rtl">'+hm(day.workStart)+'</td></tr>'+
+   '<tr><td class="blue">Pile Depth (m):</td><td>'+m1(s.depth)+'</td><td class="blue" colspan="2">concrete Consumption (m3 /day):</td><td>'+(t.v||"")+'</td><td class="blue" colspan="2">work End time:</td><td dir="rtl">'+hm(day.workEnd)+'</td></tr>'+
    '<tr><td class="blue">Steel Length (m):</td><td>'+m1(s.steel)+'</td><td class="blue" colspan="2">Mortar consumption (m3/ day):</td><td>'+esc(day.mortar)+'</td><td class="blue" colspan="2">Delays (hours):</td><td>'+(day.pauses.length?delayHours(day):"")+'</td></tr>'+
    '</table>'+
    '<table class="grid" dir="rtl" style="margin-top:-1px"><tr>'+
