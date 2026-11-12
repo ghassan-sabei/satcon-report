@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['android/**', '.github/workflows/apk.yml']
+    paths: ['android/**', 'index.html', 'manifest.json', '.github/workflows/apk.yml']
 permissions:
   contents: write
 jobs:
@@ -15,6 +15,12 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.7' }
+      - name: Bundle web files
+        run: |
+          mkdir -p android/app/src/main/assets/web android/app/src/main/assets/lib
+          cp index.html manifest.json icon-192.png icon-512.png android/app/src/main/assets/web/
+          curl -fsSL -o android/app/src/main/assets/lib/html2canvas.min.js https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js
+          curl -fsSL -o android/app/src/main/assets/lib/jspdf.umd.min.js https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js
       - name: Build
         id: build
         env: { VERSION_CODE: '${{ github.run_number }}' }

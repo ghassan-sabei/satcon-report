@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">التقرير اليومي</string>
-    <string name="asset_statements">[{\"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://ghassan-sabei.github.io\"}}]</string>
-    <color name="brand">#2b3a67</color>
 </resources>

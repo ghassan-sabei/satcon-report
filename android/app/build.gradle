@@ -4,10 +4,10 @@ android {
     compileSdk 34
     defaultConfig {
         applicationId 'com.satcon.report'
-        minSdk 21
+        minSdk 24
         targetSdk 34
         versionCode((System.getenv('VERSION_CODE') ?: '1') as int)
-        versionName '1.' + (System.getenv('VERSION_CODE') ?: '1')
+        versionName '2.' + (System.getenv('VERSION_CODE') ?: '1')
     }
     signingConfigs {
         release {
@@ -20,4 +20,4 @@ android {
     buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
-dependencies { implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0' }
+dependencies { implementation 'androidx.core:core:1.13.1' }

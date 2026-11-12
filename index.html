@@ -450,7 +450,14 @@ function sheetPages(day){
   }
   return pages;
 }
+var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
+if(NATIVE){var st=document.createElement("style");st.textContent="@page{size:A4 landscape;margin:8mm}";document.head.appendChild(st)}
 function doPrint(day){
+  if(NATIVE){
+    document.getElementById("printArea").innerHTML=sheetPages(day).join("");
+    setTimeout(function(){window.AndroidBridge.print("report_"+day.date)},150);
+    return;
+  }
   document.getElementById("printArea").innerHTML=sheetPages(day).map(function(x){return'<div class="pp">'+x+'</div>'}).join("");
   var opened=false;
   function mark(){opened=true}
@@ -489,6 +496,7 @@ function sharePdf(day){
     });
     return chain.then(function(){
       var name="report_"+day.date+(day.block?"_"+String(day.block).replace(/[^\w-]/g,""):"")+".pdf";
+      if(NATIVE){closeModal();window.AndroidBridge.sharePdf(pdf.output("datauristring").split(",")[1],name);return}
       var blob=pdf.output("blob");
       var file=new File([blob],name,{type:"application/pdf"});
       closeModal();
