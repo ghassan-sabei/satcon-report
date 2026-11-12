@@ -116,7 +116,7 @@ function blankDay(){
 function load(){
   var s=null;
   try{s=JSON.parse(localStorage.getItem(KEY));}catch(e){}
-  if(!s)s={settings:{project:"مشروع مدينة الاخوة السكني - بغداد",depth:"20.0",steel:"12.0"},cur:null,archive:[]};
+  if(!s)s={settings:{project:"OCR PROJECT ",depth:"20.0",steel:"12.0"},cur:null,archive:[]};
   return s;
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
