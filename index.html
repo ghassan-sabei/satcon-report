@@ -511,6 +511,16 @@ function sharePdf(day){
   });
 }
 
+/* native app: a newer version was downloaded */
+window.__updateReady=function(){
+  if(document.getElementById("updBar"))return;
+  var b=document.createElement("div");b.id="updBar";
+  b.style.cssText="position:fixed;bottom:0;left:0;right:0;background:#1f9d55;color:#fff;padding:12px;display:flex;align-items:center;justify-content:space-between;z-index:60;font-size:15px";
+  b.innerHTML='<span>في نسخة جديدة من التطبيق</span><button style="background:#fff;color:#1f9d55;font-weight:700">تحديث الآن</button>';
+  b.querySelector("button").onclick=function(){location.reload()};
+  document.body.appendChild(b);
+};
+
 /* keep pause timer fresh */
 setInterval(function(){if(view==="main"&&activePause(S.cur)&&!M.classList.contains("show")){
   var a=document.activeElement;if(!a||a.tagName!=="INPUT")render();

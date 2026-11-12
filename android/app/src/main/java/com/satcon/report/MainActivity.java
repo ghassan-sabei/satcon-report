@@ -64,7 +64,23 @@ public class MainActivity extends Activity {
             }
         });
         if (b != null) web.restoreState(b); else web.loadUrl(ORIGIN + "index.html");
-        checkUpdate();
+    }
+
+    long lastCheck = 0;
+    @Override protected void onResume() {
+        super.onResume();
+        if (System.currentTimeMillis() - lastCheck > 60000) { lastCheck = System.currentTimeMillis(); checkUpdate(); }
+    }
+
+    byte[] current(String n) {
+        try {
+            File f = new File(new File(getFilesDir(), "web"), n);
+            InputStream in = f.isFile() ? new FileInputStream(f) : getAssets().open("web/" + n);
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192]; int k;
+            while ((k = in.read(buf)) > 0) bo.write(buf, 0, k);
+            in.close(); return bo.toByteArray();
+        } catch (Exception e) { return new byte[0]; }
     }
 
     @Override protected void onSaveInstanceState(Bundle o) { super.onSaveInstanceState(o); web.saveState(o); }
@@ -119,10 +135,12 @@ public class MainActivity extends Activity {
                     byte[] data = bo.toByteArray();
                     String txt = new String(data, "UTF-8");
                     if (!txt.contains("satcon_daily_v1") || !txt.contains("</html>")) continue;
+                    if (java.util.Arrays.equals(data, current(n))) continue;
                     File dir = new File(getFilesDir(), "web"); dir.mkdirs();
                     File tmp = new File(dir, n + ".tmp");
                     FileOutputStream fo = new FileOutputStream(tmp); fo.write(data); fo.close();
-                    tmp.renameTo(new File(dir, n));
+                    if (tmp.renameTo(new File(dir, n)))
+                        runOnUiThread(() -> web.evaluateJavascript("window.__updateReady&&window.__updateReady()", null));
                 } catch (Exception ignored) {}
             }
         }).start();
