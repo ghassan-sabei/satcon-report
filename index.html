@@ -123,6 +123,9 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 if(!S.cur){S.cur=blankDay();save();}
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 
+function parseTyped(str){var p=String(str).trim().replace(/[٠-٩]/g,function(c){return"٠١٢٣٤٥٦٧٨٩".indexOf(c)}).split(/[\/\-\.\s]+/).filter(function(x){return x});
+  if(!p.length||p.length>3)return null;var now=new Date(),d=+p[0],m=p.length>1?+p[1]:now.getMonth()+1,y=p.length>2?+p[2]:now.getFullYear();
+  if(y<100)y+=2000;if(!(d>=1&&d<=31&&m>=1&&m<=12))return null;var dt=new Date(y,m-1,d);if(dt.getDate()!==d)return null;return isoDate(dt)}
 function pad(n){return(n<10?"0":"")+n}
 function isoDate(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
 function hm(ts){if(!ts)return"";var d=new Date(ts),h=d.getHours(),ap=h<12?"ص":"م";h=h%12||12;return h+":"+pad(d.getMinutes())+" "+ap}
@@ -356,16 +359,22 @@ function wire(app){
 }
 
 function renderArchive(app){
-  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الأيام السابقة</h2>';
+  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الأيام السابقة</h2>'+
+    (S.archive.length?'<div class="row"><input type="text" id="aFind" placeholder="🔍 اكتب التاريخ (13/11) أو رقم البلوك"></div><p class="muted" id="aNone" style="display:none">ما في يوم بهالبحث</p>':'');
   if(!S.archive.length)h+='<p class="muted">لا يوجد أيام محفوظة بعد</p>';
   S.archive.forEach(function(d,i){
     var t=totals(d);
-    h+='<div class="done-list"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' بايل · '+t.v+' m3</span></span>'+
+    h+='<div class="done-list" data-row="'+i+'"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' بايل · '+t.v+' m3</span></span>'+
        '<span><button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
   });
   h+='</div>';
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="main";render()};
+  var af=document.getElementById("aFind");
+  if(af)af.oninput=function(){var q=af.value.trim(),dt=parseTyped(q),nb=normBlock(q),n=0;
+    app.querySelectorAll("[data-row]").forEach(function(el){var d=S.archive[+el.getAttribute("data-row")];
+      var ok=!q||(dt?d.date===dt:(normBlock(d.block).indexOf(nb)>=0||fmtDate(d.date).indexOf(q)>=0));el.style.display=ok?"":"none";if(ok)n++});
+    document.getElementById("aNone").style.display=n?"none":""};
   app.querySelectorAll("[data-pdf]").forEach(function(b){b.onclick=function(){sharePdf(S.archive[+b.getAttribute("data-pdf")])}});
   app.querySelectorAll("[data-pr]").forEach(function(b){b.onclick=function(){doPrint(S.archive[+b.getAttribute("data-pr")])}});
   app.querySelectorAll("[data-da]").forEach(function(b){b.onclick=function(){

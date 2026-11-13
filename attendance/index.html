@@ -135,6 +135,9 @@ function dayMachines(date){var d=dayRec(date,false),ids={},list=[];
   S.machines.forEach(function(m){if(m.active!==false){ids[m.id]=1;list.push(m)}});
   if(d&&d.mrecs)Object.keys(d.mrecs).forEach(function(k){var id=+k;if(!ids[id]){var m=machineById(id);if(m){ids[id]=1;list.push(m)}}});
   return list}
+function parseTyped(str){var p=String(str).trim().replace(/[٠-٩]/g,function(c){return"٠١٢٣٤٥٦٧٨٩".indexOf(c)}).split(/[\/\-\.\s]+/).filter(function(x){return x});
+  if(!p.length||p.length>3)return null;var now=new Date(),d=+p[0],m=p.length>1?+p[1]:now.getMonth()+1,y=p.length>2?+p[2]:now.getFullYear();
+  if(y<100)y+=2000;if(!(d>=1&&d<=31&&m>=1&&m<=12))return null;var dt=new Date(y,m-1,d);if(dt.getDate()!==d)return null;return isoDate(dt)}
 function blockFor(date){if(S.days[date]&&S.days[date].block!=null)return S.days[date].block;
   var ks=Object.keys(S.days).filter(function(k){return k<date&&S.days[k].block}).sort();return ks.length?S.days[ks[ks.length-1]].block:""}
 function workerById(id){for(var i=0;i<S.workers.length;i++)if(S.workers[i].id===id)return S.workers[i];return null}
@@ -191,6 +194,7 @@ function renderDay(app){
   ws.forEach(function(w){var r=rec(curDate,w.id,false);if(r){if(r.absent)abs++;else if(r.in)pres++;var k=worked(r);if(k)ot+=k}});
   var h='<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
     '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===isoDate(new Date())?' (اليوم)':'')+'</div>'+
+    '<div class="row" style="margin:10px 0 0"><input type="text" id="dFind" inputmode="numeric" placeholder="🔍 اكتب التاريخ: 13/11 أو 13/11/2026"><button class="pri" id="dGo">اذهب</button></div>'+
     '<div class="row" style="margin:10px 0 0"><label>رقم البلوك</label><input type="text" id="dBlock" value="'+esc(blockFor(curDate))+'"></div></div>';
   if(!S.workers.length){
     h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
@@ -225,6 +229,9 @@ function renderDay(app){
   app.innerHTML=h;
 
   function setDate(d){curDate=d;render()}
+  function go(){var inp=document.getElementById("dFind"),d=parseTyped(inp.value);if(!d){inp.style.borderColor="#d64545";return}setDate(d)}
+  document.getElementById("dGo").onclick=go;
+  document.getElementById("dFind").onkeydown=function(e){if(e.key==="Enter")go()};
   document.getElementById("dBlock").oninput=function(e){dayRec(curDate,true).block=e.target.value.trim();save()};
   document.getElementById("dPick").onchange=function(e){if(e.target.value)setDate(e.target.value)};
   document.getElementById("prev").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()-1);setDate(isoDate(d))};
