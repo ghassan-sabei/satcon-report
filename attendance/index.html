@@ -441,10 +441,10 @@ function machinePages(mid,ym){var m=machineById(mid),st=machineMonth(mid,ym);
   var head=headTable("ملخص "+esc(m.name),"Machine Summary",monthLabel(ym),["Month","الشهر"])+
     '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">الآلية</td><td><b>'+esc(m.name)+'</b></td><td class="blue">أيام العمل</td><td>'+st.days.length+'</td><td class="blue">مجموع الساعات</td><td><b>'+dur(st.min)+'</b></td><td class="blue">مجموع المازوت (لتر)</td><td><b>'+st.diesel+'</b></td></tr></table>';
   var rh=Math.max(15,Math.min(34,Math.floor((PAGE_H-185)/Math.max(st.days.length+2,13))));
-  var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="margin-top:-1px"><tr><th style="width:5%">العدد</th><th>اليوم</th><th>التاريخ</th><th>البداية</th><th>النهاية</th><th>الساعات</th><th style="width:20%">اسم السائق</th><th>المازوت (لتر)</th></tr>';
+  var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="margin-top:-1px"><tr><th style="width:5%">العدد</th><th>اليوم</th><th>التاريخ</th><th>البلوك</th><th>البداية</th><th>النهاية</th><th>الساعات</th><th style="width:18%">اسم السائق</th><th>المازوت (لتر)</th></tr>';
   st.days.forEach(function(x,i){var wk=worked(x.r);
-    h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td>'+dayName(x.date)+'</td><td>'+fmtDate(x.date)+'</td><td>'+hm(x.r.in)+'</td><td>'+hm(x.r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+esc(x.r.driver||'')+'</td><td>'+esc(x.r.diesel||'')+'</td></tr>'});
-  h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="5">المجموع</td><td>'+dur(st.min)+'</td><td></td><td>'+st.diesel+'</td></tr></table></div>';
+    h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td>'+dayName(x.date)+'</td><td>'+fmtDate(x.date)+'</td><td>'+esc(blockFor(x.date))+'</td><td>'+hm(x.r.in)+'</td><td>'+hm(x.r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+esc(x.r.driver||'')+'</td><td>'+esc(x.r.diesel||'')+'</td></tr>'});
+  h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="6">المجموع</td><td>'+dur(st.min)+'</td><td></td><td>'+st.diesel+'</td></tr></table></div>';
   return[h]}
 function machinePdf(mid,ym){var m=machineById(mid);pdfPages(function(){return machinePages(mid,ym)},"machine_"+ym+".pdf","ملخص "+m.name+" "+monthLabel(ym))}
 function dayPdf(date){pdfPages(function(){return dayPages(date)},"attendance_"+date+".pdf","دوام "+fmtDate(date))}
