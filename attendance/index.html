@@ -240,10 +240,12 @@ function renderDay(app){
     if(ms.length){
       h+='<div class="box"><h2>الآليات</h2>';
       ms.forEach(function(m){var r=mrec(curDate,m.id,false)||{},wk=worked(r);
-        h+='<div class="wk"><div class="nm" data-mnote="'+m.id+'"><b>'+esc(m.name)+'</b><span>'+(wk!=null?'ساعات '+dur(wk):(r.in?'شغّالة':''))+(r.driver?' · '+esc(r.driver):'')+(r.diesel?' · مازوت '+esc(r.diesel)+' لتر':'')+'</span></div>'+
+        h+='<div class="wk" style="border:0;padding-bottom:6px"><div class="nm" data-mnote="'+m.id+'"><b>'+esc(m.name)+'</b><span>'+(wk!=null?'ساعات '+dur(wk):(r.in?'شغّالة':''))+'</span></div>'+
           '<button class="tbtn '+(r.in?'ok':'')+'" data-min="'+m.id+'">بداية<small>'+(r.in?hm(r.in):'')+'</small></button>'+
           '<button class="tbtn '+(r.out?'ok':(r.in?'pri':''))+'" data-mout="'+m.id+'">نهاية<small>'+(r.out?hm(r.out):'')+'</small></button>'+
-          '<button class="tbtn '+(r.sig?'ok':'')+'" data-msig="'+m.id+'" style="min-width:70px">'+(r.sig?sigSvg(r.sig,26):'✍️')+'<small>'+(r.sig?'موقّع':'توقيع')+'</small></button></div>';
+          '<button class="tbtn '+(r.sig?'ok':'')+'" data-msig="'+m.id+'" style="min-width:70px">'+(r.sig?sigSvg(r.sig,26):'✍️')+'<small>'+(r.sig?'موقّع':'توقيع')+'</small></button></div>'+
+          '<div class="row" style="margin:0;gap:6px;padding-bottom:12px;border-bottom:1px solid #eee"><input type="text" data-mdrv="'+m.id+'" placeholder="اسم السائق" value="'+esc(r.driver!=null&&r.driver!==""?r.driver:(r.in?"":(m.lastDriver||"")))+'">'+
+          '<input type="number" inputmode="decimal" step="any" data-mdsl="'+m.id+'" placeholder="⛽ المازوت (لتر)" value="'+esc(r.diesel||"")+'"></div>';
       });
       h+='</div>';
     }
@@ -296,6 +298,10 @@ function renderDay(app){
     function edit(){var r=mrec(curDate,id,true);if(!r.in){openModal('<h3>سجّل البداية أول</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
       timeEdit("نهاية - "+machineById(id).name,r.out,curDate,function(t){r.out=t;fixOut(r);save();render()})}
     bindPress(b,function(){var r=mrec(curDate,id,true);if(r.out||!r.in){edit();return}r.out=curDate===isoDate(new Date())?Date.now():stamp(Date.now());fixOut(r);save();render()},edit)});
+  app.querySelectorAll("[data-mdrv]").forEach(function(i){i.onchange=function(){var id=+i.getAttribute("data-mdrv"),r=mrec(curDate,id,true),v=i.value.trim();
+    if((r.driver||"")===v)return;r.driver=v;if(v)machineById(id).lastDriver=v;save();render()}});
+  app.querySelectorAll("[data-mdsl]").forEach(function(i){i.onchange=function(){var id=+i.getAttribute("data-mdsl"),r=mrec(curDate,id,true),v=i.value.trim();
+    if((r.diesel||"")===v)return;r.diesel=v;save();render()}});
   app.querySelectorAll("[data-msig]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-msig"),m=machineById(id),r=mrec(curDate,id,true);
     if(!r.in||!r.out){openModal('<h3>سجّل البداية والنهاية أول، وبعدين بيوقّع السائق</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
     function pad(){sigPad("توقيع سائق "+m.name+(r.driver?" - "+r.driver:""),function(sig){r.sig=sig;r.sigFor=sigKey(r);save();render()})}
@@ -481,7 +487,7 @@ function rangePages(from,to){
 function machineRange(mid,from,to){var days=0,min=0,dsl=0,blocks=[],drivers=[];
   if(from>to){var t=from;from=to;to=t}
   Object.keys(S.days).filter(function(d){return d>=from&&d<=to}).sort().forEach(function(d){var r=S.days[d].mrecs&&S.days[d].mrecs[mid];
-    if(!r||!r.in)return;days++;var wk=worked(r);if(wk)min+=wk;dsl+=parseFloat(r.diesel)||0;
+    if(!r)return;dsl+=parseFloat(r.diesel)||0;if(!r.in)return;days++;var wk=worked(r);if(wk)min+=wk;
     var bl=blockFor(d);if(bl&&blocks.indexOf(bl)<0)blocks.push(bl);if(r.driver&&drivers.indexOf(r.driver)<0)drivers.push(r.driver)});
   return{days:days,min:min,diesel:Math.round(dsl*100)/100,blocks:blocks,drivers:drivers,from:from,to:to}}
 function machinePages(mid,from,to){var m=machineById(mid),st=machineRange(mid,from,to);
