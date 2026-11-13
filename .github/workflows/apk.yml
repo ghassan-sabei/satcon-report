@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['android/**', 'index.html', 'manifest.json', '.github/workflows/apk.yml']
+    paths: ['android/**', 'index.html', 'manifest.json', 'attendance/**', '.github/workflows/apk.yml']
 permissions:
   contents: write
 jobs:
@@ -15,19 +15,28 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.7' }
-      - name: Bundle web files
+      - name: Download PDF libraries
         run: |
-          mkdir -p android/app/src/main/assets/web android/app/src/main/assets/lib
-          cp index.html manifest.json icon-192.png icon-512.png android/app/src/main/assets/web/
-          curl -fsSL -o android/app/src/main/assets/lib/html2canvas.min.js https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js
-          curl -fsSL -o android/app/src/main/assets/lib/jspdf.umd.min.js https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js
-      - name: Build
-        id: build
+          mkdir -p libs
+          curl -fsSL -o libs/html2canvas.min.js https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js
+          curl -fsSL -o libs/jspdf.umd.min.js https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js
+      - name: Build both apps
         env: { VERSION_CODE: '${{ github.run_number }}' }
         run: |
           set -o pipefail
-          gradle -p android assembleRelease --no-daemon 2>&1 | tee build.log
-          cp android/app/build/outputs/apk/release/app-release.apk satcon-report.apk
+          : > build.log
+          build() { # id name remote marker webdir iconset outfile
+            A=android/app/src/main
+            rm -rf $A/assets $A/res/mipmap-*
+            mkdir -p $A/assets/web $A/assets/lib
+            cp libs/*.js $A/assets/lib/
+            cp $5/index.html $5/manifest.json $5/icon-192.png $5/icon-512.png $A/assets/web/
+            cp -r android/icons/$6/* $A/res/
+            APP_ID=$1 APP_NAME="$2" APP_REMOTE=$3 APP_MARKER=$4 gradle -p android clean assembleRelease --no-daemon 2>&1 | tee -a build.log
+            cp android/app/build/outputs/apk/release/app-release.apk $7
+          }
+          build com.satcon.report "التقرير اليومي" https://ghassan-sabei.github.io/satcon-report/ satcon_daily_v1 . report satcon-report.apk
+          build com.satcon.attendance "دوام العمال" https://ghassan-sabei.github.io/satcon-report/attendance/ satcon_attend_v1 attendance attendance satcon-attendance.apk
       - name: Publish APK release
         if: success()
         uses: softprops/action-gh-release@v2
@@ -35,13 +44,15 @@ jobs:
           tag_name: apk-${{ github.run_number }}
           name: APK ${{ github.run_number }}
           make_latest: true
-          files: satcon-report.apk
+          files: |
+            satcon-report.apk
+            satcon-attendance.apk
       - name: Save log to branch
         if: always()
         run: |
           mkdir -p /tmp/out && cp build.log /tmp/out/ 2>/dev/null || echo "no log" > /tmp/out/build.log
           echo "${{ job.status }} run ${{ github.run_number }}" > /tmp/out/status.txt
-          [ -f satcon-report.apk ] && cp satcon-report.apk /tmp/out/ || true
+          cp satcon-*.apk /tmp/out/ 2>/dev/null || true
           cd /tmp/out && git init -q && git checkout -q -b build-log
           git -c user.name=ci -c user.email=ci@local add -A && git -c user.name=ci -c user.email=ci@local commit -qm "build ${{ github.run_number }}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" build-log

@@ -32,7 +32,7 @@ import java.util.Map;
 public class MainActivity extends Activity {
     static final String HOST = "app.satcon.local";
     static final String ORIGIN = "https://" + HOST + "/";
-    static final String REMOTE = "https://ghassan-sabei.github.io/satcon-report/";
+    static final String REMOTE = BuildConfig.REMOTE;
     static final String[] UPDATABLE = {"index.html"};
     WebView web;
 
@@ -134,7 +134,7 @@ public class MainActivity extends Activity {
                     in.close();
                     byte[] data = bo.toByteArray();
                     String txt = new String(data, "UTF-8");
-                    if (!txt.contains("satcon_daily_v1") || !txt.contains("</html>")) continue;
+                    if (!txt.contains(BuildConfig.MARKER) || !txt.contains("</html>")) continue;
                     if (java.util.Arrays.equals(data, current(n))) continue;
                     File dir = new File(getFilesDir(), "web"); dir.mkdirs();
                     File tmp = new File(dir, n + ".tmp");
@@ -167,7 +167,7 @@ public class MainActivity extends Activity {
                 File f = new File(dir, name.replaceAll("[^\\w.\\-]", "_"));
                 FileOutputStream fo = new FileOutputStream(f);
                 fo.write(Base64.decode(b64, Base64.DEFAULT)); fo.close();
-                Uri uri = FileProvider.getUriForFile(MainActivity.this, "com.satcon.report.files", f);
+                Uri uri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID + ".files", f);
                 Intent i = new Intent(Intent.ACTION_SEND);
                 i.setType("application/pdf");
                 i.putExtra(Intent.EXTRA_STREAM, uri);

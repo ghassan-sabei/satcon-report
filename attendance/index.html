@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2b3a67">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>دوام العمال - SATCON</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif;background:#eef1f6;color:#1d2433;font-size:16px}
+header.top{background:#2b3a67;color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+header.top h1{font-size:18px;margin:0}
+header.top .d{font-size:14px;opacity:.85}
+main{padding:12px;max-width:680px;margin:0 auto}
+.box{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.box h2{font-size:16px;margin:0 0 10px;color:#2b3a67}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.row label{min-width:110px;font-size:14px;color:#555}
+input[type=text],input[type=number],input[type=time],input[type=date],select,textarea{font:inherit;padding:10px;border:1px solid #c8cfdb;border-radius:8px;flex:1;min-width:0;background:#fff}
+button{font:inherit;border:0;border-radius:10px;padding:12px 14px;cursor:pointer;background:#dfe5f0;color:#1d2433}
+button:active{transform:scale(.97)}
+.big{width:100%;padding:16px;font-size:18px;font-weight:600}
+.pri{background:#2f6fd6;color:#fff}
+.ok{background:#1f9d55;color:#fff}
+.warn{background:#e08a00;color:#fff}
+.dan{background:#d64545;color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat div{background:#f3f6fb;border-radius:8px;padding:8px 4px}
+.stat b{display:block;font-size:20px;color:#2b3a67}
+.stat span{font-size:12px;color:#666}
+.tm{font-size:13px;color:#555;margin-top:4px;text-align:center}
+.paused{background:#fff4e0;border:2px solid #e08a00}
+.card{border:2px solid #2f6fd6}
+.card .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card .hd b{font-size:18px}
+.steps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.step{padding:10px 6px;text-align:center;line-height:1.3;font-size:14px;background:#eef1f6;color:#888}
+.step .t{display:block;font-size:20px;font-weight:700}
+.step.done{background:#d8f0e1;color:#14532d}
+.step.next{background:#2f6fd6;color:#fff;box-shadow:0 0 0 3px #b7cdf3}
+.hint{font-size:12px;color:#777;margin:6px 0 0}
+.done-list .it{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:14px}
+.done-list .it:last-child{border:0}
+.small{padding:8px 10px;font-size:14px}
+.muted{color:#888;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.show{display:flex}
+.modal .in{background:#fff;border-radius:14px;padding:16px;width:100%;max-width:420px}
+.modal h3{margin:0 0 12px;font-size:17px}
+.modal .acts{display:flex;gap:8px;margin-top:12px}
+.modal .acts button{flex:1}
+.reasons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#printArea{display:none}
+
+/* ===== print sheet ===== */
+@page{size:A4 portrait;margin:8mm}
+@media print{
+  body{background:#fff}
+  header.top,main,.modal{display:none!important}
+  #printArea{display:block}
+}
+.sheet{font-family:Arial,Tahoma,sans-serif;color:#000;width:100%;font-size:12px}
+.sheet table{border-collapse:collapse;width:100%}
+.sheet td,.sheet th{border:1px solid #1f2a5a;padding:3px 4px;text-align:center;height:26px}
+.sheet .blue{background:#5b9bd5;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet .logo{background:#2b3a67;color:#fff;font-size:20px;letter-spacing:4px;font-weight:300;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet .ttl{font-size:16px;font-weight:700}
+.sheet .grid th{font-weight:700;font-size:11px}
+.sheet .grid td{font-size:15px;padding:0 4px}
+.sheet .grid td.nt{font-size:12px;line-height:1.2}
+.sheet .pgno{text-align:center;font-size:11px;margin-top:4px}
+@media print{
+  .pp{width:733px;height:1062px;position:relative;overflow:hidden;page-break-after:always;break-after:page}
+  .pp:last-child{page-break-after:auto;break-after:auto}
+  .pp .sheet.page{position:absolute;top:0;left:0;height:733px;transform-origin:top left;transform:translateX(733px) rotate(90deg)}
+}
+.sheet .foot{margin-top:6px;text-align:right;font-size:11px}
+.wk{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eee}
+.wk:last-child{border:0}
+.wk .nm{flex:1;min-width:0}
+.wk .nm b{display:block;font-size:16px}
+.wk .nm span{font-size:13px;color:#666}
+.wk button{padding:10px 8px;font-size:14px;min-width:62px}
+.wk .tbtn{display:flex;flex-direction:column;line-height:1.2}
+.wk .tbtn small{font-size:12px;font-weight:700}
+.abs{background:#fde2e2!important;color:#a12a2a!important}
+.navd{display:flex;gap:8px;align-items:center}
+.navd input{text-align:center}
+</style>
+</head>
+<body>
+<header class="top"><h1>دوام العمال</h1><div class="d" id="hdDate"></div></header>
+<main id="app"></main>
+<div id="printArea"></div>
+<div class="modal" id="modal"><div class="in" id="modalIn"></div></div>
+<script>
+(function(){
+"use strict";
+var KEY="satcon_attend_v1";
+var OT_MIN=9*60;
+var DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+var MONTHS=["كانون الثاني","شباط","آذار","نيسان","أيار","حزيران","تموز","آب","أيلول","تشرين الأول","تشرين الثاني","كانون الأول"];
+
+function load(){var s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+  if(!s)s={settings:{project:"مشروع مدينة الاخوة السكني - بغداد"},workers:[],nextWid:1,days:{}};return s}
+var S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+
+function pad(n){return(n<10?"0":"")+n}
+function isoDate(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function parseIso(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+function fmtDate(iso){var p=iso.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
+function dayName(iso){return DAYS[parseIso(iso).getDay()]}
+function hm(ts){if(!ts)return"";var d=new Date(ts),h=d.getHours(),ap=h<12?"ص":"م";h=h%12||12;return h+":"+pad(d.getMinutes())+" "+ap}
+function hm24(ts){var d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())}
+function dur(min){if(min==null)return"";min=Math.max(0,Math.round(min));return Math.floor(min/60)+":"+pad(min%60)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+var curDate=isoDate(new Date());
+/* night shift: if yesterday still has workers inside and today is empty, open yesterday */
+(function(){var y=parseIso(curDate);y.setDate(y.getDate()-1);var yd=isoDate(y),D=S.days[yd],T=S.days[curDate];
+  if(D&&!(T&&Object.keys(T.recs).length)){for(var k in D.recs){var r=D.recs[k];if(r.in&&!r.out&&!r.absent){curDate=yd;break}}}})();
+function dayRec(date,create){if(!S.days[date]){if(!create)return null;S.days[date]={recs:{}}}return S.days[date]}
+function rec(date,wid,create){var d=dayRec(date,create);if(!d)return null;if(!d.recs[wid]){if(!create)return null;d.recs[wid]={in:null,out:null,absent:false,note:""}}return d.recs[wid]}
+function worked(r){if(!r||r.absent||!r.in||!r.out)return null;return(r.out-r.in)/60000}
+function overtime(r){var w=worked(r);return w==null?null:Math.max(0,w-OT_MIN)}
+function workerById(id){for(var i=0;i<S.workers.length;i++)if(S.workers[i].id===id)return S.workers[i];return null}
+function dayWorkers(date){
+  var d=dayRec(date,false),ids={},list=[];
+  S.workers.forEach(function(w){if(w.active!==false){ids[w.id]=1;list.push(w)}});
+  if(d)Object.keys(d.recs).forEach(function(k){var id=+k;if(!ids[id]){var w=workerById(id);if(w){ids[id]=1;list.push(w)}}});
+  return list;
+}
+
+/* ---------- modal ---------- */
+var M=document.getElementById("modal"),MI=document.getElementById("modalIn");
+function openModal(h){MI.innerHTML=h;M.classList.add("show")}
+function closeModal(){M.classList.remove("show");MI.innerHTML=""}
+M.addEventListener("click",function(e){if(e.target===M)closeModal()});
+function confirmBox(msg,yes,cb){
+  openModal('<h3>'+esc(msg)+'</h3><div class="acts"><button id="mY" class="dan">'+esc(yes)+'</button><button id="mN">إلغاء</button></div>');
+  document.getElementById("mY").onclick=function(){closeModal();cb()};document.getElementById("mN").onclick=closeModal;
+}
+/* time picker; base = the record's day; returns timestamp on that day */
+function timeEdit(title,ts,baseDate,cb){
+  var v=ts?hm24(ts):hm24(Date.now());
+  openModal('<h3>'+esc(title)+'</h3><input type="time" id="mT" value="'+v+'" style="width:100%;font-size:22px;direction:ltr">'+
+   '<div class="acts"><button id="mS" class="pri">حفظ</button>'+(ts?'<button id="mC" class="dan">مسح</button>':'')+'<button id="mN">إلغاء</button></div>');
+  document.getElementById("mS").onclick=function(){var val=document.getElementById("mT").value;if(!val)return;
+    var b=parseIso(baseDate),p=val.split(":");b.setHours(+p[0],+p[1],0,0);closeModal();cb(b.getTime())};
+  if(ts)document.getElementById("mC").onclick=function(){closeModal();cb(null)};
+  document.getElementById("mN").onclick=closeModal;
+}
+function bindPress(el,tap,long){
+  var t=null,fired=false;
+  el.addEventListener("pointerdown",function(){fired=false;t=setTimeout(function(){fired=true;long()},600)});
+  el.addEventListener("pointerup",function(){clearTimeout(t);if(!fired)tap()});
+  el.addEventListener("pointerleave",function(){clearTimeout(t)});
+  el.addEventListener("pointercancel",function(){clearTimeout(t)});
+  el.addEventListener("contextmenu",function(e){e.preventDefault()});
+}
+/* exit must be after entry; an earlier clock time means after midnight */
+function fixOut(r){if(r.in&&r.out){while(r.out<=r.in)r.out+=86400000;while(r.out-r.in>86400000)r.out-=86400000}}
+
+/* ---------- views ---------- */
+var view="day",monthSel=curDate.slice(0,7);
+function render(){
+  document.getElementById("hdDate").textContent=dayName(isoDate(new Date()))+" "+fmtDate(isoDate(new Date()));
+  var app=document.getElementById("app");
+  if(view==="workers")return renderWorkers(app);
+  if(view==="month")return renderMonth(app);
+  if(view==="settings")return renderSettings(app);
+  renderDay(app);
+}
+
+function renderDay(app){
+  var ws=dayWorkers(curDate),pres=0,abs=0,ot=0;
+  ws.forEach(function(w){var r=rec(curDate,w.id,false);if(r){if(r.absent)abs++;else if(r.in)pres++;var o=overtime(r);if(o)ot+=o}});
+  var h='<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
+    '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===isoDate(new Date())?' (اليوم)':'')+'</div></div>';
+  if(!S.workers.length){
+    h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
+  }else{
+    h+='<div class="box"><div class="stat"><div><b>'+pres+'</b><span>حاضر</span></div><div><b>'+abs+'</b><span>غائب</span></div><div><b>'+dur(ot)+'</b><span>إضافي</span></div></div>'+
+       '<button class="big ok" id="allIn" style="margin-top:10px">دخول الكل</button></div>';
+    h+='<div class="box"><h2>العمال</h2>';
+    ws.forEach(function(w){
+      var r=rec(curDate,w.id,false)||{},wk=worked(r),o=overtime(r);
+      var info=r.absent?'<span style="color:#d64545">غائب</span>':(wk!=null?'دوام '+dur(wk)+(o?' · إضافي '+dur(o):''):(r.in?'داخل':''));
+      if(r.note)info+=(info?' · ':'')+esc(r.note);
+      h+='<div class="wk"><div class="nm" data-note="'+w.id+'"><b>'+esc(w.name)+'</b><span>'+(w.job?esc(w.job)+(info?' · ':''):'')+info+'</span></div>'+
+        '<button class="tbtn '+(r.in?'ok':'')+'" data-in="'+w.id+'">دخول<small>'+(r.in?hm(r.in):'')+'</small></button>'+
+        '<button class="tbtn '+(r.out?'ok':(r.in&&!r.absent?'pri':''))+'" data-out="'+w.id+'">خروج<small>'+(r.out?hm(r.out):'')+'</small></button>'+
+        '<button class="'+(r.absent?'abs':'')+'" data-abs="'+w.id+'">غائب</button></div>';
+    });
+    h+='<p class="hint">كبسة = الوقت الحالي · ضغطة مطوّلة = تعديل الوقت · كبسة على الاسم = ملاحظة</p></div>';
+    h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>';
+  }
+  h+='<button class="big" id="goM" style="margin-bottom:8px">📊 الملخص الشهري</button>'+
+     '<div class="two" style="margin-bottom:30px"><button id="goW">العمال</button><button id="goS">الإعدادات</button></div>';
+  app.innerHTML=h;
+
+  function setDate(d){curDate=d;render()}
+  document.getElementById("dPick").onchange=function(e){if(e.target.value)setDate(e.target.value)};
+  document.getElementById("prev").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()-1);setDate(isoDate(d))};
+  document.getElementById("next").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()+1);setDate(isoDate(d))};
+  var g2=document.getElementById("goW2");if(g2)g2.onclick=function(){view="workers";render()};
+  document.getElementById("goW").onclick=function(){view="workers";render();scrollTo(0,0)};
+  document.getElementById("goM").onclick=function(){view="month";render();scrollTo(0,0)};
+  document.getElementById("goS").onclick=function(){view="settings";render();scrollTo(0,0)};
+  if(!S.workers.length)return;
+  document.getElementById("allIn").onclick=function(){
+    var now=Date.now(),n=0;
+    ws.forEach(function(w){var r=rec(curDate,w.id,false);if(!r||(!r.in&&!r.absent)){r=rec(curDate,w.id,true);r.in=stamp(now);n++}});
+    save();render();
+  };
+  /* "now" stamped on the viewed day (in case supervisor is viewing another date) */
+  function stamp(now){var d=new Date(now),b=parseIso(curDate);b.setHours(d.getHours(),d.getMinutes(),0,0);return b.getTime()}
+  app.querySelectorAll("[data-in]").forEach(function(b){var id=+b.getAttribute("data-in");
+    bindPress(b,function(){var r=rec(curDate,id,true);if(r.in){edit();return}r.absent=false;r.in=stamp(Date.now());fixOut(r);save();render()},edit);
+    function edit(){var r=rec(curDate,id,true);timeEdit("وقت الدخول - "+workerById(id).name,r.in,curDate,function(t){r.in=t;if(t)r.absent=false;fixOut(r);save();render()})}
+  });
+  app.querySelectorAll("[data-out]").forEach(function(b){var id=+b.getAttribute("data-out");
+    bindPress(b,function(){var r=rec(curDate,id,true);if(r.out||!r.in){edit();return}r.out=Date.now();if(curDate!==isoDate(new Date())){r.out=stamp(Date.now())}fixOut(r);save();render()},edit);
+    function edit(){var r=rec(curDate,id,true);if(!r.in){openModal('<h3>سجّل الدخول أول</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+      timeEdit("وقت الخروج - "+workerById(id).name,r.out,curDate,function(t){r.out=t;fixOut(r);save();render()})}
+  });
+  app.querySelectorAll("[data-abs]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-abs");var r=rec(curDate,id,true);
+    if(r.absent){r.absent=false}else{if(r.in){confirmBox("العامل مسجّل دخول. تسجيله غائب بيمسح أوقاته؟","غائب",function(){r.absent=true;r.in=null;r.out=null;save();render()});return}r.absent=true}
+    save();render()}});
+  app.querySelectorAll("[data-note]").forEach(function(el){el.onclick=function(){var id=+el.getAttribute("data-note");var r=rec(curDate,id,true);
+    openModal('<h3>ملاحظة - '+esc(workerById(id).name)+'</h3><input type="text" id="mR" value="'+esc(r.note)+'"><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mS").onclick=function(){r.note=document.getElementById("mR").value.trim();closeModal();save();render()};
+    document.getElementById("mN").onclick=closeModal}});
+  document.getElementById("print").onclick=function(){printPages(dayPages(curDate),"attendance_"+curDate,function(){dayPdf(curDate)})};
+  document.getElementById("pdf").onclick=function(){dayPdf(curDate)};
+}
+
+function renderWorkers(app){
+  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>إضافة عامل</h2>'+
+    '<div class="row"><label>الاسم</label><input type="text" id="wN"></div>'+
+    '<div class="row"><label>المهنة (اختياري)</label><input type="text" id="wJ"></div>'+
+    '<button class="big pri" id="wAdd">+ إضافة</button></div><div class="box"><h2>العمال ('+S.workers.filter(function(w){return w.active!==false}).length+')</h2>';
+  S.workers.forEach(function(w){
+    h+='<div class="wk"><div class="nm"><b style="'+(w.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(w.name)+'</b><span>'+esc(w.job||"")+(w.active===false?' (موقوف)':'')+'</span></div>'+
+      '<button class="small" data-ed="'+w.id+'">تعديل</button><button class="small" data-act="'+w.id+'">'+(w.active===false?'تفعيل':'إيقاف')+'</button></div>';
+  });
+  h+='<p class="hint">"إيقاف" بيخفي العامل من الدوام اليومي وبيحافظ على سجلّه القديم.</p></div>';
+  app.innerHTML=h;
+  document.getElementById("back").onclick=function(){view="day";render()};
+  document.getElementById("wAdd").onclick=function(){var n=document.getElementById("wN").value.trim();if(!n){document.getElementById("wN").style.borderColor="#d64545";return}
+    S.workers.push({id:S.nextWid++,name:n,job:document.getElementById("wJ").value.trim(),active:true});save();render();document.getElementById("wN").focus()};
+  app.querySelectorAll("[data-act]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-act"));w.active=w.active===false;save();render()}});
+  app.querySelectorAll("[data-ed]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-ed"));
+    openModal('<h3>تعديل العامل</h3><div class="row"><label>الاسم</label><input type="text" id="mA" value="'+esc(w.name)+'"></div><div class="row"><label>المهنة</label><input type="text" id="mB" value="'+esc(w.job||"")+'"></div>'+
+      '<div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();closeModal();save();render()};
+    document.getElementById("mN").onclick=closeModal}});
+}
+
+function renderSettings(app){
+  app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
+   '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.settings.project)+'"></div></div>';
+  document.getElementById("back").onclick=function(){view="day";render()};
+  document.getElementById("sP").oninput=function(e){S.settings.project=e.target.value;save()};
+}
+
+/* ---------- monthly summary ---------- */
+function monthStats(ym){
+  var rows={},order=[];
+  Object.keys(S.days).filter(function(d){return d.slice(0,7)===ym}).sort().forEach(function(d){
+    var recs=S.days[d].recs;
+    Object.keys(recs).forEach(function(k){var r=recs[k],id=+k;
+      if(!r.absent&&!r.in)return;
+      if(!rows[id]){rows[id]={w:workerById(id),pres:0,abs:0,min:0,ot:0,open:0};order.push(id)}
+      var x=rows[id];
+      if(r.absent){x.abs++;return}
+      x.pres++;var wk=worked(r);if(wk==null){x.open++;return}x.min+=wk;x.ot+=Math.max(0,wk-OT_MIN);
+    });
+  });
+  var list=order.map(function(id){return rows[id]}).filter(function(x){return x.w});
+  var idx={};S.workers.forEach(function(w,i){idx[w.id]=i});
+  list.sort(function(a,b){return idx[a.w.id]-idx[b.w.id]});
+  return list;
+}
+function monthLabel(ym){var p=ym.split("-");return MONTHS[+p[1]-1]+" "+p[0]}
+function renderMonth(app){
+  var list=monthStats(monthSel),tm=0,to=0;list.forEach(function(x){tm+=x.min;to+=x.ot});
+  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الملخص الشهري</h2>'+
+    '<div class="row"><label>الشهر</label><input type="month" id="mPick" value="'+monthSel+'" style="font:inherit;padding:10px;border:1px solid #c8cfdb;border-radius:8px;flex:1"></div>'+
+    '<div class="stat"><div><b>'+list.length+'</b><span>عمال</span></div><div><b>'+dur(tm)+'</b><span>مجموع الدوام</span></div><div><b>'+dur(to)+'</b><span>مجموع الإضافي</span></div></div>'+
+    (list.length?'<div class="two" style="margin-top:10px"><button class="big ok" id="mPrint">🖨 طباعة</button><button class="big pri" id="mPdf">📄 إرسال PDF</button></div>':'')+'</div>';
+  h+='<div class="box"><div class="done-list">';
+  if(!list.length)h+='<p class="muted">ما في دوام مسجّل بهالشهر</p>';
+  list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · دوام '+dur(x.min)+' · إضافي '+dur(x.ot)+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span></span></div>'});
+  h+='</div></div>';
+  app.innerHTML=h;
+  document.getElementById("back").onclick=function(){view="day";render()};
+  document.getElementById("mPick").onchange=function(e){if(e.target.value){monthSel=e.target.value;render()}};
+  if(list.length){
+    document.getElementById("mPrint").onclick=function(){printPages(monthPages(monthSel),"attendance_"+monthSel,function(){monthPdf(monthSel)})};
+    document.getElementById("mPdf").onclick=function(){monthPdf(monthSel)};
+  }
+}
+
+/* ---------- sheets (12 workers per page) ---------- */
+var PAGE_W=1062,PAGE_H=733,PER=12,ROW_H=40;
+function headTable(title,en,dateTxt,extra){
+  return '<table dir="ltr">'+
+   '<tr><td class="logo" style="height:44px;width:22%">SATCON</td><td class="ttl" dir="rtl">'+esc(S.settings.project)+'</td><td style="width:22%"><b>'+en+'</b><br><span dir="rtl">'+title+'</span></td></tr>'+
+   '<tr><td><b>'+(extra?extra[0]:'Day and Date')+'</b></td><td>'+dateTxt+'</td><td dir="rtl"><b>'+(extra?extra[1]:'اليوم والتاريخ')+'</b></td></tr></table>';
+}
+function paginate(rows,head,cols,totalRow){
+  var n=Math.max(1,Math.ceil(rows.length/PER)),pages=[];
+  for(var p=0;p<n;p++){
+    var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<table class="grid" dir="rtl" style="margin-top:-1px"><tr>'+cols+'</tr>';
+    for(var i=p*PER;i<(p+1)*PER;i++){
+      h+='<tr style="height:'+ROW_H+'px">'+(rows[i]!=null?rows[i](i+1):'<td>'+(i+1)+'</td>'+new Array(cols.split("<th").length-1).join('<td></td>'))+'</tr>';
+    }
+    if(totalRow&&p===n-1)h+=totalRow;
+    h+='</table>'+(n>1?'<div class="pgno">'+(p+1)+' / '+n+'</div>':'')+'</div>';
+    pages.push(h);
+  }
+  return pages;
+}
+function dayPages(date){
+  var ws=dayWorkers(date),pres=0,abs=0,ot=0;
+  var rows=ws.map(function(w){var r=rec(date,w.id,false)||{};if(r.absent)abs++;else if(r.in)pres++;var o=overtime(r);if(o)ot+=o;
+    return function(n){var wk=worked(r),o2=overtime(r);
+      return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(w.name)+'</td><td>'+esc(w.job||"")+'</td><td>'+(r.absent?'':hm(r.in))+'</td><td>'+(r.absent?'':hm(r.out))+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+(o2?dur(o2):'')+'</td><td class="nt">'+[r.absent?'غائب':'',r.note||''].filter(function(x){return x}).join(' - ')+'</td>'}});
+  var head=headTable("دوام يومي","Daily Attendance",dayName(date)+' &nbsp; '+fmtDate(date))+
+    '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">الحاضرين</td><td>'+pres+'</td><td class="blue">الغائبين</td><td>'+abs+'</td><td class="blue">مجموع الإضافي</td><td>'+dur(ot)+'</td></tr></table>';
+  var cols='<th style="width:5%">العدد</th><th style="width:22%">الاسم</th><th style="width:12%">المهنة</th><th>الدخول</th><th>الخروج</th><th>ساعات الدوام</th><th>الإضافي</th><th style="width:18%">الملاحظات</th>';
+  return paginate(rows,head,cols);
+}
+function monthPages(ym){
+  var list=monthStats(ym),tp=0,ta=0,tm=0,to=0;
+  var rows=list.map(function(x){tp+=x.pres;ta+=x.abs;tm+=x.min;to+=x.ot;
+    return function(n){return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(x.w.name)+'</td><td>'+esc(x.w.job||"")+'</td><td>'+x.pres+'</td><td>'+x.abs+'</td><td>'+dur(x.min)+'</td><td>'+dur(x.ot)+'</td>'}});
+  var head=headTable("ملخص شهري","Monthly Summary",monthLabel(ym),["Month","الشهر"]);
+  var cols='<th style="width:5%">العدد</th><th style="width:25%">الاسم</th><th style="width:14%">المهنة</th><th>أيام الحضور</th><th>أيام الغياب</th><th>مجموع الدوام</th><th>مجموع الإضافي</th>';
+  var total='<tr style="height:'+ROW_H+'px;font-weight:700;background:#dde8f6"><td colspan="3">المجموع</td><td>'+tp+'</td><td>'+ta+'</td><td>'+dur(tm)+'</td><td>'+dur(to)+'</td></tr>';
+  return paginate(rows,head,cols,total);
+}
+function dayPdf(date){pdfPages(function(){return dayPages(date)},"attendance_"+date+".pdf","دوام "+fmtDate(date))}
+function monthPdf(ym){pdfPages(function(){return monthPages(ym)},"attendance_"+ym+".pdf","ملخص دوام "+monthLabel(ym))}
+
+/* ---------- print / pdf (same as report app) ---------- */
+var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
+if(NATIVE){var st=document.createElement("style");st.textContent="@page{size:A4 landscape;margin:8mm}";document.head.appendChild(st)}
+function printPages(pages,title,fallback){
+  if(NATIVE){document.getElementById("printArea").innerHTML=pages.join("");setTimeout(function(){window.AndroidBridge.print(title)},150);return}
+  document.getElementById("printArea").innerHTML=pages.map(function(x){return'<div class="pp">'+x+'</div>'}).join("");
+  var opened=false;function mark(){opened=true}
+  window.addEventListener("beforeprint",mark,{once:true});
+  try{window.print()}catch(e){}
+  setTimeout(function(){window.removeEventListener("beforeprint",mark);if(opened)return;
+    openModal('<h3>الطباعة المباشرة ما فتحت</h3><p>رح جهّزلك PDF، افتحه بتطبيق PDF واطبع منه.</p><div class="acts"><button id="mS" class="pri">تجهيز PDF</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mS").onclick=function(){closeModal();fallback()};document.getElementById("mN").onclick=closeModal},1500);
+}
+var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js","https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
+function loadScript(u){return new Promise(function(res,rej){var s=document.createElement("script");s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+function pdfPages(makePages,name,title){
+  openModal('<h3 style="text-align:center">جاري تجهيز PDF...</h3>');
+  var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
+  p.then(function(){
+    var pages=makePages(),pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"}),chain=Promise.resolve();
+    pages.forEach(function(html,idx){chain=chain.then(function(){
+      var box=document.createElement("div");
+      box.style.cssText="position:fixed;left:-20000px;top:0;width:"+PAGE_W+"px;height:"+PAGE_H+"px;background:#fff;overflow:hidden";
+      box.innerHTML=html;document.body.appendChild(box);
+      return window.html2canvas(box,{scale:2,backgroundColor:"#fff",width:PAGE_W,height:PAGE_H}).then(function(cv){
+        document.body.removeChild(box);if(idx>0)pdf.addPage("a4","landscape");
+        pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",8,8,281,281*PAGE_H/PAGE_W)})})});
+    return chain.then(function(){
+      if(NATIVE){closeModal();window.AndroidBridge.sharePdf(pdf.output("datauristring").split(",")[1],name);return}
+      var blob=pdf.output("blob"),file=new File([blob],name,{type:"application/pdf"});closeModal();
+      if(navigator.canShare&&navigator.canShare({files:[file]}))return navigator.share({files:[file],title:title}).catch(function(){});
+      var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()});
+  }).catch(function(){
+    openModal('<h3>ما قدر يجهّز PDF</h3><p>أول مرة لازم يكون في إنترنت حتى ينزّل أدوات الـPDF.</p><div class="acts"><button id="mN">تمام</button></div>');
+    document.getElementById("mN").onclick=closeModal});
+}
+
+window.__updateReady=function(){
+  if(document.getElementById("updBar"))return;
+  var b=document.createElement("div");b.id="updBar";
+  b.style.cssText="position:fixed;bottom:0;left:0;right:0;background:#1f9d55;color:#fff;padding:12px;display:flex;align-items:center;justify-content:space-between;z-index:60;font-size:15px";
+  b.innerHTML='<span>في نسخة جديدة من التطبيق</span><button style="background:#fff;color:#1f9d55;font-weight:700">تحديث الآن</button>';
+  b.querySelector("button").onclick=function(){location.reload()};document.body.appendChild(b);
+};
+render();
+if("serviceWorker" in navigator&&location.protocol==="https:"&&!NATIVE){navigator.serviceWorker.register("sw.js").catch(function(){})}
+})();
+</script>
+</body>
+</html>

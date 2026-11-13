@@ -13,7 +13,7 @@
             </intent-filter>
         </activity>
         <provider android:name="androidx.core.content.FileProvider"
-            android:authorities="com.satcon.report.files" android:exported="false"
+            android:authorities="${applicationId}.files" android:exported="false"
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
