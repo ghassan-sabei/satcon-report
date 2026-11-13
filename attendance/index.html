@@ -220,7 +220,7 @@ function renderDay(app){
     }
     h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>';
   }
-  h+='<button class="big" id="goM" style="margin-bottom:8px">📊 الملخص الشهري</button>'+
+  h+='<button class="big" id="goM" style="margin-bottom:8px">📊 الملخص</button>'+
      '<div class="two" style="margin-bottom:30px"><button id="goW">العمال</button><button id="goS">الإعدادات</button></div>';
   app.innerHTML=h;
 
@@ -325,7 +325,7 @@ function renderSettings(app){
    '<div class="box"><h2>مسح السجل القديم</h2><p class="muted" style="margin-top:0">بيمسح دوام كل الأيام قبل التاريخ اللي بتختاره. أسماء العمال ما بتنمسح.</p>'+
    '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="cDate"></div>'+
    '<button class="big dan" id="cBtn">🗑 مسح السجل</button>'+
-   '<p class="hint">نصيحة: اطبع أو ابعت الملخص الشهري قبل ما تمسح.</p></div>';
+   '<p class="hint">نصيحة: اطبع أو ابعت الملخص قبل ما تمسح.</p></div>';
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("sP").oninput=function(e){S.settings.project=e.target.value;save()};
   document.getElementById("cBtn").onclick=function(){
@@ -342,9 +342,9 @@ function renderSettings(app){
 }
 
 /* ---------- monthly summary ---------- */
-function monthStats(ym){
-  var rows={},order=[];
-  Object.keys(S.days).filter(function(d){return d.slice(0,7)===ym}).sort().forEach(function(d){
+function rangeStats(from,to){
+  var rows={},order=[];if(from>to){var t=from;from=to;to=t}
+  Object.keys(S.days).filter(function(d){return d>=from&&d<=to}).sort().forEach(function(d){
     var recs=S.days[d].recs;
     Object.keys(recs).forEach(function(k){var r=recs[k],id=+k;
       if(!r.absent&&!r.in)return;
@@ -361,18 +361,18 @@ function monthStats(ym){
 }
 function monthLabel(ym){var p=ym.split("-");return MONTHS[+p[1]-1]+" "+p[0]}
 function renderMonth(app){
-  var list=monthStats(monthSel),tm=0;list.forEach(function(x){tm+=x.min});
-  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الملخص الشهري</h2>'+
-    '<div class="row"><label>الشهر</label><input type="month" id="mPick" value="'+monthSel+'" style="font:inherit;padding:10px;border:1px solid #c8cfdb;border-radius:8px;flex:1"></div>'+
+  if(!mFrom){var t=new Date();mTo=isoDate(t);mFrom=mTo.slice(0,8)+"01"}
+  var list=rangeStats(mFrom,mTo),tm=0;list.forEach(function(x){tm+=x.min});
+  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الملخص</h2>'+
+    '<div class="row"><label>من تاريخ</label><input type="date" id="rFrom" value="'+mFrom+'"></div>'+
+    '<div class="row"><label>إلى تاريخ</label><input type="date" id="rTo" value="'+mTo+'"></div></div>'+
+    '<div class="box"><h2>العمال</h2>'+
     '<div class="stat"><div><b>'+list.length+'</b><span>عمال</span></div><div><b>'+dur(tm)+'</b><span>مجموع الساعات</span></div><div><b>'+list.reduce(function(a,x){return a+x.pres},0)+'</b><span>أيام حضور</span></div></div>'+
     (list.length?'<div class="two" style="margin-top:10px"><button class="big ok" id="mPrint">🖨 طباعة</button><button class="big pri" id="mPdf">📄 إرسال PDF</button></div>':'')+'</div>';
   h+='<div class="box"><div class="done-list">';
-  if(!list.length)h+='<p class="muted">ما في دوام مسجّل بهالشهر</p>';
+  if(!list.length)h+='<p class="muted">ما في دوام مسجّل بهالفترة</p>';
   list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · ساعات '+dur(x.min)+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span></span></div>'});
   h+='</div></div>';
-  if(!mFrom){var t=new Date();mTo=isoDate(t);mFrom=mTo.slice(0,8)+"01"}
-  h+='<div class="box"><h2>ملخص الآليات</h2><div class="row"><label>من تاريخ</label><input type="date" id="rFrom" value="'+mFrom+'"></div>'+
-     '<div class="row"><label>إلى تاريخ</label><input type="date" id="rTo" value="'+mTo+'"></div></div>';
   S.machines.forEach(function(m){var st=machineRange(m.id,mFrom,mTo);if(!st.days&&m.active===false)return;
     h+='<div class="box"><h2>'+esc(m.name)+'</h2><div class="stat"><div><b>'+st.days+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div></div>'+
       (st.days?'<div class="two" style="margin-top:10px"><button class="ok" data-mpr="'+m.id+'">🖨 طباعة</button><button class="pri" data-mpdf="'+m.id+'">📄 PDF</button></div>':'')+'</div>'});
@@ -382,10 +382,9 @@ function renderMonth(app){
   app.querySelectorAll("[data-mpdf]").forEach(function(b){b.onclick=function(){machinePdf(+b.getAttribute("data-mpdf"),mFrom,mTo)}});
   document.getElementById("rFrom").onchange=function(e){if(e.target.value){mFrom=e.target.value;render()}};
   document.getElementById("rTo").onchange=function(e){if(e.target.value){mTo=e.target.value;render()}};
-  document.getElementById("mPick").onchange=function(e){if(e.target.value){monthSel=e.target.value;render()}};
   if(list.length){
-    document.getElementById("mPrint").onclick=function(){printPages(monthPages(monthSel),"attendance_"+monthSel,function(){monthPdf(monthSel)})};
-    document.getElementById("mPdf").onclick=function(){monthPdf(monthSel)};
+    document.getElementById("mPrint").onclick=function(){printPages(rangePages(mFrom,mTo),"attendance_"+mFrom+"_"+mTo,function(){rangePdf(mFrom,mTo)})};
+    document.getElementById("mPdf").onclick=function(){rangePdf(mFrom,mTo)};
   }
 }
 
@@ -429,11 +428,12 @@ function dayPages(date){
   var rh=Math.max(24,Math.min(ROW_H,Math.floor((PAGE_H-used)/PER)));
   return paginate(rows,head,cols,null,tail,rh);
 }
-function monthPages(ym){
-  var list=monthStats(ym),tp=0,ta=0,tm=0,to={};
+function rangePages(from,to){
+  if(from>to){var t=from;from=to;to=t}
+  var list=rangeStats(from,to),tp=0,ta=0,tm=0;
   var rows=list.map(function(x){tp+=x.pres;ta+=x.abs;tm+=x.min;
     return function(n){return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(x.w.name)+'</td><td>'+esc(x.w.job||"")+'</td><td>'+x.pres+'</td><td>'+x.abs+'</td><td><b>'+dur(x.min)+'</b></td>'}});
-  var head=headTable("ملخص شهري","Monthly Summary",monthLabel(ym),["Month","الشهر"]);
+  var head=headTable("ملخص دوام","Attendance Summary",'من '+fmtDate(from)+' &nbsp; إلى '+fmtDate(to),["Period","الفترة"]);
   var cols='<th style="width:5%">العدد</th><th style="width:24%">الاسم</th><th style="width:13%">المهنة</th><th>أيام الحضور</th><th>أيام الغياب</th><th>مجموع الساعات</th>';
   var total='<tr style="height:'+ROW_H+'px;font-weight:700;background:#dde8f6"><td colspan="3">المجموع</td><td>'+tp+'</td><td>'+ta+'</td><td>'+dur(tm)+'</td></tr>';
   return paginate(rows,head,cols,total);
@@ -461,7 +461,7 @@ function machinePages(mid,from,to){var m=machineById(mid),st=machineRange(mid,fr
   return[h]}
 function machinePdf(mid,from,to){var m=machineById(mid);pdfPages(function(){return machinePages(mid,from,to)},"machine_"+from+"_"+to+".pdf","ملخص "+m.name)}
 function dayPdf(date){pdfPages(function(){return dayPages(date)},"attendance_"+date+".pdf","دوام "+fmtDate(date))}
-function monthPdf(ym){pdfPages(function(){return monthPages(ym)},"attendance_"+ym+".pdf","ملخص دوام "+monthLabel(ym))}
+function rangePdf(from,to){pdfPages(function(){return rangePages(from,to)},"attendance_"+from+"_"+to+".pdf","ملخص دوام")}
 
 /* ---------- print / pdf (same as report app) ---------- */
 var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
@@ -496,7 +496,7 @@ function pdfPages(makePages,name,title){
       if(navigator.canShare&&navigator.canShare({files:[file]}))return navigator.share({files:[file],title:title}).catch(function(){});
       var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()});
   }).catch(function(){
-    openModal('<h3>ما قدر يجهّز PDF</h3><p>أول مرة لازم يكون في إنترنت حتى ينزّل أدوات الـPDF.</p><div class="acts"><button id="mN">تمام</button></div>');
+    openModal('<h3>ما قدر يجهّز PDF</h3><p>'+(window.jspdf?'صار خطأ بتجهيز الملف، جرّب مرة تانية.':'أول مرة لازم يكون في إنترنت حتى ينزّل أدوات الـPDF.')+'</p><div class="acts"><button id="mN">تمام</button></div>');
     document.getElementById("mN").onclick=closeModal});
 }
 
