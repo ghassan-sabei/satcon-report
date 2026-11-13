@@ -128,13 +128,17 @@ function dayRec(date,create){if(!S.days[date]){if(!create)return null;S.days[dat
 function rec(date,wid,create){var d=dayRec(date,create);if(!d)return null;if(!d.recs[wid]){if(!create)return null;d.recs[wid]={in:null,out:null,absent:false,note:""}}return d.recs[wid]}
 function worked(r){if(!r||r.absent||!r.in||!r.out)return null;return(r.out-r.in)/60000}
 function rateOf(r,w){var x=(r&&r.rate!=null&&r.rate!=="")?r.rate:(w?w.rate:0);x=parseFloat(x);return isNaN(x)?0:x}
-function payOf(r,w){var wk=worked(r);if(wk==null)return null;var v=Math.round(wk)/60*rateOf(r,w);return isUSD()?Math.round(v*100)/100:Math.round(v)}
-function isUSD(){return S.settings.currency==="USD"}
-function CUR(){return isUSD()?"دولار":"دينار"}
-function CURS(){return isUSD()?"$":"د"}
-function money(n){if(n==null)return"";var neg=n<0;n=Math.abs(n);
-  var t=isUSD()?(Math.round(n*100)/100).toFixed(2).replace(/\.00$/,""):String(Math.round(n));
+function curOf(r,w){return(r&&r.cur)||(w&&w.cur)||S.settings.currency||"IQD"}
+function payOf(r,w){var wk=worked(r);if(wk==null)return null;var v=Math.round(wk)/60*rateOf(r,w);return curOf(r,w)==="USD"?Math.round(v*100)/100:Math.round(v)}
+function sym(c){return c==="USD"?"$":"د"}
+function money(n,c){if(n==null)return"";var neg=n<0;n=Math.abs(n);
+  var t=c==="USD"?(Math.round(n*100)/100).toFixed(2).replace(/\.00$/,""):String(Math.round(n));
   var p=t.split(".");p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,",");return(neg?"-":"")+p.join(".")}
+function amt(n,c){return n==null?"":money(n,c)+" "+sym(c)}
+/* totals kept per currency, never mixed */
+function addT(t,n,c){if(n){t[c]=(t[c]||0)+n}return t}
+function fmtT(t){var o=[];if(t.IQD)o.push(amt(t.IQD,"IQD"));if(t.USD)o.push(amt(t.USD,"USD"));return o.length?o.join(" + "):"0"}
+function curSelect(id,val){val=val||S.settings.currency||"IQD";return '<select id="'+id+'" style="flex:0 0 auto"><option value="IQD"'+(val==="IQD"?' selected':'')+'>دينار</option><option value="USD"'+(val==="USD"?' selected':'')+'>دولار $</option></select>'}
 function workerById(id){for(var i=0;i<S.workers.length;i++)if(S.workers[i].id===id)return S.workers[i];return null}
 function dayWorkers(date){
   var d=dayRec(date,false),ids={},list=[];
@@ -186,18 +190,18 @@ function render(){
 
 function renderDay(app){
   var ws=dayWorkers(curDate),pres=0,abs=0,ot=0;
-  ws.forEach(function(w){var r=rec(curDate,w.id,false);if(r){if(r.absent)abs++;else if(r.in)pres++;var pp=payOf(r,w);if(pp)ot+=pp}});
+  ot={};ws.forEach(function(w){var r=rec(curDate,w.id,false);if(r){if(r.absent)abs++;else if(r.in)pres++;addT(ot,payOf(r,w),curOf(r,w))}});
   var h='<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
     '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===isoDate(new Date())?' (اليوم)':'')+'</div></div>';
   if(!S.workers.length){
     h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
   }else{
-    h+='<div class="box"><div class="stat"><div><b>'+pres+'</b><span>حاضر</span></div><div><b>'+abs+'</b><span>غائب</span></div><div><b>'+money(ot)+'</b><span>المبالغ ('+CUR()+')</span></div></div>'+
+    h+='<div class="box"><div class="stat"><div><b>'+pres+'</b><span>حاضر</span></div><div><b>'+abs+'</b><span>غائب</span></div><div><b style="font-size:15px">'+fmtT(ot)+'</b><span>المبالغ</span></div></div>'+
        '<button class="big ok" id="allIn" style="margin-top:10px">دخول الكل</button></div>';
     h+='<div class="box"><h2>العمال</h2>';
     ws.forEach(function(w){
       var r=rec(curDate,w.id,false)||{},wk=worked(r),pp=payOf(r,w);
-      var info=r.absent?'<span style="color:#d64545">غائب</span>':(wk!=null?'ساعات '+dur(wk)+(pp?' · '+money(pp)+' '+CURS():''):(r.in?'داخل':''));
+      var info=r.absent?'<span style="color:#d64545">غائب</span>':(wk!=null?'ساعات '+dur(wk)+(pp?' · '+amt(pp,curOf(r,w)):''):(r.in?'داخل':''));
       if(r.note)info+=(info?' · ':'')+esc(r.note);
       h+='<div class="wk"><div class="nm" data-note="'+w.id+'"><b>'+esc(w.name)+'</b><span>'+(w.job?esc(w.job)+(info?' · ':''):'')+info+'</span></div>'+
         '<button class="tbtn '+(r.in?'ok':'')+'" data-in="'+w.id+'">دخول<small>'+(r.in?hm(r.in):'')+'</small></button>'+
@@ -222,13 +226,13 @@ function renderDay(app){
   if(!S.workers.length)return;
   document.getElementById("allIn").onclick=function(){
     var now=Date.now(),n=0;
-    ws.forEach(function(w){var r=rec(curDate,w.id,false);if(!r||(!r.in&&!r.absent)){r=rec(curDate,w.id,true);r.in=stamp(now);r.rate=w.rate||0;n++}});
+    ws.forEach(function(w){var r=rec(curDate,w.id,false);if(!r||(!r.in&&!r.absent)){r=rec(curDate,w.id,true);r.in=stamp(now);r.rate=w.rate||0;r.cur=curOf(null,w);n++}});
     save();render();
   };
   /* "now" stamped on the viewed day (in case supervisor is viewing another date) */
   function stamp(now){var d=new Date(now),b=parseIso(curDate);b.setHours(d.getHours(),d.getMinutes(),0,0);return b.getTime()}
   app.querySelectorAll("[data-in]").forEach(function(b){var id=+b.getAttribute("data-in");
-    bindPress(b,function(){var r=rec(curDate,id,true);if(r.in){edit();return}r.absent=false;r.in=stamp(Date.now());r.rate=workerById(id).rate||0;fixOut(r);save();render()},edit);
+    bindPress(b,function(){var r=rec(curDate,id,true);if(r.in){edit();return}r.absent=false;r.in=stamp(Date.now());r.rate=workerById(id).rate||0;r.cur=curOf(null,workerById(id));fixOut(r);save();render()},edit);
     function edit(){var r=rec(curDate,id,true);timeEdit("وقت الدخول - "+workerById(id).name,r.in,curDate,function(t){r.in=t;if(t)r.absent=false;fixOut(r);save();render()})}
   });
   app.querySelectorAll("[data-out]").forEach(function(b){var id=+b.getAttribute("data-out");
@@ -251,39 +255,37 @@ function renderWorkers(app){
   var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>إضافة عامل</h2>'+
     '<div class="row"><label>الاسم</label><input type="text" id="wN"></div>'+
     '<div class="row"><label>المهنة (اختياري)</label><input type="text" id="wJ"></div>'+
-    '<div class="row"><label>سعر الساعة ('+CUR()+')</label><input type="number" inputmode="decimal" step="any" id="wR"></div>'+
+    '<div class="row"><label>سعر الساعة</label><input type="number" inputmode="decimal" step="any" id="wR">'+curSelect("wC",S.lastCur)+'</div>'+
     '<button class="big pri" id="wAdd">+ إضافة</button></div><div class="box"><h2>العمال ('+S.workers.filter(function(w){return w.active!==false}).length+')</h2>';
   S.workers.forEach(function(w){
-    h+='<div class="wk"><div class="nm"><b style="'+(w.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(w.name)+'</b><span>'+esc(w.job||"")+(w.rate?(w.job?' · ':'')+money(w.rate)+' '+CURS()+'/ساعة':' · <b style="display:inline;font-size:13px;color:#d64545">بلا سعر</b>')+(w.active===false?' (موقوف)':'')+'</span></div>'+
+    h+='<div class="wk"><div class="nm"><b style="'+(w.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(w.name)+'</b><span>'+esc(w.job||"")+(w.rate?(w.job?' · ':'')+amt(w.rate,curOf(null,w))+'/ساعة':' · <b style="display:inline;font-size:13px;color:#d64545">بلا سعر</b>')+(w.active===false?' (موقوف)':'')+'</span></div>'+
       '<button class="small" data-ed="'+w.id+'">تعديل</button><button class="small" data-act="'+w.id+'">'+(w.active===false?'تفعيل':'إيقاف')+'</button></div>';
   });
   h+='<p class="hint">"إيقاف" بيخفي العامل من الدوام اليومي وبيحافظ على سجلّه القديم.</p></div>';
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("wAdd").onclick=function(){var n=document.getElementById("wN").value.trim();if(!n){document.getElementById("wN").style.borderColor="#d64545";return}
-    S.workers.push({id:S.nextWid++,name:n,job:document.getElementById("wJ").value.trim(),rate:parseFloat(document.getElementById("wR").value)||0,active:true});save();render();document.getElementById("wN").focus()};
+    S.workers.push({id:S.nextWid++,name:n,job:document.getElementById("wJ").value.trim(),rate:parseFloat(document.getElementById("wR").value)||0,cur:document.getElementById("wC").value,active:true});S.lastCur=document.getElementById("wC").value;save();render();document.getElementById("wN").focus()};
   app.querySelectorAll("[data-act]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-act"));w.active=w.active===false;save();render()}});
   app.querySelectorAll("[data-ed]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-ed"));
     openModal('<h3>تعديل العامل</h3><div class="row"><label>الاسم</label><input type="text" id="mA" value="'+esc(w.name)+'"></div><div class="row"><label>المهنة</label><input type="text" id="mB" value="'+esc(w.job||"")+'"></div>'+
-      '<div class="row"><label>سعر الساعة ('+CUR()+')</label><input type="number" inputmode="decimal" step="any" id="mC" value="'+esc(w.rate||"")+'"></div>'+
+      '<div class="row"><label>سعر الساعة</label><input type="number" inputmode="decimal" step="any" id="mC" value="'+esc(w.rate||"")+'">'+curSelect("mD",curOf(null,w))+'</div>'+
       '<p class="hint">السعر الجديد بيمشي على الأيام الجاية. الأيام اللي انسجّلت بتضل على سعرها.</p>'+
       '<div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
-    document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();w.rate=parseFloat(document.getElementById("mC").value)||0;closeModal();save();render()};
+    document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();w.rate=parseFloat(document.getElementById("mC").value)||0;w.cur=document.getElementById("mD").value;closeModal();save();render()};
     document.getElementById("mN").onclick=closeModal}});
 }
 
 function renderSettings(app){
   app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
    '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.settings.project)+'"></div>'+
-   '<div class="row"><label>العملة</label><select id="sC"><option value="IQD"'+(isUSD()?'':' selected')+'>دينار عراقي</option><option value="USD"'+(isUSD()?' selected':'')+'>دولار أمريكي $</option></select></div>'+
-   '<p class="hint">تغيير العملة بيغيّر الاسم بس، ما بيحوّل الأسعار. إذا غيّرتها، صلّح سعر الساعة لكل عامل.</p></div>'+
+   '</div>'+
    '<div class="box"><h2>مسح السجل القديم</h2><p class="muted" style="margin-top:0">بيمسح دوام كل الأيام قبل التاريخ اللي بتختاره. أسماء العمال ما بتنمسح.</p>'+
    '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="cDate"></div>'+
    '<button class="big dan" id="cBtn">🗑 مسح السجل</button>'+
    '<p class="hint">نصيحة: اطبع أو ابعت الملخص الشهري قبل ما تمسح.</p></div>';
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("sP").oninput=function(e){S.settings.project=e.target.value;save()};
-  document.getElementById("sC").onchange=function(e){S.settings.currency=e.target.value;save()};
   document.getElementById("cBtn").onclick=function(){
     var inp=document.getElementById("cDate"),d=inp.value;
     if(!d){inp.style.borderColor="#d64545";return}
@@ -304,10 +306,10 @@ function monthStats(ym){
     var recs=S.days[d].recs;
     Object.keys(recs).forEach(function(k){var r=recs[k],id=+k;
       if(!r.absent&&!r.in)return;
-      if(!rows[id]){rows[id]={w:workerById(id),pres:0,abs:0,min:0,pay:0,open:0};order.push(id)}
+      if(!rows[id]){rows[id]={w:workerById(id),pres:0,abs:0,min:0,pay:{},open:0};order.push(id)}
       var x=rows[id];
       if(r.absent){x.abs++;return}
-      x.pres++;var wk=worked(r);if(wk==null){x.open++;return}x.min+=wk;x.pay+=payOf(r,x.w)||0;
+      x.pres++;var wk=worked(r);if(wk==null){x.open++;return}x.min+=wk;addT(x.pay,payOf(r,x.w),curOf(r,x.w));
     });
   });
   var list=order.map(function(id){return rows[id]}).filter(function(x){return x.w});
@@ -317,14 +319,14 @@ function monthStats(ym){
 }
 function monthLabel(ym){var p=ym.split("-");return MONTHS[+p[1]-1]+" "+p[0]}
 function renderMonth(app){
-  var list=monthStats(monthSel),tm=0,to=0;list.forEach(function(x){tm+=x.min;to+=x.pay});
+  var list=monthStats(monthSel),tm=0,to={};list.forEach(function(x){tm+=x.min;addT(to,x.pay.IQD,'IQD');addT(to,x.pay.USD,'USD')});
   var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الملخص الشهري</h2>'+
     '<div class="row"><label>الشهر</label><input type="month" id="mPick" value="'+monthSel+'" style="font:inherit;padding:10px;border:1px solid #c8cfdb;border-radius:8px;flex:1"></div>'+
-    '<div class="stat"><div><b>'+list.length+'</b><span>عمال</span></div><div><b>'+dur(tm)+'</b><span>مجموع الساعات</span></div><div><b>'+money(to)+'</b><span>المبالغ ('+CUR()+')</span></div></div>'+
+    '<div class="stat"><div><b>'+list.length+'</b><span>عمال</span></div><div><b>'+dur(tm)+'</b><span>مجموع الساعات</span></div><div><b style="font-size:15px">'+fmtT(to)+'</b><span>المبالغ</span></div></div>'+
     (list.length?'<div class="two" style="margin-top:10px"><button class="big ok" id="mPrint">🖨 طباعة</button><button class="big pri" id="mPdf">📄 إرسال PDF</button></div>':'')+'</div>';
   h+='<div class="box"><div class="done-list">';
   if(!list.length)h+='<p class="muted">ما في دوام مسجّل بهالشهر</p>';
-  list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · ساعات '+dur(x.min)+' · '+money(x.pay)+' '+CURS()+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span></span></div>'});
+  list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · ساعات '+dur(x.min)+' · '+fmtT(x.pay)+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span></span></div>'});
   h+='</div></div>';
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
@@ -356,22 +358,22 @@ function paginate(rows,head,cols,totalRow){
   return pages;
 }
 function dayPages(date){
-  var ws=dayWorkers(date),pres=0,abs=0,tmin=0,tpay=0;
-  var rows=ws.map(function(w){var r=rec(date,w.id,false)||{};if(r.absent)abs++;else if(r.in)pres++;var wk=worked(r),pp=payOf(r,w);if(wk)tmin+=wk;if(pp)tpay+=pp;
+  var ws=dayWorkers(date),pres=0,abs=0,tmin=0,tpay={};
+  var rows=ws.map(function(w){var r=rec(date,w.id,false)||{};if(r.absent)abs++;else if(r.in)pres++;var wk=worked(r),pp=payOf(r,w);if(wk)tmin+=wk;addT(tpay,pp,curOf(r,w));
     return function(n){
-      return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(w.name)+'</td><td>'+esc(w.job||"")+'</td><td>'+(r.absent?'':hm(r.in))+'</td><td>'+(r.absent?'':hm(r.out))+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+(r.in&&!r.absent?money(rateOf(r,w)):'')+'</td><td>'+(pp!=null?money(pp):'')+'</td><td class="nt">'+[r.absent?'غائب':'',r.note||''].filter(function(x){return x}).join(' - ')+'</td>'}});
+      return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(w.name)+'</td><td>'+esc(w.job||"")+'</td><td>'+(r.absent?'':hm(r.in))+'</td><td>'+(r.absent?'':hm(r.out))+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+(r.in&&!r.absent?amt(rateOf(r,w),curOf(r,w)):'')+'</td><td>'+(pp!=null?amt(pp,curOf(r,w)):'')+'</td><td class="nt">'+[r.absent?'غائب':'',r.note||''].filter(function(x){return x}).join(' - ')+'</td>'}});
   var head=headTable("دوام يومي","Daily Attendance",dayName(date)+' &nbsp; '+fmtDate(date))+
-    '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">الحاضرين</td><td>'+pres+'</td><td class="blue">الغائبين</td><td>'+abs+'</td><td class="blue">مجموع الساعات</td><td>'+dur(tmin)+'</td><td class="blue">مجموع المبالغ ('+CUR()+')</td><td>'+money(tpay)+'</td></tr></table>';
-  var cols='<th style="width:5%">العدد</th><th style="width:20%">الاسم</th><th style="width:11%">المهنة</th><th>الدخول</th><th>الخروج</th><th>الساعات</th><th>سعر الساعة</th><th>المبلغ ('+CUR()+')</th><th style="width:15%">الملاحظات</th>';
+    '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">الحاضرين</td><td>'+pres+'</td><td class="blue">الغائبين</td><td>'+abs+'</td><td class="blue">مجموع الساعات</td><td>'+dur(tmin)+'</td><td class="blue">مجموع المبالغ</td><td>'+fmtT(tpay)+'</td></tr></table>';
+  var cols='<th style="width:5%">العدد</th><th style="width:20%">الاسم</th><th style="width:11%">المهنة</th><th>الدخول</th><th>الخروج</th><th>الساعات</th><th>سعر الساعة</th><th>المبلغ</th><th style="width:15%">الملاحظات</th>';
   return paginate(rows,head,cols);
 }
 function monthPages(ym){
-  var list=monthStats(ym),tp=0,ta=0,tm=0,to=0;
-  var rows=list.map(function(x){tp+=x.pres;ta+=x.abs;tm+=x.min;to+=x.pay;
-    return function(n){return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(x.w.name)+'</td><td>'+esc(x.w.job||"")+'</td><td>'+x.pres+'</td><td>'+x.abs+'</td><td>'+dur(x.min)+'</td><td>'+money(x.w.rate||0)+'</td><td><b>'+money(x.pay)+'</b></td>'}});
+  var list=monthStats(ym),tp=0,ta=0,tm=0,to={};
+  var rows=list.map(function(x){tp+=x.pres;ta+=x.abs;tm+=x.min;addT(to,x.pay.IQD,'IQD');addT(to,x.pay.USD,'USD');
+    return function(n){return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(x.w.name)+'</td><td>'+esc(x.w.job||"")+'</td><td>'+x.pres+'</td><td>'+x.abs+'</td><td>'+dur(x.min)+'</td><td>'+amt(x.w.rate||0,curOf(null,x.w))+'</td><td><b>'+fmtT(x.pay)+'</b></td>'}});
   var head=headTable("ملخص شهري","Monthly Summary",monthLabel(ym),["Month","الشهر"]);
-  var cols='<th style="width:5%">العدد</th><th style="width:24%">الاسم</th><th style="width:13%">المهنة</th><th>أيام الحضور</th><th>أيام الغياب</th><th>مجموع الساعات</th><th>سعر الساعة</th><th>المبلغ ('+CUR()+')</th>';
-  var total='<tr style="height:'+ROW_H+'px;font-weight:700;background:#dde8f6"><td colspan="3">المجموع</td><td>'+tp+'</td><td>'+ta+'</td><td>'+dur(tm)+'</td><td></td><td>'+money(to)+'</td></tr>';
+  var cols='<th style="width:5%">العدد</th><th style="width:24%">الاسم</th><th style="width:13%">المهنة</th><th>أيام الحضور</th><th>أيام الغياب</th><th>مجموع الساعات</th><th>سعر الساعة</th><th>المبلغ</th>';
+  var total='<tr style="height:'+ROW_H+'px;font-weight:700;background:#dde8f6"><td colspan="3">المجموع</td><td>'+tp+'</td><td>'+ta+'</td><td>'+dur(tm)+'</td><td></td><td>'+fmtT(to)+'</td></tr>';
   return paginate(rows,head,cols,total);
 }
 function dayPdf(date){pdfPages(function(){return dayPages(date)},"attendance_"+date+".pdf","دوام "+fmtDate(date))}
