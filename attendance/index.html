@@ -209,7 +209,7 @@ function renderDay(app){
     if(ms.length){
       h+='<div class="box"><h2>الآليات</h2>';
       ms.forEach(function(m){var r=mrec(curDate,m.id,false)||{},wk=worked(r);
-        h+='<div class="wk"><div class="nm" data-mnote="'+m.id+'"><b>'+esc(m.name)+'</b><span>'+(wk!=null?'ساعات '+dur(wk):(r.in?'شغّالة':''))+(r.note?' · '+esc(r.note):'')+'</span></div>'+
+        h+='<div class="wk"><div class="nm" data-mnote="'+m.id+'"><b>'+esc(m.name)+'</b><span>'+(wk!=null?'ساعات '+dur(wk):(r.in?'شغّالة':''))+(r.driver?' · '+esc(r.driver):'')+(r.diesel?' · مازوت '+esc(r.diesel)+' لتر':'')+'</span></div>'+
           '<button class="tbtn '+(r.in?'ok':'')+'" data-min="'+m.id+'">بداية<small>'+(r.in?hm(r.in):'')+'</small></button>'+
           '<button class="tbtn '+(r.out?'ok':(r.in?'pri':''))+'" data-mout="'+m.id+'">نهاية<small>'+(r.out?hm(r.out):'')+'</small></button></div>';
       });
@@ -255,14 +255,17 @@ function renderDay(app){
     document.getElementById("mN").onclick=closeModal}});
   app.querySelectorAll("[data-min]").forEach(function(b){var id=+b.getAttribute("data-min");
     function edit(){var r=mrec(curDate,id,true);timeEdit("بداية - "+machineById(id).name,r.in,curDate,function(t){r.in=t;fixOut(r);save();render()})}
-    bindPress(b,function(){var r=mrec(curDate,id,true);if(r.in){edit();return}r.in=stamp(Date.now());fixOut(r);save();render()},edit)});
+    bindPress(b,function(){var r=mrec(curDate,id,true);if(r.in){edit();return}r.in=stamp(Date.now());if(!r.driver&&machineById(id).lastDriver)r.driver=machineById(id).lastDriver;fixOut(r);save();render()},edit)});
   app.querySelectorAll("[data-mout]").forEach(function(b){var id=+b.getAttribute("data-mout");
     function edit(){var r=mrec(curDate,id,true);if(!r.in){openModal('<h3>سجّل البداية أول</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
       timeEdit("نهاية - "+machineById(id).name,r.out,curDate,function(t){r.out=t;fixOut(r);save();render()})}
     bindPress(b,function(){var r=mrec(curDate,id,true);if(r.out||!r.in){edit();return}r.out=curDate===isoDate(new Date())?Date.now():stamp(Date.now());fixOut(r);save();render()},edit)});
-  app.querySelectorAll("[data-mnote]").forEach(function(el){el.onclick=function(){var id=+el.getAttribute("data-mnote");var r=mrec(curDate,id,true);
-    openModal('<h3>ملاحظة - '+esc(machineById(id).name)+'</h3><input type="text" id="mR" value="'+esc(r.note)+'"><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
-    document.getElementById("mS").onclick=function(){r.note=document.getElementById("mR").value.trim();closeModal();save();render()};
+  app.querySelectorAll("[data-mnote]").forEach(function(el){el.onclick=function(){var id=+el.getAttribute("data-mnote");var r=mrec(curDate,id,true),m=machineById(id);
+    var drv=r.driver!=null&&r.driver!==""?r.driver:(m.lastDriver||"");
+    openModal('<h3>'+esc(m.name)+'</h3><div class="row"><label>اسم السائق</label><input type="text" id="mDr" value="'+esc(drv)+'"></div>'+
+      '<div class="row"><label>كمية المازوت (لتر)</label><input type="number" inputmode="decimal" step="any" id="mDi" value="'+esc(r.diesel||"")+'"></div>'+
+      '<div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mS").onclick=function(){r.driver=document.getElementById("mDr").value.trim();r.diesel=document.getElementById("mDi").value.trim();if(r.driver)m.lastDriver=r.driver;closeModal();save();render()};
     document.getElementById("mN").onclick=closeModal}});
   document.getElementById("print").onclick=function(){printPages(dayPages(curDate),"attendance_"+curDate,function(){dayPdf(curDate)})};
   document.getElementById("pdf").onclick=function(){dayPdf(curDate)};
@@ -363,7 +366,7 @@ function renderMonth(app){
   list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · ساعات '+dur(x.min)+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span></span></div>'});
   h+='</div></div>';
   S.machines.forEach(function(m){var st=machineMonth(m.id,monthSel);if(!st.days.length&&m.active===false)return;
-    h+='<div class="box"><h2>'+esc(m.name)+'</h2><div class="stat" style="grid-template-columns:1fr 1fr"><div><b>'+st.days.length+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div></div>'+
+    h+='<div class="box"><h2>'+esc(m.name)+'</h2><div class="stat"><div><b>'+st.days.length+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div></div>'+
       (st.days.length?'<div class="two" style="margin-top:10px"><button class="ok" data-mpr="'+m.id+'">🖨 طباعة</button><button class="pri" data-mpdf="'+m.id+'">📄 PDF</button></div>':'')+'</div>'});
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
@@ -407,9 +410,9 @@ function dayPages(date){
   var cols='<th style="width:5%">العدد</th><th style="width:24%">الاسم</th><th style="width:13%">المهنة</th><th>الدخول</th><th>الخروج</th><th>الساعات</th><th style="width:22%">الملاحظات</th>';
   var ms=dayMachines(date),tail='',MROW=44;
   if(ms.length){
-    tail='<table class="grid" dir="rtl" style="margin-top:10px"><tr><th style="width:15%">الآلية</th><th>البداية</th><th>النهاية</th><th>الساعات</th><th style="width:20%">الملاحظات</th><th style="width:26%">التوقيع</th></tr>';
+    tail='<table class="grid" dir="rtl" style="margin-top:10px"><tr><th style="width:13%">الآلية</th><th style="width:18%">اسم السائق</th><th>البداية</th><th>النهاية</th><th>الساعات</th><th>المازوت (لتر)</th><th style="width:24%">التوقيع</th></tr>';
     ms.forEach(function(m){var r=mrec(date,m.id,false)||{},wk=worked(r);
-      tail+='<tr style="height:'+MROW+'px"><td><b>'+esc(m.name)+'</b></td><td>'+hm(r.in)+'</td><td>'+hm(r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td class="nt">'+esc(r.note||'')+'</td><td></td></tr>'});
+      tail+='<tr style="height:'+MROW+'px"><td><b>'+esc(m.name)+'</b></td><td>'+esc(r.driver||'')+'</td><td>'+hm(r.in)+'</td><td>'+hm(r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+esc(r.diesel||'')+'</td><td></td></tr>'});
     tail+='</table>';
   }
   var used=150+(ms.length?36+ms.length*MROW:0)+22;
@@ -425,18 +428,18 @@ function monthPages(ym){
   var total='<tr style="height:'+ROW_H+'px;font-weight:700;background:#dde8f6"><td colspan="3">المجموع</td><td>'+tp+'</td><td>'+ta+'</td><td>'+dur(tm)+'</td></tr>';
   return paginate(rows,head,cols,total);
 }
-function machineMonth(mid,ym){var days=[],min=0;
+function machineMonth(mid,ym){var days=[],min=0,dsl=0;
   Object.keys(S.days).filter(function(d){return d.slice(0,7)===ym}).sort().forEach(function(d){var r=S.days[d].mrecs&&S.days[d].mrecs[mid];
-    if(r&&r.in){days.push({date:d,r:r});var wk=worked(r);if(wk)min+=wk}});
-  return{days:days,min:min}}
+    if(r&&r.in){days.push({date:d,r:r});var wk=worked(r);if(wk)min+=wk;dsl+=parseFloat(r.diesel)||0}});
+  return{days:days,min:min,diesel:Math.round(dsl*100)/100}}
 function machinePages(mid,ym){var m=machineById(mid),st=machineMonth(mid,ym);
   var head=headTable("ملخص "+esc(m.name),"Machine Summary",monthLabel(ym),["Month","الشهر"])+
-    '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">الآلية</td><td><b>'+esc(m.name)+'</b></td><td class="blue">أيام العمل</td><td>'+st.days.length+'</td><td class="blue">مجموع الساعات</td><td><b>'+dur(st.min)+'</b></td></tr></table>';
+    '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">الآلية</td><td><b>'+esc(m.name)+'</b></td><td class="blue">أيام العمل</td><td>'+st.days.length+'</td><td class="blue">مجموع الساعات</td><td><b>'+dur(st.min)+'</b></td><td class="blue">مجموع المازوت (لتر)</td><td><b>'+st.diesel+'</b></td></tr></table>';
   var rh=Math.max(15,Math.min(34,Math.floor((PAGE_H-185)/Math.max(st.days.length+2,13))));
-  var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="margin-top:-1px"><tr><th style="width:5%">العدد</th><th>اليوم</th><th>التاريخ</th><th>البداية</th><th>النهاية</th><th>الساعات</th><th style="width:30%">الملاحظات</th></tr>';
+  var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="margin-top:-1px"><tr><th style="width:5%">العدد</th><th>اليوم</th><th>التاريخ</th><th>البداية</th><th>النهاية</th><th>الساعات</th><th style="width:20%">اسم السائق</th><th>المازوت (لتر)</th></tr>';
   st.days.forEach(function(x,i){var wk=worked(x.r);
-    h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td>'+dayName(x.date)+'</td><td>'+fmtDate(x.date)+'</td><td>'+hm(x.r.in)+'</td><td>'+hm(x.r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td class="nt">'+esc(x.r.note||'')+'</td></tr>'});
-  h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="5">المجموع</td><td>'+dur(st.min)+'</td><td></td></tr></table></div>';
+    h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td>'+dayName(x.date)+'</td><td>'+fmtDate(x.date)+'</td><td>'+hm(x.r.in)+'</td><td>'+hm(x.r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+esc(x.r.driver||'')+'</td><td>'+esc(x.r.diesel||'')+'</td></tr>'});
+  h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="5">المجموع</td><td>'+dur(st.min)+'</td><td></td><td>'+st.diesel+'</td></tr></table></div>';
   return[h]}
 function machinePdf(mid,ym){var m=machineById(mid);pdfPages(function(){return machinePages(mid,ym)},"machine_"+ym+".pdf","ملخص "+m.name+" "+monthLabel(ym))}
 function dayPdf(date){pdfPages(function(){return dayPages(date)},"attendance_"+date+".pdf","دوام "+fmtDate(date))}
