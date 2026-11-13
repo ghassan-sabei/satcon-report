@@ -259,13 +259,20 @@ function renderWorkers(app){
     '<button class="big pri" id="wAdd">+ إضافة</button></div><div class="box"><h2>العمال ('+S.workers.filter(function(w){return w.active!==false}).length+')</h2>';
   S.workers.forEach(function(w){
     h+='<div class="wk"><div class="nm"><b style="'+(w.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(w.name)+'</b><span>'+esc(w.job||"")+(w.rate?(w.job?' · ':'')+amt(w.rate,curOf(null,w))+'/ساعة':' · <b style="display:inline;font-size:13px;color:#d64545">بلا سعر</b>')+(w.active===false?' (موقوف)':'')+'</span></div>'+
-      '<button class="small" data-ed="'+w.id+'">تعديل</button><button class="small" data-act="'+w.id+'">'+(w.active===false?'تفعيل':'إيقاف')+'</button></div>';
+      '<button class="small" data-ed="'+w.id+'">تعديل</button><button class="small" data-act="'+w.id+'">'+(w.active===false?'تفعيل':'إيقاف')+'</button>'+(w.active===false?'<button class="small dan" data-del="'+w.id+'">حذف</button>':'')+'</div>';
   });
-  h+='<p class="hint">"إيقاف" بيخفي العامل من الدوام اليومي وبيحافظ على سجلّه القديم.</p></div>';
+  h+='<p class="hint">"إيقاف" بيخفي العامل من الدوام اليومي وبيحافظ على سجلّه القديم. العامل الموقوف بيطلع جنبه زر "حذف".</p></div>';
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("wAdd").onclick=function(){var n=document.getElementById("wN").value.trim();if(!n){document.getElementById("wN").style.borderColor="#d64545";return}
     S.workers.push({id:S.nextWid++,name:n,job:document.getElementById("wJ").value.trim(),rate:parseFloat(document.getElementById("wR").value)||0,cur:document.getElementById("wC").value,active:true});S.lastCur=document.getElementById("wC").value;save();render();document.getElementById("wN").focus()};
+  app.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){
+    var w=workerById(+b.getAttribute("data-del")),days=Object.keys(S.days).filter(function(d){return S.days[d].recs[w.id]}).sort();
+    function del(){days.forEach(function(d){delete S.days[d].recs[w.id];if(!Object.keys(S.days[d].recs).length)delete S.days[d]});
+      S.workers=S.workers.filter(function(x){return x!==w});save();render()}
+    if(!days.length){confirmBox("حذف "+w.name+" نهائياً؟","حذف",del);return}
+    confirmBox(w.name+" إلو "+days.length+" يوم مسجّل (من "+fmtDate(days[0])+" لـ "+fmtDate(days[days.length-1])+"). الحذف بيمسح سجلّه كمان وبيطلع من الملخصات. أكيد؟","احذف مع السجل",del);
+  }});
   app.querySelectorAll("[data-act]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-act"));w.active=w.active===false;save();render()}});
   app.querySelectorAll("[data-ed]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-ed"));
     openModal('<h3>تعديل العامل</h3><div class="row"><label>الاسم</label><input type="text" id="mA" value="'+esc(w.name)+'"></div><div class="row"><label>المهنة</label><input type="text" id="mB" value="'+esc(w.job||"")+'"></div>'+
