@@ -264,9 +264,24 @@ function renderWorkers(app){
 
 function renderSettings(app){
   app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
-   '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.settings.project)+'"></div></div>';
+   '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.settings.project)+'"></div></div>'+
+   '<div class="box"><h2>مسح السجل القديم</h2><p class="muted" style="margin-top:0">بيمسح دوام كل الأيام قبل التاريخ اللي بتختاره. أسماء العمال ما بتنمسح.</p>'+
+   '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="cDate"></div>'+
+   '<button class="big dan" id="cBtn">🗑 مسح السجل</button>'+
+   '<p class="hint">نصيحة: اطبع أو ابعت الملخص الشهري قبل ما تمسح.</p></div>';
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("sP").oninput=function(e){S.settings.project=e.target.value;save()};
+  document.getElementById("cBtn").onclick=function(){
+    var inp=document.getElementById("cDate"),d=inp.value;
+    if(!d){inp.style.borderColor="#d64545";return}
+    var old=Object.keys(S.days).filter(function(k){return k<d});
+    if(!old.length){openModal('<h3>ما في أيام مسجّلة قبل '+fmtDate(d)+'</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+    old.sort();
+    confirmBox("رح ينمسح "+old.length+" يوم (من "+fmtDate(old[0])+" لـ "+fmtDate(old[old.length-1])+"). ما فيك ترجعهم. أكيد؟","امسح",function(){
+      old.forEach(function(k){delete S.days[k]});save();
+      openModal('<h3>انمسح '+old.length+' يوم ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;
+    });
+  };
 }
 
 /* ---------- monthly summary ---------- */
