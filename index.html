@@ -589,27 +589,23 @@ function renderBlock(app){
   document.getElementById("bPdf").onclick=function(){blockPdf(b)};
 }
 function blockPdf(b){pdfPages(function(){return blockPages(b)},"block_"+String(b.label).replace(/[^\w-]/g,"")+".pdf","ملخص بلوك "+b.label)}
-var BLOCK_ROWS=16;
 function blockPages(b){
   var s=S.settings;
-  var head='<table dir="ltr">'+
-   '<tr><td class="logo" colspan="2" style="height:44px">SATCON</td><td class="ttl" colspan="4" dir="rtl">'+esc(s.project)+'</td><td colspan="2"><b>Block Summary</b><br><span dir="rtl">ملخص بلوك</span></td></tr>'+
-   '<tr><td class="blue">Block nb.:</td><td>'+esc(b.label)+'</td><td class="blue">Working days:</td><td>'+b.nDays+'</td><td class="blue">From:</td><td>'+fmtDate(b.first)+'</td><td class="blue">To:</td><td>'+fmtDate(b.last)+'</td></tr>'+
-   '<tr><td class="blue">Nb. of piles:</td><td>'+b.piles+'</td><td class="blue">Total meters (m):</td><td>'+b.meters+'</td><td class="blue">Concrete (m3):</td><td>'+b.conc+'</td><td class="blue">Mortar (m3):</td><td>'+b.mortar+'</td></tr>'+
-   '</table>'+
-   '<table class="grid" dir="rtl" style="margin-top:-1px"><tr><th>العدد</th><th>اليوم</th><th>التاريخ</th><th>عدد البايلات</th><th>الأمتار</th><th>الكونكريت m3</th><th>المورتر m3</th><th>التأخير (ساعة)</th></tr>';
-  var n=Math.max(1,Math.ceil(b.days.length/BLOCK_ROWS)),pages=[];
-  for(var pg=0;pg<n;pg++){
-    var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head;
-    var part=b.days.slice(pg*BLOCK_ROWS,(pg+1)*BLOCK_ROWS);
-    part.forEach(function(x,i){
-      h+='<tr style="height:30px"><td>'+(pg*BLOCK_ROWS+i+1)+'</td><td>'+dayName(x.date)+'</td><td>'+fmtDate(x.date)+'</td><td>'+x.piles+'</td><td>'+x.meters+'</td><td>'+x.conc+'</td><td>'+x.mortar+'</td><td>'+(x.delay||"")+'</td></tr>';
-    });
-    if(pg===n-1)h+='<tr style="height:30px;font-weight:700;background:#dde8f6"><td colspan="3">المجموع</td><td>'+b.piles+'</td><td>'+b.meters+'</td><td>'+b.conc+'</td><td>'+b.mortar+'</td><td>'+(b.delay||"")+'</td></tr>';
-    h+='</table>'+(n>1?'<div class="pgno">'+(pg+1)+' / '+n+'</div>':'')+'</div>';
-    pages.push(h);
-  }
-  return pages;
+  function row(ar,en,v){return '<tr style="height:48px"><td style="font-size:14px;font-weight:700;width:30%" class="blue">'+en+'</td><td style="font-size:22px;font-weight:700">'+v+'</td><td style="font-size:15px;font-weight:700;width:30%" class="blue" dir="rtl">'+ar+'</td></tr>'}
+  var h='<div class="sheet page" style="width:'+PAGE_W+'px"><table dir="ltr">'+
+   '<tr><td class="logo" style="height:50px;width:30%">SATCON</td><td class="ttl" dir="rtl">'+esc(s.project)+'</td><td style="width:30%"><b>Block Summary</b><br><span dir="rtl">ملخص بلوك</span></td></tr>'+
+   '</table><table dir="ltr" style="margin-top:12px">'+
+   row("رقم البلوك","Block nb.",esc(b.label))+
+   row("من تاريخ","From",fmtDate(b.first))+
+   row("إلى تاريخ","To",fmtDate(b.last))+
+   row("عدد أيام العمل","Working days",b.nDays)+
+   row("عدد البايلات","Nb. of piles",b.piles)+
+   row("مجموع الأمتار (m)","Total meters (m)",b.meters)+
+   row("كمية الكونكريت (m3)","Concrete (m3)",b.conc)+
+   row("كمية المورتر (m3)","Mortar (m3)",b.mortar)+
+   row("مجموع التأخير (ساعة)","Delays (hours)",b.delay)+
+   '</table></div>';
+  return [h];
 }
 
 /* native app: a newer version was downloaded */
