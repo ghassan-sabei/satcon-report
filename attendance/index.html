@@ -109,7 +109,31 @@ function load(){var s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){
   if(!s)s={settings:{project:"مشروع مدينة الاخوة السكني - بغداد"},workers:[],nextWid:1,days:{}};return s}
 var S=load();
 if(!S.machines){S.machines=[{id:1,name:"بوكلن",active:true},{id:2,name:"كرين",active:true}];S.nextMid=3}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function sigKey(r){return JSON.stringify([r.in||null,r.out||null,r.driver||"",r.diesel||""])}
+/* a signature only stays valid for the exact numbers that were signed */
+function dropStaleSigs(){for(var d in S.days){var mr=S.days[d].mrecs;if(!mr)continue;for(var k in mr){var r=mr[k];if(r.sig&&r.sigFor!==sigKey(r)){delete r.sig;delete r.sigFor}}}}
+function save(){dropStaleSigs();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function sigSvg(sig,h){if(!sig)return"";var W=sig.w,H=sig.h,o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" style="height:'+h+'px;width:auto;max-width:100%;vertical-align:middle">';
+  sig.s.forEach(function(st){var pts=[];for(var i=0;i<st.length;i+=2)pts.push(st[i]+","+st[i+1]);
+    o+=(st.length===2?'<circle cx="'+st[0]+'" cy="'+st[1]+'" r="3" fill="#0b2a7a"/>':'<polyline points="'+pts.join(" ")+'" fill="none" stroke="#0b2a7a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>')});
+  return o+'</svg>'}
+function sigPad(title,onSave){
+  openModal('<h3>'+esc(title)+'</h3><canvas id="sgC" style="width:100%;height:200px;border:2px dashed #9aa6bf;border-radius:10px;background:#fff;touch-action:none;display:block"></canvas>'+
+    '<p class="hint">وقّع بإصبعك داخل المربع</p><div class="acts"><button id="sgS" class="ok">حفظ</button><button id="sgX">مسح</button><button id="mN">إلغاء</button></div>');
+  var c=document.getElementById("sgC"),W=600,H=200,ctx,strokes=[],cur=null;
+  var rect=c.getBoundingClientRect();c.width=W;c.height=H;ctx=c.getContext("2d");
+  ctx.lineWidth=5;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#0b2a7a";
+  function pt(e){var r=c.getBoundingClientRect();return[Math.round((e.clientX-r.left)*W/r.width),Math.round((e.clientY-r.top)*H/r.height)]}
+  c.addEventListener("pointerdown",function(e){e.preventDefault();c.setPointerCapture(e.pointerId);var p=pt(e);cur=[p[0],p[1]];strokes.push(cur);ctx.beginPath();ctx.arc(p[0],p[1],2.5,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(p[0],p[1])});
+  c.addEventListener("pointermove",function(e){if(!cur)return;var p=pt(e),lx=cur[cur.length-2],ly=cur[cur.length-1];if(Math.abs(p[0]-lx)+Math.abs(p[1]-ly)<3)return;cur.push(p[0],p[1]);ctx.lineTo(p[0],p[1]);ctx.stroke()});
+  function up(){cur=null}
+  c.addEventListener("pointerup",up);c.addEventListener("pointercancel",up);
+  ctx.fillStyle="#0b2a7a";
+  document.getElementById("sgX").onclick=function(){strokes=[];ctx.clearRect(0,0,W,H)};
+  document.getElementById("sgS").onclick=function(){if(!strokes.length){c.style.borderColor="#d64545";return}closeModal();onSave({w:W,h:H,s:strokes})};
+  document.getElementById("mN").onclick=closeModal;
+}
+
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
 
 function pad(n){return(n<10?"0":"")+n}
@@ -194,7 +218,7 @@ function renderDay(app){
   ws.forEach(function(w){var r=rec(curDate,w.id,false);if(r){if(r.absent)abs++;else if(r.in)pres++;var k=worked(r);if(k)ot+=k}});
   var h='<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
     '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===isoDate(new Date())?' (اليوم)':'')+'</div>'+
-    '<div class="row" style="margin:10px 0 0"><input type="text" id="dFind" inputmode="numeric" placeholder="🔍 اكتب التاريخ: 13-11 أو 13-11-2026"><button class="pri" id="dGo">اذهب</button></div>'+
+    '<div class="row" style="margin:10px 0 0"><input type="text" id="dFind" inputmode="numeric" placeholder="🔍 التاريخ: 13-11"><button class="pri" id="dGo">اذهب</button></div>'+
     '<div class="row" style="margin:10px 0 0"><label>رقم البلوك</label><input type="text" id="dBlock" value="'+esc(blockFor(curDate))+'"></div></div>';
   if(!S.workers.length){
     h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
@@ -218,7 +242,8 @@ function renderDay(app){
       ms.forEach(function(m){var r=mrec(curDate,m.id,false)||{},wk=worked(r);
         h+='<div class="wk"><div class="nm" data-mnote="'+m.id+'"><b>'+esc(m.name)+'</b><span>'+(wk!=null?'ساعات '+dur(wk):(r.in?'شغّالة':''))+(r.driver?' · '+esc(r.driver):'')+(r.diesel?' · مازوت '+esc(r.diesel)+' لتر':'')+'</span></div>'+
           '<button class="tbtn '+(r.in?'ok':'')+'" data-min="'+m.id+'">بداية<small>'+(r.in?hm(r.in):'')+'</small></button>'+
-          '<button class="tbtn '+(r.out?'ok':(r.in?'pri':''))+'" data-mout="'+m.id+'">نهاية<small>'+(r.out?hm(r.out):'')+'</small></button></div>';
+          '<button class="tbtn '+(r.out?'ok':(r.in?'pri':''))+'" data-mout="'+m.id+'">نهاية<small>'+(r.out?hm(r.out):'')+'</small></button>'+
+          '<button class="tbtn '+(r.sig?'ok':'')+'" data-msig="'+m.id+'" style="min-width:70px">'+(r.sig?sigSvg(r.sig,26):'✍️')+'<small>'+(r.sig?'موقّع':'توقيع')+'</small></button></div>';
       });
       h+='</div>';
     }
@@ -271,6 +296,14 @@ function renderDay(app){
     function edit(){var r=mrec(curDate,id,true);if(!r.in){openModal('<h3>سجّل البداية أول</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
       timeEdit("نهاية - "+machineById(id).name,r.out,curDate,function(t){r.out=t;fixOut(r);save();render()})}
     bindPress(b,function(){var r=mrec(curDate,id,true);if(r.out||!r.in){edit();return}r.out=curDate===isoDate(new Date())?Date.now():stamp(Date.now());fixOut(r);save();render()},edit)});
+  app.querySelectorAll("[data-msig]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-msig"),m=machineById(id),r=mrec(curDate,id,true);
+    if(!r.in||!r.out){openModal('<h3>سجّل البداية والنهاية أول، وبعدين بيوقّع السائق</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+    function pad(){sigPad("توقيع سائق "+m.name+(r.driver?" - "+r.driver:""),function(sig){r.sig=sig;r.sigFor=sigKey(r);save();render()})}
+    if(r.sig){openModal('<h3>توقيع '+esc(m.name)+'</h3><div style="text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px">'+sigSvg(r.sig,120)+'</div><div class="acts"><button id="mS" class="pri">توقيع جديد</button><button id="mD" class="dan">مسح التوقيع</button><button id="mN">إغلاق</button></div>');
+      document.getElementById("mS").onclick=function(){closeModal();pad()};
+      document.getElementById("mD").onclick=function(){delete r.sig;delete r.sigFor;closeModal();save();render()};
+      document.getElementById("mN").onclick=closeModal;return}
+    pad()}});
   app.querySelectorAll("[data-mnote]").forEach(function(el){el.onclick=function(){var id=+el.getAttribute("data-mnote");var r=mrec(curDate,id,true),m=machineById(id);
     var drv=r.driver!=null&&r.driver!==""?r.driver:(m.lastDriver||"");
     openModal('<h3>'+esc(m.name)+'</h3><div class="row"><label>اسم السائق</label><input type="text" id="mDr" value="'+esc(drv)+'"></div>'+
@@ -428,7 +461,7 @@ function dayPages(date){
   if(ms.length){
     tail='<table class="grid" dir="rtl" style="margin-top:10px"><tr><th style="width:13%">الآلية</th><th style="width:18%">اسم السائق</th><th>البداية</th><th>النهاية</th><th>الساعات</th><th>المازوت (لتر)</th><th style="width:24%">التوقيع</th></tr>';
     ms.forEach(function(m){var r=mrec(date,m.id,false)||{},wk=worked(r);
-      tail+='<tr style="height:'+MROW+'px"><td><b>'+esc(m.name)+'</b></td><td>'+esc(r.driver||'')+'</td><td>'+hm(r.in)+'</td><td>'+hm(r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+esc(r.diesel||'')+'</td><td></td></tr>'});
+      tail+='<tr style="height:'+MROW+'px"><td><b>'+esc(m.name)+'</b></td><td>'+esc(r.driver||'')+'</td><td>'+hm(r.in)+'</td><td>'+hm(r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+esc(r.diesel||'')+'</td><td style="padding:1px">'+sigSvg(r.sig,MROW-6)+'</td></tr>'});
     tail+='</table>';
   }
   var used=150+(ms.length?36+ms.length*MROW:0)+22;
