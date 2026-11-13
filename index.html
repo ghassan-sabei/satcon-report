@@ -360,7 +360,7 @@ function wire(app){
 
 function renderArchive(app){
   var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الأيام السابقة</h2>'+
-    (S.archive.length?'<div class="row"><input type="text" id="aFind" placeholder="🔍 اكتب التاريخ (13/11) أو رقم البلوك"></div><p class="muted" id="aNone" style="display:none">ما في يوم بهالبحث</p>':'');
+    (S.archive.length?'<div class="row"><input type="text" id="aFind" placeholder="🔍 اكتب التاريخ (13-11) أو رقم البلوك"></div><p class="muted" id="aNone" style="display:none">ما في يوم بهالبحث</p>':'');
   if(!S.archive.length)h+='<p class="muted">لا يوجد أيام محفوظة بعد</p>';
   S.archive.forEach(function(d,i){
     var t=totals(d);

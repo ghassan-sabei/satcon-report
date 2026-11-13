@@ -194,7 +194,7 @@ function renderDay(app){
   ws.forEach(function(w){var r=rec(curDate,w.id,false);if(r){if(r.absent)abs++;else if(r.in)pres++;var k=worked(r);if(k)ot+=k}});
   var h='<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
     '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===isoDate(new Date())?' (اليوم)':'')+'</div>'+
-    '<div class="row" style="margin:10px 0 0"><input type="text" id="dFind" inputmode="numeric" placeholder="🔍 اكتب التاريخ: 13/11 أو 13/11/2026"><button class="pri" id="dGo">اذهب</button></div>'+
+    '<div class="row" style="margin:10px 0 0"><input type="text" id="dFind" inputmode="numeric" placeholder="🔍 اكتب التاريخ: 13-11 أو 13-11-2026"><button class="pri" id="dGo">اذهب</button></div>'+
     '<div class="row" style="margin:10px 0 0"><label>رقم البلوك</label><input type="text" id="dBlock" value="'+esc(blockFor(curDate))+'"></div></div>';
   if(!S.workers.length){
     h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
