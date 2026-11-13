@@ -282,18 +282,19 @@ function renderWorkers(app){
   });
   h+='<p class="hint">"إيقاف" بيخفي العامل من الدوام اليومي وبيحافظ على سجلّه القديم. العامل الموقوف بيطلع جنبه زر "حذف".</p></div>';
   h+='<div class="box"><h2>الآليات</h2>';
-  S.machines.forEach(function(m){h+='<div class="wk"><div class="nm"><b style="'+(m.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(m.name)+'</b><span>'+(m.active===false?'(موقوفة)':'')+'</span></div>'+
+  S.machines.forEach(function(m){h+='<div class="wk"><div class="nm"><b style="'+(m.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(m.name)+'</b><span>'+(m.lastDriver?'السائق: '+esc(m.lastDriver):'')+(m.active===false?' (موقوفة)':'')+'</span></div>'+
     '<button class="small" data-med="'+m.id+'">تعديل</button><button class="small" data-mact="'+m.id+'">'+(m.active===false?'تفعيل':'إيقاف')+'</button>'+(m.active===false?'<button class="small dan" data-mdel="'+m.id+'">حذف</button>':'')+'</div>'});
-  h+='<div class="row" style="margin-top:10px"><input type="text" id="mNew" placeholder="اسم آلية جديدة"><button class="pri" id="mAdd">+ إضافة</button></div></div>';
+  h+='<div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px"><div class="row"><label>اسم الآلية</label><input type="text" id="mNew"></div>'+
+    '<div class="row"><label>اسم السائق</label><input type="text" id="mNewD"></div><button class="big pri" id="mAdd">+ إضافة آلية</button></div></div>';
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("wAdd").onclick=function(){var n=document.getElementById("wN").value.trim();if(!n){document.getElementById("wN").style.borderColor="#d64545";return}
     S.workers.push({id:S.nextWid++,name:n,job:document.getElementById("wJ").value.trim(),active:true});save();render();document.getElementById("wN").focus()};
-  document.getElementById("mAdd").onclick=function(){var n=document.getElementById("mNew").value.trim();if(!n)return;S.machines.push({id:S.nextMid++,name:n,active:true});save();render()};
+  document.getElementById("mAdd").onclick=function(){var n=document.getElementById("mNew").value.trim();if(!n)return;S.machines.push({id:S.nextMid++,name:n,lastDriver:document.getElementById("mNewD").value.trim(),active:true});save();render()};
   app.querySelectorAll("[data-mact]").forEach(function(b){b.onclick=function(){var m=machineById(+b.getAttribute("data-mact"));m.active=m.active===false;save();render()}});
   app.querySelectorAll("[data-med]").forEach(function(b){b.onclick=function(){var m=machineById(+b.getAttribute("data-med"));
-    openModal('<h3>تعديل الآلية</h3><input type="text" id="mA" value="'+esc(m.name)+'"><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
-    document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;m.name=n;closeModal();save();render()};
+    openModal('<h3>تعديل الآلية</h3><div class="row"><label>اسم الآلية</label><input type="text" id="mA" value="'+esc(m.name)+'"></div><div class="row"><label>اسم السائق</label><input type="text" id="mDr" value="'+esc(m.lastDriver||"")+'"></div><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;m.name=n;m.lastDriver=document.getElementById("mDr").value.trim();closeModal();save();render()};
     document.getElementById("mN").onclick=closeModal}});
   app.querySelectorAll("[data-mdel]").forEach(function(b){b.onclick=function(){var m=machineById(+b.getAttribute("data-mdel"));
     var days=Object.keys(S.days).filter(function(d){return S.days[d].mrecs&&S.days[d].mrecs[m.id]});
