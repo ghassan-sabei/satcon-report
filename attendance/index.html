@@ -135,6 +135,8 @@ function dayMachines(date){var d=dayRec(date,false),ids={},list=[];
   S.machines.forEach(function(m){if(m.active!==false){ids[m.id]=1;list.push(m)}});
   if(d&&d.mrecs)Object.keys(d.mrecs).forEach(function(k){var id=+k;if(!ids[id]){var m=machineById(id);if(m){ids[id]=1;list.push(m)}}});
   return list}
+function blockFor(date){if(S.days[date]&&S.days[date].block!=null)return S.days[date].block;
+  var ks=Object.keys(S.days).filter(function(k){return k<date&&S.days[k].block}).sort();return ks.length?S.days[ks[ks.length-1]].block:""}
 function workerById(id){for(var i=0;i<S.workers.length;i++)if(S.workers[i].id===id)return S.workers[i];return null}
 function dayWorkers(date){
   var d=dayRec(date,false),ids={},list=[];
@@ -188,7 +190,8 @@ function renderDay(app){
   var ws=dayWorkers(curDate),pres=0,abs=0,ot=0;
   ws.forEach(function(w){var r=rec(curDate,w.id,false);if(r){if(r.absent)abs++;else if(r.in)pres++;var k=worked(r);if(k)ot+=k}});
   var h='<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
-    '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===isoDate(new Date())?' (اليوم)':'')+'</div></div>';
+    '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===isoDate(new Date())?' (اليوم)':'')+'</div>'+
+    '<div class="row" style="margin:10px 0 0"><label>رقم البلوك</label><input type="text" id="dBlock" value="'+esc(blockFor(curDate))+'"></div></div>';
   if(!S.workers.length){
     h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
   }else{
@@ -222,6 +225,7 @@ function renderDay(app){
   app.innerHTML=h;
 
   function setDate(d){curDate=d;render()}
+  document.getElementById("dBlock").oninput=function(e){dayRec(curDate,true).block=e.target.value.trim();save()};
   document.getElementById("dPick").onchange=function(e){if(e.target.value)setDate(e.target.value)};
   document.getElementById("prev").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()-1);setDate(isoDate(d))};
   document.getElementById("next").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()+1);setDate(isoDate(d))};
@@ -407,7 +411,7 @@ function dayPages(date){
     return function(n){
       return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(w.name)+'</td><td>'+esc(w.job||"")+'</td><td>'+(r.absent?'':hm(r.in))+'</td><td>'+(r.absent?'':hm(r.out))+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td class="nt">'+[r.absent?'غائب':'',r.note||''].filter(function(x){return x}).join(' - ')+'</td>'}});
   var head=headTable("دوام يومي","Daily Attendance",dayName(date)+' &nbsp; '+fmtDate(date))+
-    '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">الحاضرين</td><td>'+pres+'</td><td class="blue">الغائبين</td><td>'+abs+'</td><td class="blue">مجموع الساعات</td><td>'+dur(tmin)+'</td></tr></table>';
+    '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">رقم البلوك</td><td><b>'+esc(blockFor(date))+'</b></td><td class="blue">الحاضرين</td><td>'+pres+'</td><td class="blue">الغائبين</td><td>'+abs+'</td><td class="blue">مجموع الساعات</td><td>'+dur(tmin)+'</td></tr></table>';
   var cols='<th style="width:5%">العدد</th><th style="width:24%">الاسم</th><th style="width:13%">المهنة</th><th>الدخول</th><th>الخروج</th><th>الساعات</th><th style="width:22%">الملاحظات</th>';
   var ms=dayMachines(date),tail='',MROW=44;
   if(ms.length){
