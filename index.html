@@ -555,8 +555,7 @@ function statGrid(b){
     '<div><b>'+b.piles+'</b><span>بايلات</span></div>'+
     '<div><b>'+b.meters+'</b><span>أمتار</span></div>'+
     '<div><b>'+b.conc+'</b><span>كونكريت m3</span></div>'+
-    '<div><b>'+b.mortar+'</b><span>مورتر m3</span></div>'+
-    '<div><b>'+b.delay+'</b><span>تأخير (ساعة)</span></div></div>';
+    '<div><b>'+b.mortar+'</b><span>مورتر m3</span></div></div>';
 }
 function renderBlocks(app){
   var gs=blockGroups();
@@ -580,7 +579,7 @@ function renderBlock(app){
     '<div class="box"><h2>الأيام</h2><div class="done-list">';
   b.days.forEach(function(x){
     h+='<div class="it"><span><b>'+dayName(x.date)+' '+fmtDate(x.date)+'</b>'+(x.cur?' <span class="muted">(اليوم الحالي)</span>':'')+
-       '<br><span class="muted">'+x.piles+' بايل · '+x.meters+' م · '+x.conc+' m3 كونكريت · '+x.mortar+' m3 مورتر'+(x.delay?' · تأخير '+x.delay+' س':'')+'</span></span></div>';
+       '<br><span class="muted">'+x.piles+' بايل · '+x.meters+' م · '+x.conc+' m3 كونكريت · '+x.mortar+' m3 مورتر'+'</span></span></div>';
   });
   h+='</div></div>';
   app.innerHTML=h;
@@ -603,7 +602,6 @@ function blockPages(b){
    row("مجموع الأمتار (m)","Total meters (m)",b.meters)+
    row("كمية الكونكريت (m3)","Concrete (m3)",b.conc)+
    row("كمية المورتر (m3)","Mortar (m3)",b.mortar)+
-   row("مجموع التأخير (ساعة)","Delays (hours)",b.delay)+
    '</table></div>';
   return [h];
 }
