@@ -64,6 +64,9 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        s.setMinimumFontSize(1);
+        s.setMinimumLogicalFontSize(1);
+        s.setTextZoom(100);
         web.addJavascriptInterface(new Bridge(), "AndroidBridge");
         web.setWebChromeClient(new WebChromeClient() {
             @Override
