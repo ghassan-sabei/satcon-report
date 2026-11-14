@@ -109,6 +109,7 @@ function load(){var s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){
   if(!s)s={settings:{project:"مشروع مدينة الاخوة السكني - بغداد"},workers:[],nextWid:1,days:{}};return s}
 var S=load();
 if(!S.machines){S.machines=[{id:1,name:"بوكلن",active:true},{id:2,name:"كرين",active:true}];S.nextMid=3}
+if(!S.fuel){S.fuel={opening:0,ins:[],nextIn:1,equip:[],nextEq:1}}
 function sigKey(r){return JSON.stringify([r.in||null,r.out||null,r.driver||"",r.diesel||""])}
 /* a signature only stays valid for the exact numbers that were signed */
 function dropStaleSigs(){for(var d in S.days){var mr=S.days[d].mrecs;if(!mr)continue;for(var k in mr){var r=mr[k];if(r.sig&&r.sigFor!==sigKey(r)){delete r.sig;delete r.sigFor}}}}
@@ -210,6 +211,7 @@ function render(){
   if(view==="workers")return renderWorkers(app);
   if(view==="month")return renderMonth(app);
   if(view==="settings")return renderSettings(app);
+  if(view==="fuel")return renderFuel(app);
   renderDay(app);
 }
 
@@ -236,6 +238,7 @@ function renderDay(app){
         '<button class="'+(r.absent?'abs':'')+'" data-abs="'+w.id+'">غائب</button></div>';
     });
     h+='<p class="hint">كبسة = الوقت الحالي · ضغطة مطوّلة = تعديل الوقت · كبسة على الاسم = ملاحظة</p></div>';
+  }
     var ms=dayMachines(curDate);
     if(ms.length){
       h+='<div class="box"><h2>الآليات</h2>';
@@ -250,8 +253,7 @@ function renderDay(app){
       h+='</div>';
     }
     h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>';
-  }
-  h+='<button class="big" id="goM" style="margin-bottom:8px">📊 الملخص</button>'+
+  h+='<div class="two" style="margin-bottom:8px"><button class="big" id="goM">📊 الملخص</button><button class="big" id="goF">⛽ المازوت</button></div>'+
      '<div class="two" style="margin-bottom:30px"><button id="goW">العمال</button><button id="goS">الإعدادات</button></div>';
   app.innerHTML=h;
 
@@ -265,10 +267,10 @@ function renderDay(app){
   document.getElementById("next").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()+1);setDate(isoDate(d))};
   var g2=document.getElementById("goW2");if(g2)g2.onclick=function(){view="workers";render()};
   document.getElementById("goW").onclick=function(){view="workers";render();scrollTo(0,0)};
+  document.getElementById("goF").onclick=function(){view="fuel";render();scrollTo(0,0)};
   document.getElementById("goM").onclick=function(){view="month";render();scrollTo(0,0)};
   document.getElementById("goS").onclick=function(){view="settings";render();scrollTo(0,0)};
-  if(!S.workers.length)return;
-  document.getElementById("allIn").onclick=function(){
+  var aiB=document.getElementById("allIn");if(aiB)aiB.onclick=function(){
     var now=Date.now(),n=0;
     ws.forEach(function(w){var r=rec(curDate,w.id,false);if(!r||(!r.in&&!r.absent)){r=rec(curDate,w.id,true);r.in=stamp(now);n++}});
     save();render();
@@ -348,7 +350,7 @@ function renderWorkers(app){
     document.getElementById("mN").onclick=closeModal}});
   app.querySelectorAll("[data-mdel]").forEach(function(b){b.onclick=function(){var m=machineById(+b.getAttribute("data-mdel"));
     var days=Object.keys(S.days).filter(function(d){return S.days[d].mrecs&&S.days[d].mrecs[m.id]});
-    confirmBox("حذف "+m.name+(days.length?" مع "+days.length+" يوم مسجّل":"")+"؟","حذف",function(){days.forEach(function(d){delete S.days[d].mrecs[m.id]});S.machines=S.machines.filter(function(x){return x!==m});save();render()})}});
+    confirmBox("حذف "+m.name+(days.length?" مع "+days.length+" يوم مسجّل":"")+"؟","حذف",function(){days.forEach(function(d){var r=S.days[d].mrecs[m.id];S.fuel.opening=num2(S.fuel.opening)-(parseFloat(r.diesel)||0);delete S.days[d].mrecs[m.id]});S.machines=S.machines.filter(function(x){return x!==m});save();render()})}});
   app.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){
     var w=workerById(+b.getAttribute("data-del")),days=Object.keys(S.days).filter(function(d){return S.days[d].recs[w.id]}).sort();
     function del(){days.forEach(function(d){delete S.days[d].recs[w.id];if(!Object.keys(S.days[d].recs).length&&!(S.days[d].mrecs&&Object.keys(S.days[d].mrecs).length))delete S.days[d]});
@@ -363,6 +365,110 @@ function renderWorkers(app){
     document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();closeModal();save();render()};
     document.getElementById("mN").onclick=closeModal}});
 }
+
+/* ================= fuel ================= */
+function num2(v){var x=parseFloat(v);return isNaN(x)?0:x}
+function lit(v){return(Math.round(v*100)/100).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",")}
+function eqById(id){for(var i=0;i<S.fuel.equip.length;i++)if(S.fuel.equip[i].id===id)return S.fuel.equip[i];return null}
+function erec(date,eid,create){var d=dayRec(date,create);if(!d)return null;if(!d.erecs){if(!create)return null;d.erecs={}}if(!d.erecs[eid]){if(!create)return null;d.erecs[eid]={diesel:""}}return d.erecs[eid]}
+/* sums over [from,to] (inclusive); beforeOnly=true means all dates < to */
+function inRange(d,from,to,beforeOnly){return beforeOnly?d<to:((!from||d>=from)&&(!to||d<=to))}
+function sumIn(from,to,beforeOnly){var t=0;S.fuel.ins.forEach(function(x){if(inRange(x.date,from,to,beforeOnly))t+=num2(x.qty)});return t}
+function consumers(from,to,beforeOnly){var m={},e={};
+  Object.keys(S.days).forEach(function(d){if(!inRange(d,from,to,beforeOnly))return;var D=S.days[d];
+    if(D.mrecs)for(var k in D.mrecs){var q=num2(D.mrecs[k].diesel);if(q)m[k]=(m[k]||0)+q}
+    if(D.erecs)for(var k2 in D.erecs){var q2=num2(D.erecs[k2].diesel);if(q2)e[k2]=(e[k2]||0)+q2}});
+  return{m:m,e:e}}
+function sumOut(from,to,beforeOnly){var c=consumers(from,to,beforeOnly),t=0;for(var k in c.m)t+=c.m[k];for(var j in c.e)t+=c.e[j];return t}
+function balanceAt(date){return num2(S.fuel.opening)+sumIn(null,date,false)-sumOut(null,date,false)}
+var fFrom=null,fTo=null;
+function renderFuel(app){
+  var today=isoDate(new Date()),bal=num2(S.fuel.opening)+sumIn()-sumOut();
+  var dIn=sumIn(curDate,curDate),dOut=sumOut(curDate,curDate);
+  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button>'+
+    '<div class="box"><h2>⛽ المازوت بالخزان</h2><div class="stat" style="grid-template-columns:1fr"><div><b style="font-size:28px;color:'+(bal<0?'#d64545':'#1f6f4a')+'">'+lit(bal)+'</b><span>لتر باقي حالياً</span></div></div></div>'+
+    '<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
+    '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===today?' (اليوم)':'')+'</div>'+
+    '<div class="stat" style="margin-top:8px"><div><b>'+lit(dIn)+'</b><span>وارد اليوم</span></div><div><b>'+lit(dOut)+'</b><span>صرف اليوم</span></div><div><b>'+lit(balanceAt(curDate))+'</b><span>الباقي آخر اليوم</span></div></div></div>';
+  /* deliveries */
+  var ins=S.fuel.ins.filter(function(x){return x.date===curDate});
+  h+='<div class="box"><h2>الوارد (حمولة جديدة)</h2>'+
+    '<div class="row"><label>الكمية (لتر)</label><input type="number" inputmode="decimal" step="any" id="fQ"></div>'+
+    '<div class="row"><label>المورّد / السائق</label><input type="text" id="fS"></div>'+
+    '<div class="row"><label>رقم الوصل</label><input type="text" id="fR"></div>'+
+    '<button class="big pri" id="fAdd">+ تسجيل الوارد</button>';
+  if(ins.length){h+='<div class="done-list" style="margin-top:8px">';ins.forEach(function(x){
+    h+='<div class="it"><span><b>'+lit(num2(x.qty))+' لتر</b><br><span class="muted">'+esc(x.supplier||"")+(x.receipt?' · وصل '+esc(x.receipt):'')+'</span></span><button class="small dan" data-fdel="'+x.id+'">حذف</button></div>'});h+='</div>'}
+  h+='</div>';
+  /* consumption of the day */
+  h+='<div class="box"><h2>الصرف</h2>';
+  dayMachines(curDate).forEach(function(m){var r=mrec(curDate,m.id,false);
+    h+='<div class="wk"><div class="nm"><b>'+esc(m.name)+'</b><span>من شاشة الدوام</span></div><b>'+(r&&r.diesel?lit(num2(r.diesel))+' لتر':'—')+'</b></div>'});
+  S.fuel.equip.filter(function(q){return q.active!==false||(erec(curDate,q.id,false)||{}).diesel}).forEach(function(q){var r=erec(curDate,q.id,false)||{};
+    h+='<div class="wk"><div class="nm"><b>'+esc(q.name)+'</b><span>معدّة</span></div><input type="number" inputmode="decimal" step="any" data-eq="'+q.id+'" value="'+esc(r.diesel||"")+'" placeholder="لتر" style="max-width:110px"></div>'});
+  if(!S.fuel.equip.length)h+='<p class="muted">ضيف المعدات من تحت (مولدة، كمبريسر...)</p>';
+  h+='</div>';
+  /* equipment management */
+  h+='<div class="box"><h2>المعدات</h2>';
+  S.fuel.equip.forEach(function(q){h+='<div class="wk"><div class="nm"><b style="'+(q.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(q.name)+'</b></div>'+
+    '<button class="small" data-eqed="'+q.id+'">تعديل</button><button class="small" data-eqact="'+q.id+'">'+(q.active===false?'تفعيل':'إيقاف')+'</button>'+(q.active===false?'<button class="small dan" data-eqdel="'+q.id+'">حذف</button>':'')+'</div>'});
+  h+='<div class="row" style="margin-top:10px"><input type="text" id="eqNew" placeholder="اسم المعدّة (مثلاً مولدة)"><button class="pri" id="eqAdd">+ إضافة</button></div></div>';
+  /* report */
+  if(!fFrom){fTo=today;fFrom=today.slice(0,8)+"01"}
+  h+='<div class="box"><h2>تقرير المازوت</h2><div class="row"><label>من تاريخ</label><input type="date" id="fFrom" value="'+fFrom+'"></div>'+
+    '<div class="row"><label>إلى تاريخ</label><input type="date" id="fTo" value="'+fTo+'"></div>'+
+    '<div class="two"><button class="big ok" id="fPrint">🖨 طباعة</button><button class="big pri" id="fPdf">📄 إرسال PDF</button></div></div>';
+  h+='<div class="box"><h2>الرصيد الافتتاحي</h2><div class="row"><label>المازوت بالخزان قبل أول تسجيل (لتر)</label><input type="number" inputmode="decimal" step="any" id="fOpen" value="'+esc(S.fuel.opening||"")+'"></div>'+
+    '<p class="hint">بتحطه مرة وحدة لما تبلّش تستعمل الصفحة.</p></div>';
+  app.innerHTML=h;
+  document.getElementById("back").onclick=function(){view="day";render()};
+  function setDate(d){curDate=d;render()}
+  document.getElementById("dPick").onchange=function(e){if(e.target.value)setDate(e.target.value)};
+  document.getElementById("prev").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()-1);setDate(isoDate(d))};
+  document.getElementById("next").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()+1);setDate(isoDate(d))};
+  document.getElementById("fAdd").onclick=function(){var q=num2(document.getElementById("fQ").value);if(!q){document.getElementById("fQ").style.borderColor="#d64545";return}
+    S.fuel.ins.push({id:S.fuel.nextIn++,date:curDate,qty:q,supplier:document.getElementById("fS").value.trim(),receipt:document.getElementById("fR").value.trim()});save();render()};
+  app.querySelectorAll("[data-fdel]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-fdel");confirmBox("حذف هالوارد؟","حذف",function(){S.fuel.ins=S.fuel.ins.filter(function(x){return x.id!==id});save();render()})}});
+  app.querySelectorAll("[data-eq]").forEach(function(i){i.onchange=function(){var r=erec(curDate,+i.getAttribute("data-eq"),true);r.diesel=i.value.trim();save();render()}});
+  document.getElementById("eqAdd").onclick=function(){var n=document.getElementById("eqNew").value.trim();if(!n)return;S.fuel.equip.push({id:S.fuel.nextEq++,name:n,active:true});save();render()};
+  app.querySelectorAll("[data-eqact]").forEach(function(b){b.onclick=function(){var q=eqById(+b.getAttribute("data-eqact"));q.active=q.active===false;save();render()}});
+  app.querySelectorAll("[data-eqed]").forEach(function(b){b.onclick=function(){var q=eqById(+b.getAttribute("data-eqed"));
+    openModal('<h3>تعديل المعدّة</h3><input type="text" id="mA" value="'+esc(q.name)+'"><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;q.name=n;closeModal();save();render()};document.getElementById("mN").onclick=closeModal}});
+  app.querySelectorAll("[data-eqdel]").forEach(function(b){b.onclick=function(){var q=eqById(+b.getAttribute("data-eqdel"));
+    confirmBox("حذف "+q.name+"؟ المازوت اللي صرفته بيضل محسوب من الخزان.","حذف",function(){var tot=0;
+      for(var d in S.days){var E=S.days[d].erecs;if(E&&E[q.id]){tot+=num2(E[q.id].diesel);delete E[q.id]}}
+      S.fuel.opening=num2(S.fuel.opening)-tot;S.fuel.equip=S.fuel.equip.filter(function(x){return x!==q});save();render()})}});
+  document.getElementById("fFrom").onchange=function(e){if(e.target.value)fFrom=e.target.value};
+  document.getElementById("fTo").onchange=function(e){if(e.target.value)fTo=e.target.value};
+  document.getElementById("fPrint").onclick=function(){printPages(fuelPages(fFrom,fTo),"fuel_"+fFrom+"_"+fTo,function(){fuelPdf(fFrom,fTo)})};
+  document.getElementById("fPdf").onclick=function(){fuelPdf(fFrom,fTo)};
+  document.getElementById("fOpen").onchange=function(e){S.fuel.opening=num2(e.target.value);save();render()};
+}
+function fuelPages(from,to){
+  if(from>to){var t=from;from=to;to=t}
+  var prev=parseIso(from);prev.setDate(prev.getDate()-1);
+  var open=balanceAt(isoDate(prev)),inQ=sumIn(from,to),c=consumers(from,to),outQ=sumOut(from,to),close=open+inQ-outQ;
+  var ins=S.fuel.ins.filter(function(x){return x.date>=from&&x.date<=to}).sort(function(a,b){return a.date<b.date?-1:1});
+  var cons=[];S.machines.forEach(function(m){if(c.m[m.id])cons.push([m.name,c.m[m.id]])});
+  for(var k in c.m){if(!machineById(+k))cons.push(["آلية محذوفة",c.m[k]])}
+  S.fuel.equip.forEach(function(q){if(c.e[q.id])cons.push([q.name,c.e[q.id]])});
+  var nRows=ins.length+cons.length+4,rh=Math.max(18,Math.min(34,Math.floor((PAGE_H-250)/Math.max(nRows,8))));
+  var td='style="height:'+rh+'px"';
+  var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+headTable("تقرير المازوت","Diesel Report",'من '+fmtDate(from)+' &nbsp; إلى '+fmtDate(to),["Period","الفترة"])+
+    '<table dir="rtl" style="margin-top:-1px"><tr style="height:34px"><td class="blue">رصيد أول الفترة</td><td><b>'+lit(open)+'</b></td><td class="blue">الوارد</td><td><b>'+lit(inQ)+'</b></td><td class="blue">الصرف</td><td><b>'+lit(outQ)+'</b></td><td class="blue">الباقي آخر الفترة</td><td><b>'+lit(close)+'</b></td></tr></table>'+
+    '<div style="display:flex;gap:10px;margin-top:10px;align-items:flex-start">'+
+    '<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="flex:1"><tr><th colspan="4">الوارد (لتر)</th></tr><tr><th>التاريخ</th><th>الكمية</th><th>المورّد / السائق</th><th>رقم الوصل</th></tr>';
+  if(!ins.length)h+='<tr '+td+'><td colspan="4">ما في وارد</td></tr>';
+  ins.forEach(function(x){h+='<tr '+td+'><td>'+fmtDate(x.date)+'</td><td>'+lit(num2(x.qty))+'</td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td></tr>'});
+  h+='<tr '+td+' style="font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(inQ)+'</td><td colspan="2"></td></tr></table>'+
+    '<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="flex:1"><tr><th colspan="2">الصرف (لتر)</th></tr><tr><th>الآلية / المعدّة</th><th>الكمية</th></tr>';
+  if(!cons.length)h+='<tr '+td+'><td colspan="2">ما في صرف</td></tr>';
+  cons.forEach(function(x){h+='<tr '+td+'><td>'+esc(x[0])+'</td><td>'+lit(x[1])+'</td></tr>'});
+  h+='<tr '+td+' style="font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(outQ)+'</td></tr></table></div></div>';
+  return[h];
+}
+function fuelPdf(from,to){pdfPages(function(){return fuelPages(from,to)},"fuel_"+from+"_"+to+".pdf","تقرير المازوت")}
 
 function renderSettings(app){
   app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
@@ -381,6 +487,9 @@ function renderSettings(app){
     if(!old.length){openModal('<h3>ما في أيام مسجّلة قبل '+fmtDate(d)+'</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
     old.sort();
     confirmBox("رح ينمسح "+old.length+" يوم (من "+fmtDate(old[0])+" لـ "+fmtDate(old[old.length-1])+"). ما فيك ترجعهم. أكيد؟","امسح",function(){
+      var ins=S.fuel.ins.filter(function(x){return x.date<d});
+      S.fuel.opening=num2(S.fuel.opening)+sumIn(null,d,true)-sumOut(null,d,true);
+      S.fuel.ins=S.fuel.ins.filter(function(x){return x.date>=d});
       old.forEach(function(k){delete S.days[k]});save();
       openModal('<h3>انمسح '+old.length+' يوم ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;
     });
