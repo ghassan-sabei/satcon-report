@@ -418,13 +418,16 @@ function extractPlan(db){
   texts.forEach(function(t){if(/^\d+[A-Za-z]?$/.test(t.t)||!t.t||t.t.length>14||!inb(t.x,t.y))return;out.txt.push([X(t.x),Y(t.y),Math.round(Math.max(t.h,R*0.5)*100)/100,t.t])});
   return{R:R,w:X(maxx),h:Y(miny),piles:piles.map(function(p){return{n:p.n,x:X(p.x),y:Y(p.y)}}),extra:extra.map(function(q){return[X(q[0]),Y(q[1])]}),geo:out,dup:dup};
 }
-function planSvg(pl,done,opts){opts=opts||{};var R=pl.R,g=pl.geo,sw=R*0.06;
-  var o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+pl.w+' '+pl.h+'" '+(opts.attrs||'')+'><rect width="'+pl.w+'" height="'+pl.h+'" fill="#fff"/><g stroke="#9aa3b5" stroke-width="'+sw+'" fill="none">';
+function planDims(pl,rot){return(rot===90||rot===270)?{w:pl.h,h:pl.w}:{w:pl.w,h:pl.h}}
+function planSvg(pl,done,opts){opts=opts||{};var R=pl.R,g=pl.geo,sw=R*0.06,rot=opts.rot||0,D=planDims(pl,rot);
+  var tf=rot===90?'translate('+pl.h+',0) rotate(90)':rot===180?'translate('+pl.w+','+pl.h+') rotate(180)':rot===270?'translate(0,'+pl.w+') rotate(270)':'';
+  function un(x,y){return rot?' transform="rotate('+(-rot)+' '+x+' '+y+')"':''}
+  var o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+D.w+' '+D.h+'" '+(opts.attrs||'')+'><rect width="'+D.w+'" height="'+D.h+'" fill="#fff"/><g transform="'+tf+'"><g stroke="#9aa3b5" stroke-width="'+sw+'" fill="none">';
   g.lines.forEach(function(l){o+='<line x1="'+l[0]+'" y1="'+l[1]+'" x2="'+l[2]+'" y2="'+l[3]+'"/>'});
   g.polys.forEach(function(p){var s2=[];for(var i=0;i<p.length;i+=2)s2.push(p[i]+","+p[i+1]);o+='<polyline points="'+s2.join(" ")+'"/>'});
   g.circ.forEach(function(c){o+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'"/>'});
   o+='</g><g fill="#7a8399" font-family="Arial" text-anchor="start">';
-  g.txt.forEach(function(t){o+='<text x="'+t[0]+'" y="'+t[1]+'" font-size="'+t[2]+'">'+esc(t[3])+'</text>'});
+  g.txt.forEach(function(t){o+='<text x="'+t[0]+'" y="'+t[1]+'" font-size="'+t[2]+'"'+un(t[0],t[1])+'>'+esc(t[3])+'</text>'});
   o+='</g><g stroke="#bbb" stroke-width="'+sw+'" fill="#f1f1f1">';
   pl.extra.forEach(function(q){o+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+R+'"/>'});
   o+='</g><g font-family="Arial" text-anchor="middle" font-weight="700">';
@@ -432,8 +435,8 @@ function planSvg(pl,done,opts){opts=opts||{};var R=pl.R,g=pl.geo,sw=R*0.06;
   pl.piles.forEach(function(p){var d=!!done[p.n],k=R*0.62;
     o+='<g data-pile="'+esc(p.n)+'">'+(opn[p.n]&&!d?'<circle cx="'+p.x+'" cy="'+p.y+'" r="'+(R*1.4)+'" fill="none" stroke="#e08a00" stroke-width="'+(R*0.22)+'"/>':'')+'<circle cx="'+p.x+'" cy="'+p.y+'" r="'+R+'" fill="'+(d?'#1f9d55':'#fff')+'" stroke="'+(d?'#14532d':'#2b3a67')+'" stroke-width="'+(R*0.1)+'"/>'+
       (d?'<path d="M'+(p.x-k)+' '+(p.y-k)+'L'+(p.x+k)+' '+(p.y+k)+'M'+(p.x+k)+' '+(p.y-k)+'L'+(p.x-k)+' '+(p.y+k)+'" stroke="#fff" stroke-width="'+(R*0.16)+'" stroke-linecap="round"/>':
-       '<text x="'+p.x+'" y="'+(p.y+R*0.32)+'" font-size="'+(R*(p.n.length>2?0.78:0.95))+'" fill="#2b3a67">'+esc(p.n)+'</text>')+'</g>'});
-  return o+'</g></svg>';
+       '<text x="'+p.x+'" y="'+(p.y+R*0.32)+'" font-size="'+(R*(p.n.length>2?0.78:0.95))+'" fill="#2b3a67"'+un(p.x,p.y)+'>'+esc(p.n)+'</text>')+'</g>'});
+  return o+'</g></g></svg>';
 }
 function planStats(key){var pl=S.plans[key],dn=donePiles(key),d=0;pl.piles.forEach(function(p){if(dn[p.n])d++});
   return{total:pl.piles.length,done:d,left:pl.piles.length-d,pct:pl.piles.length?Math.round(d*1000/pl.piles.length)/10:0,dn:dn}}
@@ -448,8 +451,8 @@ function renderPlan(app){
   h+='<label class="big pri" style="display:block;text-align:center;border-radius:10px;padding:14px;cursor:pointer;margin-top:6px">📥 استيراد مخطط (DWG)<input type="file" id="plFile" accept=".dwg,.DWG,application/acad,application/octet-stream,*/*" style="display:none"></label></div>';
   if(planSel){var st=planStats(planSel),pl=S.plans[planSel];
     h+='<div class="box"><div class="stat" style="grid-template-columns:repeat(4,1fr)"><div><b>'+st.total+'</b><span>المجموع</span></div><div><b style="color:#1f9d55">'+st.done+'</b><span>منفّذة</span></div><div><b style="color:#d64545">'+st.left+'</b><span>باقية</span></div><div><b>'+st.pct+'%</b><span>الإنجاز</span></div></div></div>'+
-      '<div class="box" style="padding:6px"><div id="plWrap" style="position:relative;width:100%;aspect-ratio:'+pl.w+'/'+pl.h+';min-height:240px;max-height:70vh;overflow:hidden;touch-action:none;background:#fff;border-radius:8px">'+planSvg(pl,st.dn,{open:openToday(planSel),attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
-      '<div style="display:flex;gap:6px;margin-top:6px"><button id="zIn" style="flex:1">＋</button><button id="zOut" style="flex:1">－</button><button id="zFit" style="flex:2">ملء الشاشة</button></div>'+
+      '<div class="box" style="padding:6px"><div id="plWrap" style="position:relative;width:100%;aspect-ratio:'+planDims(pl,pl.rot||0).w+'/'+planDims(pl,pl.rot||0).h+';min-height:240px;max-height:70vh;overflow:hidden;touch-action:none;background:#fff;border-radius:8px">'+planSvg(pl,st.dn,{rot:pl.rot||0,open:openToday(planSel),attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
+      '<div style="display:flex;gap:6px;margin-top:6px"><button id="zIn" style="flex:1">＋</button><button id="zOut" style="flex:1">－</button><button id="zRot" style="flex:1.4">⟳ تدوير</button><button id="zFit" style="flex:2">ملء الشاشة</button></div>'+
       '<p class="hint">حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحها بالتقرير. <span style="color:#e08a00;font-weight:700">◯ برتقالي</span> = مفتوحة اليوم.</p></div>'+
       '<div class="two" style="margin-bottom:8px"><button class="big ok" id="plPrint">🖨 طباعة</button><button class="big pri" id="plPdf">📄 إرسال PDF</button></div>'+
       '<button class="small dan" id="plDel" style="margin-bottom:30px">حذف مخطط '+esc(pl.label)+'</button>';
@@ -460,15 +463,17 @@ function renderPlan(app){
   document.getElementById("plFile").onchange=function(e){var f=e.target.files[0];if(f)importPlan(f)};
   if(!planSel)return;
   var pl=S.plans[planSel],svg=document.getElementById("plSvg"),wrap=document.getElementById("plWrap");
-  var vb=(planVB&&planVB.key===planSel)?planVB:{key:planSel,x:0,y:0,w:pl.w,h:pl.h};planVB=vb;
+  var PD=planDims(pl,pl.rot||0);
+  var vb=(planVB&&planVB.key===planSel&&planVB.rot===(pl.rot||0))?planVB:{key:planSel,rot:pl.rot||0,x:0,y:0,w:PD.w,h:PD.h};planVB=vb;
   function apply(){svg.setAttribute("viewBox",vb.x+" "+vb.y+" "+vb.w+" "+vb.h)}
   apply();
   function zoom(f,cx,cy){var r=svg.getBoundingClientRect();if(cx==null){cx=r.width/2;cy=r.height/2}
     var sc=Math.max(vb.w/r.width,vb.h/r.height),px=vb.x+(cx-(r.width-vb.w/sc)/2)*sc,py=vb.y+(cy-(r.height-vb.h/sc)/2)*sc;
-    var nw=Math.min(pl.w*1.5,Math.max(pl.R*8,vb.w/f)),k=nw/vb.w;vb.x=px-(px-vb.x)*k;vb.y=py-(py-vb.y)*k;vb.w=nw;vb.h=vb.h*k;apply()}
+    var nw=Math.min(PD.w*1.5,Math.max(pl.R*8,vb.w/f)),k=nw/vb.w;vb.x=px-(px-vb.x)*k;vb.y=py-(py-vb.y)*k;vb.w=nw;vb.h=vb.h*k;apply()}
   document.getElementById("zIn").onclick=function(){zoom(1.6)};
   document.getElementById("zOut").onclick=function(){zoom(1/1.6)};
-  document.getElementById("zFit").onclick=function(){vb.x=0;vb.y=0;vb.w=pl.w;vb.h=pl.h;apply()};
+  document.getElementById("zFit").onclick=function(){vb.x=0;vb.y=0;vb.w=PD.w;vb.h=PD.h;apply()};
+  document.getElementById("zRot").onclick=function(){pl.rot=((pl.rot||0)+90)%360;save();var y=window.scrollY;render();scrollTo(0,y)};
   var pts={},last=null,moved=0,pinch=null;
   wrap.addEventListener("pointerdown",function(e){wrap.setPointerCapture(e.pointerId);pts[e.pointerId]={x:e.clientX,y:e.clientY};moved=0;
     var ids=Object.keys(pts);if(ids.length===2){var a=pts[ids[0]],b=pts[ids[1]];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)}}});
