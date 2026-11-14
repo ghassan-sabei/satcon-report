@@ -46,6 +46,7 @@ button:active{transform:scale(.97)}
 .done-list .it{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:14px}
 .done-list .it:last-child{border:0}
 .small{padding:8px 10px;font-size:14px}
+.zb{width:44px;height:44px;padding:0;font-size:22px;font-weight:700;background:rgba(43,58,103,.88);color:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .muted{color:#888;font-size:13px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .modal.show{display:flex}
@@ -451,9 +452,11 @@ function renderPlan(app){
   h+='<label class="big pri" style="display:block;text-align:center;border-radius:10px;padding:14px;cursor:pointer;margin-top:6px">📥 استيراد مخطط (DWG)<input type="file" id="plFile" accept=".dwg,.DWG,application/acad,application/octet-stream,*/*" style="display:none"></label></div>';
   if(planSel){var st=planStats(planSel),pl=S.plans[planSel];
     h+='<div class="box"><div class="stat" style="grid-template-columns:repeat(4,1fr)"><div><b>'+st.total+'</b><span>المجموع</span></div><div><b style="color:#1f9d55">'+st.done+'</b><span>منفّذة</span></div><div><b style="color:#d64545">'+st.left+'</b><span>باقية</span></div><div><b>'+st.pct+'%</b><span>الإنجاز</span></div></div></div>'+
-      '<div class="box" style="padding:6px"><div id="plWrap" style="position:relative;width:100%;aspect-ratio:'+planDims(pl,pl.rot||0).w+'/'+planDims(pl,pl.rot||0).h+';min-height:240px;max-height:70vh;overflow:hidden;touch-action:none;background:#fff;border-radius:8px">'+planSvg(pl,st.dn,{rot:pl.rot||0,open:openToday(planSel),attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
-      '<div style="display:flex;gap:6px;margin-top:6px"><button id="zIn" style="flex:1">＋</button><button id="zOut" style="flex:1">－</button><button id="zRot" style="flex:1.4">⟳ تدوير</button><button id="zFit" style="flex:2">ملء الشاشة</button></div>'+
-      '<p class="hint">حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحها بالتقرير. <span style="color:#e08a00;font-weight:700">◯ برتقالي</span> = مفتوحة اليوم.</p></div>'+
+      '<div class="box" style="padding:6px"><div id="plWrap" style="position:relative;width:100%;aspect-ratio:'+planDims(pl,pl.rot||0).w+'/'+planDims(pl,pl.rot||0).h+';min-height:240px;max-height:60vh;overflow:hidden;touch-action:none;background:#fff;border-radius:8px">'+
+        '<div style="position:absolute;top:6px;left:6px;z-index:5;display:flex;flex-direction:column;gap:6px">'+
+          '<button id="zIn" class="zb">＋</button><button id="zOut" class="zb">－</button><button id="zRot" class="zb">⟳</button><button id="zFit" class="zb">⤢</button></div>'+planSvg(pl,st.dn,{rot:pl.rot||0,open:openToday(planSel),attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
+
+      '<p class="hint">الأزرار على طرف المخطط: ＋ تكبير، － تصغير، ⟳ تدوير، ⤢ المخطط كامل. حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحها بالتقرير. <span style="color:#e08a00;font-weight:700">◯ برتقالي</span> = مفتوحة اليوم.</p></div>'+
       '<div class="two" style="margin-bottom:8px"><button class="big ok" id="plPrint">🖨 طباعة</button><button class="big pri" id="plPdf">📄 إرسال PDF</button></div>'+
       '<button class="small dan" id="plDel" style="margin-bottom:30px">حذف مخطط '+esc(pl.label)+'</button>';
   }
@@ -475,7 +478,7 @@ function renderPlan(app){
   document.getElementById("zFit").onclick=function(){vb.x=0;vb.y=0;vb.w=PD.w;vb.h=PD.h;apply()};
   document.getElementById("zRot").onclick=function(){pl.rot=((pl.rot||0)+90)%360;save();var y=window.scrollY;render();scrollTo(0,y)};
   var pts={},last=null,moved=0,pinch=null;
-  wrap.addEventListener("pointerdown",function(e){wrap.setPointerCapture(e.pointerId);pts[e.pointerId]={x:e.clientX,y:e.clientY};moved=0;
+  wrap.addEventListener("pointerdown",function(e){if(e.target.closest&&e.target.closest(".zb"))return;wrap.setPointerCapture(e.pointerId);pts[e.pointerId]={x:e.clientX,y:e.clientY};moved=0;
     var ids=Object.keys(pts);if(ids.length===2){var a=pts[ids[0]],b=pts[ids[1]];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)}}});
   wrap.addEventListener("pointermove",function(e){if(!pts[e.pointerId])return;var p=pts[e.pointerId],dx=e.clientX-p.x,dy=e.clientY-p.y;
     var ids=Object.keys(pts);
