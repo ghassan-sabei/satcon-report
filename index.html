@@ -366,7 +366,11 @@ function wire(app){
 }
 
 /* ================= site plan (DWG) ================= */
-var planSel=null;
+var planSel=null,planVB=null;
+function openToday(key){var m={};if(normBlock(S.cur.block)!==key)return m;S.cur.piles.forEach(function(p){if(!p.pourEnd)m[String(p.no).trim()]=1});return m}
+function toast(msg){var t=document.getElementById("toast");if(t)t.remove();t=document.createElement("div");t.id="toast";t.textContent=msg;
+  t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f9d55;color:#fff;padding:12px 18px;border-radius:24px;z-index:70;font-size:15px;box-shadow:0 2px 10px rgba(0,0,0,.25)";
+  document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove()},2200)}
 if(!S.plans)S.plans={};
 function donePiles(key){var m={};[S.cur].concat(S.archive).forEach(function(d){if(normBlock(d.block)!==key)return;
   d.piles.forEach(function(p){if(p.pourEnd)m[String(p.no).trim()]=d.date})});return m}
@@ -424,8 +428,9 @@ function planSvg(pl,done,opts){opts=opts||{};var R=pl.R,g=pl.geo,sw=R*0.06;
   o+='</g><g stroke="#bbb" stroke-width="'+sw+'" fill="#f1f1f1">';
   pl.extra.forEach(function(q){o+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+R+'"/>'});
   o+='</g><g font-family="Arial" text-anchor="middle" font-weight="700">';
+  var opn=opts.open||{};
   pl.piles.forEach(function(p){var d=!!done[p.n],k=R*0.62;
-    o+='<g data-pile="'+esc(p.n)+'"><circle cx="'+p.x+'" cy="'+p.y+'" r="'+R+'" fill="'+(d?'#1f9d55':'#fff')+'" stroke="'+(d?'#14532d':'#2b3a67')+'" stroke-width="'+(R*0.1)+'"/>'+
+    o+='<g data-pile="'+esc(p.n)+'">'+(opn[p.n]&&!d?'<circle cx="'+p.x+'" cy="'+p.y+'" r="'+(R*1.4)+'" fill="none" stroke="#e08a00" stroke-width="'+(R*0.22)+'"/>':'')+'<circle cx="'+p.x+'" cy="'+p.y+'" r="'+R+'" fill="'+(d?'#1f9d55':'#fff')+'" stroke="'+(d?'#14532d':'#2b3a67')+'" stroke-width="'+(R*0.1)+'"/>'+
       (d?'<path d="M'+(p.x-k)+' '+(p.y-k)+'L'+(p.x+k)+' '+(p.y+k)+'M'+(p.x+k)+' '+(p.y-k)+'L'+(p.x-k)+' '+(p.y+k)+'" stroke="#fff" stroke-width="'+(R*0.16)+'" stroke-linecap="round"/>':
        '<text x="'+p.x+'" y="'+(p.y+R*0.32)+'" font-size="'+(R*(p.n.length>2?0.78:0.95))+'" fill="#2b3a67">'+esc(p.n)+'</text>')+'</g>'});
   return o+'</g></svg>';
@@ -435,16 +440,17 @@ function planStats(key){var pl=S.plans[key],dn=donePiles(key),d=0;pl.piles.forEa
 function renderPlan(app){
   var keys=Object.keys(S.plans).sort();
   if(!planSel||!S.plans[planSel])planSel=keys[0]||null;
-  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button>';
+  var nOpen=planSel?Object.keys(openToday(planSel)).length:0;
+  var h='<button id="back" class="'+(nOpen?'ok':'')+'" style="margin-bottom:12px">→ رجوع للتقرير'+(nOpen?' ('+nOpen+' مفتوحة)':'')+'</button>';
   h+='<div class="box"><h2>🗺️ مخطط الحفر</h2>';
   if(keys.length){h+='<div class="row"><label>البلوك</label><select id="plSel">';keys.forEach(function(k){h+='<option value="'+esc(k)+'"'+(k===planSel?' selected':'')+'>'+esc(S.plans[k].label)+'</option>'});h+='</select></div>'}
   else h+='<p class="muted">ما في مخططات. استورد ملف DWG للبلوك.</p>';
   h+='<label class="big pri" style="display:block;text-align:center;border-radius:10px;padding:14px;cursor:pointer;margin-top:6px">📥 استيراد مخطط (DWG)<input type="file" id="plFile" accept=".dwg,.DWG,application/acad,application/octet-stream,*/*" style="display:none"></label></div>';
   if(planSel){var st=planStats(planSel),pl=S.plans[planSel];
     h+='<div class="box"><div class="stat" style="grid-template-columns:repeat(4,1fr)"><div><b>'+st.total+'</b><span>المجموع</span></div><div><b style="color:#1f9d55">'+st.done+'</b><span>منفّذة</span></div><div><b style="color:#d64545">'+st.left+'</b><span>باقية</span></div><div><b>'+st.pct+'%</b><span>الإنجاز</span></div></div></div>'+
-      '<div class="box" style="padding:6px"><div id="plWrap" style="position:relative;width:100%;aspect-ratio:'+pl.w+'/'+pl.h+';min-height:240px;max-height:70vh;overflow:hidden;touch-action:none;background:#fff;border-radius:8px">'+planSvg(pl,st.dn,{attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
+      '<div class="box" style="padding:6px"><div id="plWrap" style="position:relative;width:100%;aspect-ratio:'+pl.w+'/'+pl.h+';min-height:240px;max-height:70vh;overflow:hidden;touch-action:none;background:#fff;border-radius:8px">'+planSvg(pl,st.dn,{open:openToday(planSel),attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
       '<div style="display:flex;gap:6px;margin-top:6px"><button id="zIn" style="flex:1">＋</button><button id="zOut" style="flex:1">－</button><button id="zFit" style="flex:2">ملء الشاشة</button></div>'+
-      '<p class="hint">حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحلك ياها بالتقرير.</p></div>'+
+      '<p class="hint">حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحها بالتقرير. <span style="color:#e08a00;font-weight:700">◯ برتقالي</span> = مفتوحة اليوم.</p></div>'+
       '<div class="two" style="margin-bottom:8px"><button class="big ok" id="plPrint">🖨 طباعة</button><button class="big pri" id="plPdf">📄 إرسال PDF</button></div>'+
       '<button class="small dan" id="plDel" style="margin-bottom:30px">حذف مخطط '+esc(pl.label)+'</button>';
   }
@@ -454,14 +460,15 @@ function renderPlan(app){
   document.getElementById("plFile").onchange=function(e){var f=e.target.files[0];if(f)importPlan(f)};
   if(!planSel)return;
   var pl=S.plans[planSel],svg=document.getElementById("plSvg"),wrap=document.getElementById("plWrap");
-  var vb={x:0,y:0,w:pl.w,h:pl.h};
+  var vb=(planVB&&planVB.key===planSel)?planVB:{key:planSel,x:0,y:0,w:pl.w,h:pl.h};planVB=vb;
   function apply(){svg.setAttribute("viewBox",vb.x+" "+vb.y+" "+vb.w+" "+vb.h)}
+  apply();
   function zoom(f,cx,cy){var r=svg.getBoundingClientRect();if(cx==null){cx=r.width/2;cy=r.height/2}
     var sc=Math.max(vb.w/r.width,vb.h/r.height),px=vb.x+(cx-(r.width-vb.w/sc)/2)*sc,py=vb.y+(cy-(r.height-vb.h/sc)/2)*sc;
     var nw=Math.min(pl.w*1.5,Math.max(pl.R*8,vb.w/f)),k=nw/vb.w;vb.x=px-(px-vb.x)*k;vb.y=py-(py-vb.y)*k;vb.w=nw;vb.h=vb.h*k;apply()}
   document.getElementById("zIn").onclick=function(){zoom(1.6)};
   document.getElementById("zOut").onclick=function(){zoom(1/1.6)};
-  document.getElementById("zFit").onclick=function(){vb={x:0,y:0,w:pl.w,h:pl.h};apply()};
+  document.getElementById("zFit").onclick=function(){vb.x=0;vb.y=0;vb.w=pl.w;vb.h=pl.h;apply()};
   var pts={},last=null,moved=0,pinch=null;
   wrap.addEventListener("pointerdown",function(e){wrap.setPointerCapture(e.pointerId);pts[e.pointerId]={x:e.clientX,y:e.clientY};moved=0;
     var ids=Object.keys(pts);if(ids.length===2){var a=pts[ids[0]],b=pts[ids[1]];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)}}});
@@ -483,9 +490,9 @@ function renderPlan(app){
     var cb=normBlock(S.cur.block);
     if(cb!==planSel){openModal('<h3>حفرة '+esc(n)+' — باقية</h3><p class="muted">بلوك اليوم بالتقرير '+(S.cur.block?esc(S.cur.block):'مش محطوط')+'، فما فيني افتحها هون.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
     var open=false;S.cur.piles.forEach(function(p){if(String(p.no).trim()===n&&!p.pourEnd)open=true});
-    openModal('<h3>حفرة '+esc(n)+' — باقية</h3>'+(open?'<p class="muted">مفتوحة اليوم بالتقرير.</p>':'')+'<div class="acts">'+(open?'':'<button id="mS" class="pri">ابدأ هالحفرة بالتقرير</button>')+'<button id="mN">إغلاق</button></div>');
+    openModal('<h3>حفرة '+esc(n)+' — '+(open?'مفتوحة اليوم':'باقية')+'</h3>'+(open?'<p class="muted">هالحفرة مفتوحة بالتقرير، كمّلها من هونيك.</p>':'')+'<div class="acts">'+(open?'':'<button id="mS" class="pri">ابدأ هالحفرة بالتقرير</button>')+'<button id="mN">إغلاق</button></div>');
     document.getElementById("mN").onclick=closeModal;
-    var b=document.getElementById("mS");if(b)b.onclick=function(){window.__addPile(n);closeModal();view="main";render();scrollTo(0,0)};
+    var b=document.getElementById("mS");if(b)b.onclick=function(){(function(){var d=S.cur;d.piles.push({id:d.nextId++,no:n,drillStart:null,drillEnd:null,concOrder:null,concArrive:null,pourStart:null,pourEnd:null,vol:"",note:""});if(!d.workStart)d.workStart=Date.now();save()})();closeModal();var y=window.scrollY;render();scrollTo(0,y);toast("✓ انفتحت حفرة "+n+" بالتقرير")};
   }
 }
 function importPlan(file){
