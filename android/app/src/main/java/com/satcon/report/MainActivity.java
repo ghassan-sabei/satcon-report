@@ -196,9 +196,10 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 PrintManager pm = (PrintManager) getSystemService(Context.PRINT_SERVICE);
                 PrintDocumentAdapter ad = web.createPrintDocumentAdapter(title);
-                PrintAttributes.MediaSize ms = "A3".equals(size) ? PrintAttributes.MediaSize.ISO_A3 : PrintAttributes.MediaSize.ISO_A4;
+                PrintAttributes.MediaSize ms = size.startsWith("A3") ? PrintAttributes.MediaSize.ISO_A3 : PrintAttributes.MediaSize.ISO_A4;
+                ms = size.endsWith("P") ? ms.asPortrait() : ms.asLandscape();
                 PrintAttributes attrs = new PrintAttributes.Builder()
-                        .setMediaSize(ms.asLandscape())
+                        .setMediaSize(ms)
                         .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
                         .setMinMargins(PrintAttributes.Margins.NO_MARGINS).build();
                 pm.print(title, ad, attrs);

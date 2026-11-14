@@ -506,7 +506,7 @@ function renderPlan(app){
   wrap.addEventListener("wheel",function(e){e.preventDefault();var r=svg.getBoundingClientRect();zoom(e.deltaY<0?1.25:0.8,e.clientX-r.left,e.clientY-r.top)},{passive:false});
   var a3=function(){return S.settings.planPaper!=="A4"};
   document.getElementById("plPaper").onchange=function(e){S.settings.planPaper=e.target.value;save()};
-  document.getElementById("plPrint").onclick=function(){printPages(planPages(planSel,a3()),"plan_"+planSel,function(){planPdf(planSel,a3())},a3())};
+  document.getElementById("plPrint").onclick=function(){printPages(planPages(planSel,a3()),"plan_"+planSel,function(){planPdf(planSel,a3())},a3(),true)};
   document.getElementById("plPdf").onclick=function(){planPdf(planSel,a3())};
   document.getElementById("plDel").onclick=function(){confirmBox("حذف مخطط "+pl.label+"؟ تقاريرك ما بتتأثر.","حذف",function(){delete S.plans[planSel];planSel=null;save();render()})};
   function pileTap(n){var st=planStats(planSel),dn=st.dn;
@@ -751,7 +751,14 @@ var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
 var A3_W=1527,A3_H=1062;
 var pageStyle=document.createElement("style");document.head.appendChild(pageStyle);
 pageStyle.textContent=NATIVE?"@page{size:A4 landscape;margin:8mm}":"";
-function printPages(pages,title,fallback,a3){
+function printPages(pages,title,fallback,a3,rotate){
+  if(NATIVE&&rotate&&window.AndroidBridge.printSized){
+    /* landscape sheet rotated onto a portrait page: comes out right whatever the printer decides */
+    pageStyle.textContent="@page{size:"+(a3?"A3":"A4")+" portrait;margin:8mm}";
+    document.getElementById("printArea").innerHTML=pages.map(function(x){return'<div class="pp'+(a3?' a3':'')+'">'+x+'</div>'}).join("");
+    setTimeout(function(){window.AndroidBridge.printSized(title,a3?"A3P":"A4P")},150);
+    return;
+  }
   if(NATIVE){
     pageStyle.textContent="@page{size:"+(a3?"A3":"A4")+" landscape;margin:8mm}";
     document.getElementById("printArea").innerHTML=pages.join("");
