@@ -113,7 +113,9 @@ if(!S.fuel){S.fuel={opening:0,ins:[],nextIn:1,equip:[],nextEq:1}}
 function sigKey(r){return JSON.stringify([r.in||null,r.out||null,r.driver||"",r.diesel||""])}
 /* a signature only stays valid for the exact numbers that were signed */
 function eqSigKey(r){return JSON.stringify([r.diesel||""])}
-function dropStaleSigs(){for(var d in S.days){var mr=S.days[d].mrecs,er=S.days[d].erecs,k,r;
+function inSigKey(x){return JSON.stringify([x.qty,x.supplier||"",x.receipt||"",x.date])}
+function dropStaleSigs(){if(S.fuel)S.fuel.ins.forEach(function(x){if(x.sig&&x.sigFor!==inSigKey(x)){delete x.sig;delete x.sigFor}});
+  for(var d in S.days){var mr=S.days[d].mrecs,er=S.days[d].erecs,k,r;
   if(mr)for(k in mr){r=mr[k];if(r.sig&&r.sigFor!==sigKey(r)){delete r.sig;delete r.sigFor}}
   if(er)for(k in er){r=er[k];if(r.sig&&r.sigFor!==eqSigKey(r)){delete r.sig;delete r.sigFor}}}}
 function save(){dropStaleSigs();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -402,7 +404,7 @@ function renderFuel(app){
     '<div class="row"><label>رقم الوصل</label><input type="text" id="fR"></div>'+
     '<button class="big pri" id="fAdd">+ تسجيل الوارد</button>';
   if(ins.length){h+='<div class="done-list" style="margin-top:8px">';ins.forEach(function(x){
-    h+='<div class="it"><span><b>'+lit(num2(x.qty))+' لتر</b><br><span class="muted">'+esc(x.supplier||"")+(x.receipt?' · وصل '+esc(x.receipt):'')+'</span></span><button class="small dan" data-fdel="'+x.id+'">حذف</button></div>'});h+='</div>'}
+    h+='<div class="it"><span><b>'+lit(num2(x.qty))+' لتر</b><br><span class="muted">'+esc(x.supplier||"")+(x.receipt?' · وصل '+esc(x.receipt):'')+'</span></span><span style="display:flex;gap:6px;align-items:center"><button class="tbtn '+(x.sig?'ok':'')+'" data-insig="'+x.id+'" style="min-width:70px">'+(x.sig?sigSvg(x.sig,26):'✍️')+'<small>'+(x.sig?'موقّع':'توقيع')+'</small></button><button class="small dan" data-fdel="'+x.id+'">حذف</button></span></div>'});h+='</div>'}
   h+='</div>';
   /* consumption of the day */
   h+='<div class="box"><h2>الصرف</h2>';
@@ -435,6 +437,13 @@ function renderFuel(app){
   document.getElementById("fdPdf").onclick=function(){fuelDayPdf(curDate)};
   document.getElementById("fAdd").onclick=function(){var q=num2(document.getElementById("fQ").value);if(!q){document.getElementById("fQ").style.borderColor="#d64545";return}
     S.fuel.ins.push({id:S.fuel.nextIn++,date:curDate,qty:q,supplier:document.getElementById("fS").value.trim(),receipt:document.getElementById("fR").value.trim()});save();render()};
+  app.querySelectorAll("[data-insig]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-insig"),x=null;S.fuel.ins.forEach(function(y){if(y.id===id)x=y});
+    function pad(){sigPad("توقيع المورّد"+(x.supplier?" - "+x.supplier:"")+" ("+lit(num2(x.qty))+" لتر)",function(sig){x.sig=sig;x.sigFor=inSigKey(x);save();render()})}
+    if(x.sig){openModal('<h3>توقيع المورّد</h3><div style="text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px">'+sigSvg(x.sig,120)+'</div><div class="acts"><button id="mS" class="pri">توقيع جديد</button><button id="mD" class="dan">مسح التوقيع</button><button id="mN">إغلاق</button></div>');
+      document.getElementById("mS").onclick=function(){closeModal();pad()};
+      document.getElementById("mD").onclick=function(){delete x.sig;delete x.sigFor;closeModal();save();render()};
+      document.getElementById("mN").onclick=closeModal;return}
+    pad()}});
   app.querySelectorAll("[data-fdel]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-fdel");confirmBox("حذف هالوارد؟","حذف",function(){S.fuel.ins=S.fuel.ins.filter(function(x){return x.id!==id});save();render()})}});
   app.querySelectorAll("[data-eq]").forEach(function(i){i.onchange=function(){var r=erec(curDate,+i.getAttribute("data-eq"),true);r.diesel=i.value.trim();save();render()}});
   app.querySelectorAll("[data-eqsig]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-eqsig"),q=eqById(id),r=erec(curDate,id,true);
@@ -493,9 +502,9 @@ function fuelDayPages(date){
   var n=ins.length+rows.length,rh=Math.max(26,Math.min(44,Math.floor((PAGE_H-260)/Math.max(n+3,8))));
   var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+headTable("مازوت يومي","Daily Diesel",dayName(date)+' &nbsp; '+fmtDate(date))+
     '<table dir="rtl" style="margin-top:-1px"><tr style="height:34px"><td class="blue">رقم البلوك</td><td><b>'+esc(blockFor(date))+'</b></td><td class="blue">رصيد أول اليوم</td><td><b>'+lit(open)+'</b></td><td class="blue">الوارد</td><td><b>'+lit(inQ)+'</b></td><td class="blue">الصرف</td><td><b>'+lit(outQ)+'</b></td><td class="blue">الباقي آخر اليوم</td><td><b>'+lit(close)+'</b></td></tr></table>'+
-    '<table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="4">الوارد (لتر)</th></tr><tr><th style="width:8%">العدد</th><th>الكمية</th><th>المورّد / السائق</th><th>رقم الوصل</th></tr>';
-  if(!ins.length)h+='<tr style="height:'+rh+'px"><td colspan="4">ما في وارد اليوم</td></tr>';
-  ins.forEach(function(x,i){h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+lit(num2(x.qty))+'</b></td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td></tr>'});
+    '<table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="5">الوارد (لتر)</th></tr><tr><th style="width:8%">العدد</th><th style="width:12%">الكمية</th><th style="width:20%">المورّد / السائق</th><th style="width:20%">رقم الوصل</th><th>توقيع المورّد</th></tr>';
+  if(!ins.length)h+='<tr style="height:'+rh+'px"><td colspan="5">ما في وارد اليوم</td></tr>';
+  ins.forEach(function(x,i){h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+lit(num2(x.qty))+'</b></td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
   h+='</table><table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="6">الصرف (لتر)</th></tr><tr><th style="width:8%">العدد</th><th style="width:20%">الآلية / المعدّة</th><th style="width:10%">النوع</th><th style="width:20%">اسم السائق</th><th style="width:12%">الكمية</th><th>التوقيع</th></tr>';
   rows.forEach(function(x,i){h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+esc(x.n)+'</b></td><td>'+x.t+'</td><td>'+esc(x.who)+'</td><td><b>'+(num2(x.q)?lit(num2(x.q)):'')+'</b></td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
   h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="4">المجموع</td><td>'+lit(outQ)+'</td><td></td></tr></table></div>';
