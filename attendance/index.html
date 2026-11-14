@@ -112,7 +112,10 @@ if(!S.machines){S.machines=[{id:1,name:"بوكلن",active:true},{id:2,name:"ك�
 if(!S.fuel){S.fuel={opening:0,ins:[],nextIn:1,equip:[],nextEq:1}}
 function sigKey(r){return JSON.stringify([r.in||null,r.out||null,r.driver||"",r.diesel||""])}
 /* a signature only stays valid for the exact numbers that were signed */
-function dropStaleSigs(){for(var d in S.days){var mr=S.days[d].mrecs;if(!mr)continue;for(var k in mr){var r=mr[k];if(r.sig&&r.sigFor!==sigKey(r)){delete r.sig;delete r.sigFor}}}}
+function eqSigKey(r){return JSON.stringify([r.diesel||""])}
+function dropStaleSigs(){for(var d in S.days){var mr=S.days[d].mrecs,er=S.days[d].erecs,k,r;
+  if(mr)for(k in mr){r=mr[k];if(r.sig&&r.sigFor!==sigKey(r)){delete r.sig;delete r.sigFor}}
+  if(er)for(k in er){r=er[k];if(r.sig&&r.sigFor!==eqSigKey(r)){delete r.sig;delete r.sigFor}}}}
 function save(){dropStaleSigs();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function sigSvg(sig,h){if(!sig)return"";var W=sig.w,H=sig.h,o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" style="height:'+h+'px;width:auto;max-width:100%;vertical-align:middle">';
   sig.s.forEach(function(st){var pts=[];for(var i=0;i<st.length;i+=2)pts.push(st[i]+","+st[i+1]);
@@ -403,9 +406,10 @@ function renderFuel(app){
   /* consumption of the day */
   h+='<div class="box"><h2>الصرف</h2>';
   dayMachines(curDate).forEach(function(m){var r=mrec(curDate,m.id,false);
-    h+='<div class="wk"><div class="nm"><b>'+esc(m.name)+'</b><span>من شاشة الدوام</span></div><b>'+(r&&r.diesel?lit(num2(r.diesel))+' لتر':'—')+'</b></div>'});
+    h+='<div class="wk"><div class="nm"><b>'+esc(m.name)+'</b><span>من شاشة الدوام</span></div><b>'+(r&&r.diesel?lit(num2(r.diesel))+' لتر':'—')+'</b>'+(r&&r.sig?'<span style="margin-right:8px">'+sigSvg(r.sig,26)+'</span>':'')+'</div>'});
   S.fuel.equip.filter(function(q){return q.active!==false||(erec(curDate,q.id,false)||{}).diesel}).forEach(function(q){var r=erec(curDate,q.id,false)||{};
-    h+='<div class="wk"><div class="nm"><b>'+esc(q.name)+'</b><span>معدّة</span></div><input type="number" inputmode="decimal" step="any" data-eq="'+q.id+'" value="'+esc(r.diesel||"")+'" placeholder="لتر" style="max-width:110px"></div>'});
+    h+='<div class="wk"><div class="nm"><b>'+esc(q.name)+'</b><span>معدّة</span></div><input type="number" inputmode="decimal" step="any" data-eq="'+q.id+'" value="'+esc(r.diesel||"")+'" placeholder="لتر" style="max-width:100px">'+
+      '<button class="tbtn '+(r.sig?'ok':'')+'" data-eqsig="'+q.id+'" style="min-width:70px">'+(r.sig?sigSvg(r.sig,26):'✍️')+'<small>'+(r.sig?'موقّع':'توقيع')+'</small></button></div>'});
   if(!S.fuel.equip.length)h+='<p class="muted">ضيف المعدات من تحت (مولدة، كمبريسر...)</p>';
   h+='</div>';
   /* equipment management */
@@ -430,6 +434,14 @@ function renderFuel(app){
     S.fuel.ins.push({id:S.fuel.nextIn++,date:curDate,qty:q,supplier:document.getElementById("fS").value.trim(),receipt:document.getElementById("fR").value.trim()});save();render()};
   app.querySelectorAll("[data-fdel]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-fdel");confirmBox("حذف هالوارد؟","حذف",function(){S.fuel.ins=S.fuel.ins.filter(function(x){return x.id!==id});save();render()})}});
   app.querySelectorAll("[data-eq]").forEach(function(i){i.onchange=function(){var r=erec(curDate,+i.getAttribute("data-eq"),true);r.diesel=i.value.trim();save();render()}});
+  app.querySelectorAll("[data-eqsig]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-eqsig"),q=eqById(id),r=erec(curDate,id,true);
+    if(!num2(r.diesel)){openModal('<h3>اكتب كمية المازوت أول، وبعدين بيوقّع المستلم</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+    function pad(){sigPad("توقيع استلام مازوت - "+q.name+" ("+lit(num2(r.diesel))+" لتر)",function(sig){r.sig=sig;r.sigFor=eqSigKey(r);save();render()})}
+    if(r.sig){openModal('<h3>توقيع '+esc(q.name)+'</h3><div style="text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px">'+sigSvg(r.sig,120)+'</div><div class="acts"><button id="mS" class="pri">توقيع جديد</button><button id="mD" class="dan">مسح التوقيع</button><button id="mN">إغلاق</button></div>');
+      document.getElementById("mS").onclick=function(){closeModal();pad()};
+      document.getElementById("mD").onclick=function(){delete r.sig;delete r.sigFor;closeModal();save();render()};
+      document.getElementById("mN").onclick=closeModal;return}
+    pad()}});
   document.getElementById("eqAdd").onclick=function(){var n=document.getElementById("eqNew").value.trim();if(!n)return;S.fuel.equip.push({id:S.fuel.nextEq++,name:n,active:true});save();render()};
   app.querySelectorAll("[data-eqact]").forEach(function(b){b.onclick=function(){var q=eqById(+b.getAttribute("data-eqact"));q.active=q.active===false;save();render()}});
   app.querySelectorAll("[data-eqed]").forEach(function(b){b.onclick=function(){var q=eqById(+b.getAttribute("data-eqed"));
