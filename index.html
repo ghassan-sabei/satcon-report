@@ -122,6 +122,8 @@ function load(){
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 if(!S.cur){S.cur=blankDay();save();}
+/* a current day that has nothing recorded yet always takes today's date */
+(function(){var c=S.cur,t=isoDate(new Date());if(c.date!==t&&!c.workStart&&!c.piles.length&&!(c.pauses&&c.pauses.length)&&!c.mortar){c.date=t;save()}})();
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 
 function parseTyped(str){var p=String(str).trim().replace(/[٠-٩]/g,function(c){return"٠١٢٣٤٥٦٧٨٩".indexOf(c)}).split(/[\/\-\.\s]+/).filter(function(x){return x});
@@ -203,6 +205,8 @@ function render(){
 
   if(S.handedOver)h+='<div class="box" style="background:#fff4e0;border:2px solid #e08a00"><b>⚠️ سلّمت البيانات لمشرف تاني بتاريخ '+fmtDate(isoDate(new Date(S.handedOver)))+'</b><p style="margin:6px 0">أي شي بتسجّله هون بعد التسليم ما بيوصله.</p><button class="small" id="hoX">فهمت، خفّي التنبيه</button></div>';
   h+='<div class="box"><h2>معلومات اليوم</h2>'+
+     '<div class="row"><label>تاريخ التقرير</label><input type="date" id="dayDate" value="'+esc(day.date)+'"'+(day.date!==isoDate(new Date())?' style="border-color:#e08a00;background:#fff4e0"':'')+'></div>'+
+     (day.date!==isoDate(new Date())?'<p class="hint" style="color:#a15c00;margin:-4px 0 8px">⚠️ تاريخ التقرير مش تاريخ اليوم. إذا غلط صلّحه من هون.</p>':'')+
      '<div class="row"><label>رقم البلوك</label><input type="text" id="block" value="'+esc(day.block)+'"></div>'+
      '<div class="two">'+
        '<div><button class="big '+(day.workStart?'':'ok')+'" data-id="ws">'+(day.workStart?'بدء العمل ✓':'بدء العمل')+'</button><div class="tm">'+(day.workStart?hm(day.workStart):'—')+'</div></div>'+
@@ -271,9 +275,10 @@ function findPile(id){id=+id;for(var i=0;i<S.cur.piles.length;i++)if(S.cur.piles
 function wire(app){
   var day=S.cur;
   document.getElementById("block").oninput=function(e){day.block=e.target.value;save()};
+  document.getElementById("dayDate").onchange=function(e){if(e.target.value){day.date=e.target.value;save();render()}};
   document.getElementById("mortar").oninput=function(e){day.mortar=e.target.value;save()};
   bindPress(app.querySelector('[data-id=ws]'),function(){
-    if(!day.workStart){day.workStart=Date.now();save();render()}
+    if(!day.workStart){if(!day.piles.length&&day.date!==isoDate(new Date()))day.date=isoDate(new Date());day.workStart=Date.now();save();render()}
   },function(){timeEdit("وقت بدء العمل",day.workStart,function(t){day.workStart=t;save();render()})});
   bindPress(app.querySelector('[data-id=we]'),function(){
     if(!day.workEnd){day.workEnd=Date.now();var ap=activePause(day);if(ap)ap.end=day.workEnd;save();render()}
@@ -539,7 +544,7 @@ function renderArchive(app){
   S.archive.forEach(function(d,i){
     var t=totals(d);
     h+='<div class="done-list" data-row="'+i+'"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' بايل · '+t.v+' m3</span></span>'+
-       '<span><button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
+       '<span><button class="small" data-dt="'+i+'">📅 التاريخ</button> <button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
   });
   h+='</div>';
   app.innerHTML=h;
@@ -550,6 +555,12 @@ function renderArchive(app){
       var ok=!q||(dt?d.date===dt:(normBlock(d.block).indexOf(nb)>=0||fmtDate(d.date).indexOf(q)>=0));el.style.display=ok?"":"none";if(ok)n++});
     document.getElementById("aNone").style.display=n?"none":""};
   app.querySelectorAll("[data-pdf]").forEach(function(b){b.onclick=function(){sharePdf(S.archive[+b.getAttribute("data-pdf")])}});
+  app.querySelectorAll("[data-dt]").forEach(function(b){b.onclick=function(){var d=S.archive[+b.getAttribute("data-dt")];
+    openModal('<h3>تعديل تاريخ اليوم</h3><p class="muted" style="margin-top:0">بلوك '+esc(d.block||"-")+' · '+totals(d).n+' بايل</p><input type="date" id="mDt" value="'+esc(d.date)+'" style="width:100%;font-size:20px">'+
+      '<div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mS").onclick=function(){var v=document.getElementById("mDt").value;if(!v)return;d.date=v;
+      S.archive.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0});closeModal();save();render()};
+    document.getElementById("mN").onclick=closeModal}});
   app.querySelectorAll("[data-pr]").forEach(function(b){b.onclick=function(){doPrint(S.archive[+b.getAttribute("data-pr")])}});
   app.querySelectorAll("[data-da]").forEach(function(b){b.onclick=function(){
     confirmBox("حذف هذا اليوم نهائياً؟","حذف",function(){S.archive.splice(+b.getAttribute("data-da"),1);save();render()});
