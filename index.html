@@ -201,6 +201,7 @@ function render(){
   var done=day.piles.filter(isDone);
   var h="";
 
+  if(S.handedOver)h+='<div class="box" style="background:#fff4e0;border:2px solid #e08a00"><b>⚠️ سلّمت البيانات لمشرف تاني بتاريخ '+fmtDate(isoDate(new Date(S.handedOver)))+'</b><p style="margin:6px 0">أي شي بتسجّله هون بعد التسليم ما بيوصله.</p><button class="small" id="hoX">فهمت، خفّي التنبيه</button></div>';
   h+='<div class="box"><h2>معلومات اليوم</h2>'+
      '<div class="row"><label>رقم البلوك</label><input type="text" id="block" value="'+esc(day.block)+'"></div>'+
      '<div class="two">'+
@@ -261,6 +262,7 @@ function render(){
      '<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>';
 
   app.innerHTML=h;
+  var hx=document.getElementById("hoX");if(hx)hx.onclick=function(){delete S.handedOver;save();render()};
   wire(app);
 }
 
@@ -561,13 +563,88 @@ function renderSettings(app){
    '<div class="row"><label>عمق البايل (m)</label><input type="number" inputmode="decimal" id="sD" value="'+esc(s.depth)+'"></div>'+
    '<div class="row"><label>طول الحديد (m)</label><input type="number" inputmode="decimal" id="sS" value="'+esc(s.steel)+'"></div>'+
    '<div class="row"><label>تاريخ اليوم الحالي</label><input type="date" id="sT" value="'+esc(S.cur.date)+'"></div>'+
-   '</div>';
+   '</div>'+
+   '<div class="box"><h2>تسليم واستلام بين المشرفين</h2><p class="muted" style="margin-top:0">التسليم بيطلّع ملف فيه كل شي: اليوم الحالي، الأيام السابقة، المخططات، والإعدادات. المشرف الجديد بيستلمه وبيكمّل من مكانك.</p>'+
+   '<button class="big pri" id="hoOut" style="margin-bottom:8px">📤 تسليم البيانات</button>'+
+   '<label class="big" style="display:block;text-align:center;border-radius:10px;padding:16px;background:#dfe5f0;cursor:pointer;font-weight:600">📥 استلام البيانات<input type="file" id="hoIn" accept=".json,application/json,*/*" style="display:none"></label>'+
+   '<p class="hint">الملف نفسه بيصلح نسخة احتياطية إذا ضاع الموبايل.</p></div>';
   document.getElementById("back").onclick=function(){view="main";render()};
   document.getElementById("sP").oninput=function(e){s.project=e.target.value;save()};
   document.getElementById("sD").oninput=function(e){s.depth=e.target.value;S.cur.depth=e.target.value;save()};
   document.getElementById("sS").oninput=function(e){s.steel=e.target.value;S.cur.steel=e.target.value;save()};
   document.getElementById("sT").onchange=function(e){if(e.target.value){S.cur.date=e.target.value;save();render()}};
+  document.getElementById("hoOut").onclick=handOver;
+  document.getElementById("hoIn").onchange=function(e){var f=e.target.files[0];if(f)receive(f);e.target.value=""};
 }
+
+/* ---------- handover between supervisors ---------- */
+function utf8b64(str){var bytes=new TextEncoder().encode(str),bin="";for(var i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));return btoa(bin)}
+function shareText(text,name,mime,title){
+  if(NATIVE&&window.AndroidBridge.shareFile){window.AndroidBridge.shareFile(utf8b64(text),name,mime);return}
+  if(NATIVE){window.AndroidBridge.sharePdf(utf8b64(text),name);return}
+  var blob=new Blob([text],{type:mime}),file=new File([blob],name,{type:mime});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:title}).catch(function(){});return}
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+function allDays(st){return[st.cur].concat(st.archive||[]).filter(function(d){return d})}
+function summary(st){var ds=allDays(st),dates=ds.map(function(d){return d.date}).sort(),bl={},open=0;
+  ds.forEach(function(d){var b=normBlock(d.block);if(b)bl[b]=1});(st.cur&&st.cur.piles||[]).forEach(function(p){if(!p.pourEnd)open++});
+  var piles=0;ds.forEach(function(d){d.piles.forEach(function(p){if(p.pourEnd)piles++})});
+  return{days:ds.filter(function(d){return d.piles.length||d.workStart||d.mortar}).length,first:dates[0],last:dates[dates.length-1],blocks:Object.keys(bl),plans:Object.keys(st.plans||{}),open:open,piles:piles}}
+function handOver(){
+  var data={app:"satcon-report",v:1,at:Date.now(),state:S};
+  var name="satcon_handover_"+isoDate(new Date())+".json";
+  shareText(JSON.stringify(data),name,"application/json","تسليم بيانات التقرير");
+  S.handedOver=Date.now();save();
+}
+function receive(file){
+  file.text().then(function(t){var d=JSON.parse(t);if(!d||d.app!=="satcon-report"||!d.state||!d.state.cur)throw 0;return d}).then(function(d){
+    var inc=d.state,sm=summary(inc),mine=summary(S),hasMine=mine.days>0||mine.plans.length>0;
+    var info='<p style="margin:0 0 8px">ملف تسليم بتاريخ <b>'+fmtDate(isoDate(new Date(d.at)))+'</b></p><div class="done-list" style="font-size:14px">'+
+      '<div class="it"><span>أيام مسجّلة</span><b>'+sm.days+(sm.first?' ('+fmtDate(sm.first)+' ← '+fmtDate(sm.last)+')':'')+'</b></div>'+
+      '<div class="it"><span>بايلات منفّذة</span><b>'+sm.piles+'</b></div>'+
+      '<div class="it"><span>البلوكات</span><b>'+esc(sm.blocks.join("، ")||"—")+'</b></div>'+
+      '<div class="it"><span>المخططات</span><b>'+esc(sm.plans.join("، ")||"—")+'</b></div>'+
+      '<div class="it"><span>حفر مفتوحة باليوم الحالي</span><b>'+sm.open+'</b></div></div>';
+    if(!hasMine){
+      openModal('<h3>📥 استلام البيانات</h3>'+info+'<div class="acts"><button id="mS" class="ok">استلام</button><button id="mN">إلغاء</button></div>');
+      document.getElementById("mS").onclick=function(){applyReplace(inc)};
+    }else{
+      openModal('<h3>📥 استلام البيانات</h3>'+info+'<p class="hint" style="color:#a15c00">عندك بيانات على هالموبايل ('+mine.days+' يوم). اختار:</p>'+
+        '<div class="acts" style="flex-direction:column"><button id="mR" class="dan">استبدال: امسح اللي عندي وخد الملف</button><button id="mM" class="pri">دمج: ضيف الملف على اللي عندي</button><button id="mN">إلغاء</button></div>');
+      document.getElementById("mR").onclick=function(){confirmBox("رح تنمسح كل بياناتك على هالموبايل وتتبدّل ببيانات الملف. أكيد؟","استبدال",function(){applyReplace(inc)})};
+      document.getElementById("mM").onclick=function(){applyMerge(inc)};
+    }
+    document.getElementById("mN").onclick=closeModal;
+  }).catch(function(){openModal('<h3>الملف مش ملف تسليم</h3><p>اختار الملف اللي بعتلك ياه المشرف (بيبلّش اسمه بـ satcon_handover).</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal});
+}
+function done(msg){save();view="main";render();scrollTo(0,0);openModal('<h3>'+msg+' ✓</h3><p>كمّل الشغل من هون.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal}
+function applyReplace(inc){
+  S.settings=inc.settings||S.settings;S.cur=inc.cur;S.archive=inc.archive||[];S.plans=inc.plans||{};delete S.handedOver;
+  done("تم الاستلام")}
+function stepCount(p){var n=0;STEPS.forEach(function(st){if(p[st.k])n++});if(p.vol!==""&&p.vol!=null)n++;return n}
+function mergeDay(a,b){ /* b = incoming wins on ties */
+  var m=JSON.parse(JSON.stringify(a));
+  ["workStart","workEnd"].forEach(function(k){if(b[k]&&!m[k])m[k]=b[k];else if(b[k]&&m[k])m[k]=k==="workStart"?Math.min(m[k],b[k]):Math.max(m[k],b[k])});
+  if(!m.mortar&&b.mortar)m.mortar=b.mortar;if(!m.block&&b.block)m.block=b.block;
+  ["depth","steel"].forEach(function(k){if(!m[k]&&b[k])m[k]=b[k]});
+  var ps={};(m.pauses||[]).forEach(function(p){ps[p.start]=p});(b.pauses||[]).forEach(function(p){if(!ps[p.start]||(!ps[p.start].end&&p.end))ps[p.start]=p});
+  m.pauses=Object.keys(ps).sort().map(function(k){return ps[k]});
+  var byNo={},order=[];m.piles.forEach(function(p){var k=String(p.no).trim();byNo[k]=p;order.push(k)});
+  b.piles.forEach(function(p){var k=String(p.no).trim();if(!byNo[k]){byNo[k]=JSON.parse(JSON.stringify(p));order.push(k)}else if(stepCount(p)>=stepCount(byNo[k]))byNo[k]=JSON.parse(JSON.stringify(p))});
+  m.piles=order.map(function(k,i){var p=byNo[k];p.id=i+1;return p});m.nextId=m.piles.length+1;
+  return m}
+function applyMerge(inc){
+  var map={},key=function(d){return d.date+"|"+normBlock(d.block)};
+  allDays(S).forEach(function(d){map[key(d)]=JSON.parse(JSON.stringify(d))});
+  allDays(inc).forEach(function(d){var k=key(d);map[k]=map[k]?mergeDay(map[k],d):JSON.parse(JSON.stringify(d))});
+  var curKey=key(inc.cur.date>=S.cur.date?inc.cur:S.cur);
+  S.cur=map[curKey];delete map[curKey];
+  S.archive=Object.keys(map).map(function(k){return map[k]}).filter(function(d){return d.piles.length||d.workStart||d.mortar||(d.pauses&&d.pauses.length)}).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0});
+  S.plans=S.plans||{};Object.keys(inc.plans||{}).forEach(function(k){S.plans[k]=inc.plans[k]});
+  ["project","depth","steel"].forEach(function(k){if(!S.settings[k]&&inc.settings&&inc.settings[k])S.settings[k]=inc.settings[k]});
+  delete S.handedOver;
+  done("تم الدمج")}
 
 /* ---------- print ---------- */
 function m1(v){var x=parseFloat(v);return isNaN(x)?esc(v):x.toFixed(1)+"m"}

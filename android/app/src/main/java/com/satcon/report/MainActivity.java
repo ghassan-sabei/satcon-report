@@ -189,6 +189,21 @@ public class MainActivity extends Activity {
             });
         }
 
+        @JavascriptInterface public void shareFile(String b64, String name, String mime) {
+            try {
+                File dir = new File(getCacheDir(), "pdf"); dir.mkdirs();
+                File f = new File(dir, name.replaceAll("[^\\w.\\-]", "_"));
+                FileOutputStream fo = new FileOutputStream(f);
+                fo.write(Base64.decode(b64, Base64.DEFAULT)); fo.close();
+                Uri uri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID + ".files", f);
+                Intent i = new Intent(Intent.ACTION_SEND);
+                i.setType(mime);
+                i.putExtra(Intent.EXTRA_STREAM, uri);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                runOnUiThread(() -> startActivity(Intent.createChooser(i, "إرسال الملف")));
+            } catch (Exception ignored) {}
+        }
+
         @JavascriptInterface public void sharePdf(String b64, String name) {
             try {
                 File dir = new File(getCacheDir(), "pdf"); dir.mkdirs();
