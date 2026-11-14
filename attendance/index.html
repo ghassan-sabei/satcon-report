@@ -427,7 +427,7 @@ function renderFuel(app){
     '<div class="two"><button class="big ok" id="fPrint">🖨 طباعة</button><button class="big pri" id="fPdf">📄 إرسال PDF</button></div></div>';
   h+='<div class="box"><h2>الرصيد الافتتاحي</h2><div class="row"><label>المازوت بالخزان قبل أول تسجيل (لتر)</label><input type="number" inputmode="decimal" step="any" id="fOpen" value="'+esc(S.fuel.opening||"")+'"></div>'+
     '<p class="hint">بتحطه مرة وحدة لما تبلّش تستعمل الصفحة.</p></div>'+
-    '<div class="box"><h2>مسح سجل المازوت القديم</h2><p class="muted" style="margin-top:0">بيمسح الوارد وصرف المعدات قبل التاريخ اللي بتختاره. الباقي بالخزان ما بيتغيّر.</p>'+
+    '<div class="box"><h2>مسح سجل المازوت القديم 🔒</h2><p class="muted" style="margin-top:0">بيمسح الوارد وصرف المعدات قبل التاريخ اللي بتختاره. الباقي بالخزان ما بيتغيّر.</p>'+
     '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="fcDate"></div><button class="big dan" id="fcBtn">🗑 مسح سجل المازوت</button>'+
     '<p class="hint">نصيحة: اطبع تقرير المازوت للفترة القديمة قبل ما تمسح.</p></div>';
   app.innerHTML=h;
@@ -470,8 +470,8 @@ function renderFuel(app){
   document.getElementById("fTo").onchange=function(e){if(e.target.value)fTo=e.target.value};
   document.getElementById("fPrint").onclick=function(){printPages(fuelPages(fFrom,fTo),"fuel_"+fFrom+"_"+fTo,function(){fuelPdf(fFrom,fTo)})};
   document.getElementById("fPdf").onclick=function(){fuelPdf(fFrom,fTo)};
-  document.getElementById("fcBtn").onclick=function(){var inp=document.getElementById("fcDate"),d=inp.value;
-    if(!d){inp.style.borderColor="#d64545";return}
+  document.getElementById("fcBtn").onclick=function(){var inp=document.getElementById("fcDate");if(!inp.value){inp.style.borderColor="#d64545";return}requireAdmin(clearFuel)};
+  function clearFuel(){var inp=document.getElementById("fcDate"),d=inp.value;
     var ins=S.fuel.ins.filter(function(x){return x.date<d}),inQ=0,eqQ=0,eqDays=0;ins.forEach(function(x){inQ+=num2(x.qty)});
     for(var k in S.days){if(k<d&&S.days[k].erecs){var any=false;for(var e in S.days[k].erecs){var q=num2(S.days[k].erecs[e].diesel);if(q){eqQ+=q;any=true}}if(any)eqDays++}}
     if(!ins.length&&!eqDays){openModal('<h3>ما في سجل مازوت قبل '+fmtDate(d)+'</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
@@ -479,7 +479,7 @@ function renderFuel(app){
       S.fuel.opening=num2(S.fuel.opening)+inQ-eqQ;
       S.fuel.ins=S.fuel.ins.filter(function(x){return x.date>=d});
       for(var k in S.days){if(k<d&&S.days[k].erecs){delete S.days[k].erecs;var D=S.days[k];if(!Object.keys(D.recs||{}).length&&!(D.mrecs&&Object.keys(D.mrecs).length)&&!D.block)delete S.days[k]}}
-      save();render();openModal('<h3>انمسح سجل المازوت القديم ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal})};
+      save();render();openModal('<h3>انمسح سجل المازوت القديم ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal})}
   document.getElementById("fOpen").onchange=function(e){S.fuel.opening=num2(e.target.value);save();render()};
 }
 function fuelPages(from,to){
@@ -526,17 +526,49 @@ function fuelDayPages(date){
 function fuelDayPdf(date){pdfPages(function(){return fuelDayPages(date)},"fuel_"+date+".pdf","مازوت "+fmtDate(date))}
 function fuelPdf(from,to){pdfPages(function(){return fuelPages(from,to)},"fuel_"+from+"_"+to+".pdf","تقرير المازوت")}
 
+/* ---------- admin password (guards deleting old records) ---------- */
+function pwHash(str){var h1=0xdeadbeef^7,h2=0x41c6ce57^7;str="satcon|"+str;
+  for(var i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return(h2>>>0).toString(16)+(h1>>>0).toString(16)}
+function requireAdmin(then){
+  if(!S.settings.adminPw){openModal('<h3>لازم تحط كلمة سر الإدارة أول</h3><p>من <b>الإعدادات ← كلمة سر الإدارة</b>.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+  openModal('<h3>🔒 كلمة سر الإدارة</h3><input type="password" id="pw1" style="font-size:20px;width:100%"><p class="hint" id="pwE" style="color:#d64545;display:none">كلمة السر غلط</p>'+
+    '<div class="acts"><button id="mS" class="pri">متابعة</button><button id="mN">إلغاء</button></div>');
+  var i=document.getElementById("pw1");setTimeout(function(){i.focus()},50);
+  function ok(){if(pwHash(i.value)!==S.settings.adminPw){document.getElementById("pwE").style.display="";i.value="";return}closeModal();then()}
+  document.getElementById("mS").onclick=ok;i.onkeydown=function(e){if(e.key==="Enter")ok()};
+  document.getElementById("mN").onclick=closeModal;
+}
+function pwEditor(){
+  var has=!!S.settings.adminPw;
+  openModal('<h3>'+(has?'تغيير':'تعيين')+' كلمة سر الإدارة</h3>'+
+    (has?'<div class="row"><label>كلمة السر الحالية</label><input type="password" id="pwO"></div>':'')+
+    '<div class="row"><label>كلمة السر الجديدة</label><input type="password" id="pwN"></div><div class="row"><label>أعد كتابتها</label><input type="password" id="pwN2"></div>'+
+    '<p class="hint" id="pwE" style="color:#d64545;display:none"></p><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+  function err(t){var e=document.getElementById("pwE");e.textContent=t;e.style.display=""}
+  document.getElementById("mS").onclick=function(){
+    if(has&&pwHash(document.getElementById("pwO").value)!==S.settings.adminPw)return err("كلمة السر الحالية غلط");
+    var a=document.getElementById("pwN").value,b=document.getElementById("pwN2").value;
+    if(a.length<4)return err("لازم تكون 4 أحرف أو أرقام على الأقل");if(a!==b)return err("الكلمتين مش متطابقين");
+    S.settings.adminPw=pwHash(a);save();closeModal();render();
+    openModal('<h3>انحفظت كلمة سر الإدارة ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal};
+  document.getElementById("mN").onclick=closeModal;
+}
 function renderSettings(app){
   app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
    '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.settings.project)+'"></div>'+
    '</div>'+
-   '<div class="box"><h2>مسح السجل القديم</h2><p class="muted" style="margin-top:0">بيمسح دوام كل الأيام قبل التاريخ اللي بتختاره. أسماء العمال ما بتنمسح.</p>'+
+   '<div class="box"><h2>🔒 كلمة سر الإدارة</h2><p class="muted" style="margin-top:0">'+(S.settings.adminPw?'محطوطة. مسح السجلات القديمة بيطلبها.':'مش محطوطة لهلق.')+'</p><button class="big" id="pwBtn">'+(S.settings.adminPw?'تغيير كلمة السر':'تعيين كلمة السر')+'</button></div>'+
+   '<div class="box"><h2>مسح السجل القديم 🔒</h2><p class="muted" style="margin-top:0">بيمسح دوام كل الأيام قبل التاريخ اللي بتختاره. أسماء العمال ما بتنمسح.</p>'+
    '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="cDate"></div>'+
    '<button class="big dan" id="cBtn">🗑 مسح السجل</button>'+
    '<p class="hint">نصيحة: اطبع أو ابعت الملخص قبل ما تمسح.</p></div>';
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("sP").oninput=function(e){S.settings.project=e.target.value;save()};
-  document.getElementById("cBtn").onclick=function(){
+  document.getElementById("pwBtn").onclick=pwEditor;
+  document.getElementById("cBtn").onclick=function(){if(!document.getElementById("cDate").value){document.getElementById("cDate").style.borderColor="#d64545";return}requireAdmin(clearAtt)};
+  function clearAtt(){
     var inp=document.getElementById("cDate"),d=inp.value;
     if(!d){inp.style.borderColor="#d64545";return}
     var old=Object.keys(S.days).filter(function(k){return k<d});
@@ -549,7 +581,7 @@ function renderSettings(app){
       old.forEach(function(k){delete S.days[k]});save();
       openModal('<h3>انمسح '+old.length+' يوم ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;
     });
-  };
+  }
 }
 
 /* ---------- monthly summary ---------- */
