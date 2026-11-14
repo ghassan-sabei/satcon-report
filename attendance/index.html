@@ -426,7 +426,10 @@ function renderFuel(app){
     '<div class="row"><label>إلى تاريخ</label><input type="date" id="fTo" value="'+fTo+'"></div>'+
     '<div class="two"><button class="big ok" id="fPrint">🖨 طباعة</button><button class="big pri" id="fPdf">📄 إرسال PDF</button></div></div>';
   h+='<div class="box"><h2>الرصيد الافتتاحي</h2><div class="row"><label>المازوت بالخزان قبل أول تسجيل (لتر)</label><input type="number" inputmode="decimal" step="any" id="fOpen" value="'+esc(S.fuel.opening||"")+'"></div>'+
-    '<p class="hint">بتحطه مرة وحدة لما تبلّش تستعمل الصفحة.</p></div>';
+    '<p class="hint">بتحطه مرة وحدة لما تبلّش تستعمل الصفحة.</p></div>'+
+    '<div class="box"><h2>مسح سجل المازوت القديم</h2><p class="muted" style="margin-top:0">بيمسح الوارد وصرف المعدات قبل التاريخ اللي بتختاره. الباقي بالخزان ما بيتغيّر.</p>'+
+    '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="fcDate"></div><button class="big dan" id="fcBtn">🗑 مسح سجل المازوت</button>'+
+    '<p class="hint">نصيحة: اطبع تقرير المازوت للفترة القديمة قبل ما تمسح.</p></div>';
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
   function setDate(d){curDate=d;render()}
@@ -467,6 +470,16 @@ function renderFuel(app){
   document.getElementById("fTo").onchange=function(e){if(e.target.value)fTo=e.target.value};
   document.getElementById("fPrint").onclick=function(){printPages(fuelPages(fFrom,fTo),"fuel_"+fFrom+"_"+fTo,function(){fuelPdf(fFrom,fTo)})};
   document.getElementById("fPdf").onclick=function(){fuelPdf(fFrom,fTo)};
+  document.getElementById("fcBtn").onclick=function(){var inp=document.getElementById("fcDate"),d=inp.value;
+    if(!d){inp.style.borderColor="#d64545";return}
+    var ins=S.fuel.ins.filter(function(x){return x.date<d}),inQ=0,eqQ=0,eqDays=0;ins.forEach(function(x){inQ+=num2(x.qty)});
+    for(var k in S.days){if(k<d&&S.days[k].erecs){var any=false;for(var e in S.days[k].erecs){var q=num2(S.days[k].erecs[e].diesel);if(q){eqQ+=q;any=true}}if(any)eqDays++}}
+    if(!ins.length&&!eqDays){openModal('<h3>ما في سجل مازوت قبل '+fmtDate(d)+'</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+    confirmBox("رح ينمسح "+ins.length+" وارد ("+lit(inQ)+" لتر) وصرف المعدات بـ "+eqDays+" يوم ("+lit(eqQ)+" لتر) قبل "+fmtDate(d)+". الباقي بالخزان بيضل متل ما هو. أكيد؟","امسح",function(){
+      S.fuel.opening=num2(S.fuel.opening)+inQ-eqQ;
+      S.fuel.ins=S.fuel.ins.filter(function(x){return x.date>=d});
+      for(var k in S.days){if(k<d&&S.days[k].erecs){delete S.days[k].erecs;var D=S.days[k];if(!Object.keys(D.recs||{}).length&&!(D.mrecs&&Object.keys(D.mrecs).length)&&!D.block)delete S.days[k]}}
+      save();render();openModal('<h3>انمسح سجل المازوت القديم ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal})};
   document.getElementById("fOpen").onchange=function(e){S.fuel.opening=num2(e.target.value);save();render()};
 }
 function fuelPages(from,to){
