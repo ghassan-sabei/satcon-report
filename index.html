@@ -426,35 +426,24 @@ function extractPlan(db){
   texts.forEach(function(t){if(/^\d+[A-Za-z]?$/.test(t.t)||!t.t||t.t.length>14||!inb(t.x,t.y))return;out.txt.push([X(t.x),Y(t.y),Math.round(Math.max(t.h,R*0.5)*100)/100,t.t])});
   return{R:R,w:X(maxx),h:Y(miny),piles:piles.map(function(p){return{n:p.n,x:X(p.x),y:Y(p.y)}}),extra:extra.map(function(q){return[X(q[0]),Y(q[1])]}),geo:out,dup:dup};
 }
-function printRadius(pl){if(pl._pr)return pl._pr;var P=pl.piles,ds=[];
-  for(var i=0;i<P.length;i++){var b=1e18;for(var j=0;j<P.length;j++){if(i===j)continue;var d=Math.hypot(P[i].x-P[j].x,P[i].y-P[j].y);if(d>0.01&&d<b)b=d}if(b<1e18)ds.push(b)}
-  ds.sort(function(a,b){return a-b});var p5=ds.length?ds[Math.floor(ds.length*0.05)]:pl.R*3;
-  return Math.max(pl.R,Math.min(pl.R*2.6,p5*0.46))}
 function planDims(pl,rot){return(rot===90||rot===270)?{w:pl.h,h:pl.w}:{w:pl.w,h:pl.h}}
-function planSvg(pl,done,opts){opts=opts||{};var PR=!!opts.print,R0=pl.R,R=PR?printRadius(pl):pl.R,g=pl.geo,sw=PR?R0*0.09:R0*0.06,rot=opts.rot||0,D=planDims(pl,rot);
+function planSvg(pl,done,opts){opts=opts||{};var R=pl.R,g=pl.geo,sw=R*0.06,rot=opts.rot||0,D=planDims(pl,rot);
   var tf=rot===90?'translate('+pl.h+',0) rotate(90)':rot===180?'translate('+pl.w+','+pl.h+') rotate(180)':rot===270?'translate(0,'+pl.w+') rotate(270)':'';
   function un(x,y){return rot?' transform="rotate('+(-rot)+' '+x+' '+y+')"':''}
-  var o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+D.w+' '+D.h+'" '+(opts.attrs||'')+'><rect width="'+D.w+'" height="'+D.h+'" fill="#fff"/><g transform="'+tf+'"><g stroke="'+(PR?'#6b7280':'#9aa3b5')+'" stroke-width="'+sw+'" fill="none">';
+  var o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+D.w+' '+D.h+'" '+(opts.attrs||'')+'><rect width="'+D.w+'" height="'+D.h+'" fill="#fff"/><g transform="'+tf+'"><g stroke="#9aa3b5" stroke-width="'+sw+'" fill="none">';
   g.lines.forEach(function(l){o+='<line x1="'+l[0]+'" y1="'+l[1]+'" x2="'+l[2]+'" y2="'+l[3]+'"/>'});
   g.polys.forEach(function(p){var s2=[];for(var i=0;i<p.length;i+=2)s2.push(p[i]+","+p[i+1]);o+='<polyline points="'+s2.join(" ")+'"/>'});
   g.circ.forEach(function(c){o+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'"/>'});
-  o+='</g><g fill="'+(PR?'#374151':'#7a8399')+'" font-family="Arial" text-anchor="start"'+(PR?' font-weight="700"':'')+'>';
+  o+='</g><g fill="#7a8399" font-family="Arial" text-anchor="start">';
   g.txt.forEach(function(t){o+='<text x="'+t[0]+'" y="'+t[1]+'" font-size="'+t[2]+'"'+un(t[0],t[1])+'>'+esc(t[3])+'</text>'});
   o+='</g><g stroke="#bbb" stroke-width="'+sw+'" fill="#f1f1f1">';
-  pl.extra.forEach(function(q){o+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+R0+'"/>'});
+  pl.extra.forEach(function(q){o+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+R+'"/>'});
   o+='</g><g font-family="Arial" text-anchor="middle" font-weight="700">';
   var opn=opts.open||{};
-  pl.piles.forEach(function(p){var d=!!done[p.n],k=R*0.62,fs=R*(p.n.length>2?0.78:0.95);
-    o+='<g data-pile="'+esc(p.n)+'">'+(opn[p.n]&&!d?'<circle cx="'+p.x+'" cy="'+p.y+'" r="'+(R*1.4)+'" fill="none" stroke="#e08a00" stroke-width="'+(R*0.22)+'"/>':'');
-    if(PR){
-      o+='<circle cx="'+p.x+'" cy="'+p.y+'" r="'+R+'" fill="'+(d?'#15803d':'#fff')+'" stroke="#000" stroke-width="'+(R*0.09)+'"/>'+
-        (d?'<path d="M'+(p.x-k)+' '+(p.y-k)+'L'+(p.x+k)+' '+(p.y+k)+'M'+(p.x+k)+' '+(p.y-k)+'L'+(p.x-k)+' '+(p.y+k)+'" stroke="#0b3d1c" stroke-width="'+(R*0.07)+'" stroke-linecap="round"/>':'')+
-        '<text x="'+p.x+'" y="'+(p.y+fs*0.36)+'" font-size="'+fs+'" fill="'+(d?'#fff':'#000')+'"'+un(p.x,p.y)+'>'+esc(p.n)+'</text></g>';
-    }else{
-      o+='<circle cx="'+p.x+'" cy="'+p.y+'" r="'+R+'" fill="'+(d?'#1f9d55':'#fff')+'" stroke="'+(d?'#14532d':'#2b3a67')+'" stroke-width="'+(R*0.1)+'"/>'+
+  pl.piles.forEach(function(p){var d=!!done[p.n],k=R*0.62;
+    o+='<g data-pile="'+esc(p.n)+'">'+(opn[p.n]&&!d?'<circle cx="'+p.x+'" cy="'+p.y+'" r="'+(R*1.4)+'" fill="none" stroke="#e08a00" stroke-width="'+(R*0.22)+'"/>':'')+'<circle cx="'+p.x+'" cy="'+p.y+'" r="'+R+'" fill="'+(d?'#1f9d55':'#fff')+'" stroke="'+(d?'#14532d':'#2b3a67')+'" stroke-width="'+(R*0.1)+'"/>'+
       (d?'<path d="M'+(p.x-k)+' '+(p.y-k)+'L'+(p.x+k)+' '+(p.y+k)+'M'+(p.x+k)+' '+(p.y-k)+'L'+(p.x-k)+' '+(p.y+k)+'" stroke="#fff" stroke-width="'+(R*0.16)+'" stroke-linecap="round"/>':
-       '<text x="'+p.x+'" y="'+(p.y+R*0.32)+'" font-size="'+fs+'" fill="#2b3a67"'+un(p.x,p.y)+'>'+esc(p.n)+'</text>')+'</g>';
-    }});
+       '<text x="'+p.x+'" y="'+(p.y+R*0.32)+'" font-size="'+(R*(p.n.length>2?0.78:0.95))+'" fill="#2b3a67"'+un(p.x,p.y)+'>'+esc(p.n)+'</text>')+'</g>'});
   return o+'</g></g></svg>';
 }
 function planStats(key){var pl=S.plans[key],dn=donePiles(key),d=0;pl.piles.forEach(function(p){if(dn[p.n])d++});
@@ -543,11 +532,10 @@ function importPlan(file){
 function planPages(key){var pl=S.plans[key],st=planStats(key);
   var head='<table dir="ltr"><tr><td class="logo" style="height:40px;width:22%">SATCON</td><td class="ttl" dir="rtl">'+esc(S.settings.project)+'</td><td style="width:22%"><b>Piling Progress</b><br><span dir="rtl">مخطط الإنجاز</span></td></tr></table>'+
     '<table dir="rtl" style="margin-top:-1px"><tr style="height:30px"><td class="blue">البلوك</td><td><b>'+esc(pl.label)+'</b></td><td class="blue">التاريخ</td><td>'+fmtDate(isoDate(new Date()))+'</td><td class="blue">المجموع</td><td><b>'+st.total+'</b></td><td class="blue">منفّذة</td><td><b>'+st.done+'</b></td><td class="blue">باقية</td><td><b>'+st.left+'</b></td><td class="blue">الإنجاز</td><td><b>'+st.pct+'%</b></td></tr></table>';
-  var availH=PAGE_H-120,availW=PAGE_W,sc=Math.min(availW/pl.w,availH/pl.h);
-  return['<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<div style="text-align:center;margin-top:6px">'+planSvg(pl,st.dn,{print:true,attrs:'width="'+Math.floor(pl.w*sc)+'" height="'+Math.floor(pl.h*sc)+'"'})+'</div>'+
-    '<div style="text-align:center;font-size:12px;margin-top:2px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#15803d;border:1px solid #000;vertical-align:middle"></span> منفّذة &nbsp;&nbsp; <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#fff;border:1px solid #000;vertical-align:middle"></span> باقية</div></div>'];
+  var availH=PAGE_H-110,availW=PAGE_W,sc=Math.min(availW/pl.w,availH/pl.h);
+  return['<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<div style="text-align:center;margin-top:6px">'+planSvg(pl,st.dn,{attrs:'width="'+Math.floor(pl.w*sc)+'" height="'+Math.floor(pl.h*sc)+'"'})+'</div></div>'];
 }
-function planPdf(key){pdfPages(function(){return planPages(key)},"plan_"+key+"_"+isoDate(new Date())+".pdf","مخطط "+S.plans[key].label,true)}
+function planPdf(key){pdfPages(function(){return planPages(key)},"plan_"+key+"_"+isoDate(new Date())+".pdf","مخطط "+S.plans[key].label)}
 
 function renderArchive(app){
   var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الأيام السابقة</h2>'+
@@ -780,7 +768,7 @@ var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.
           "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
 function loadScript(u){return new Promise(function(res,rej){var s=document.createElement("script");s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 function busy(msg){openModal('<h3 style="text-align:center">'+esc(msg)+'</h3>')}
-function pdfPages(makePages,name,title,hq){
+function pdfPages(makePages,name,title){
   busy("جاري تجهيز PDF...");
   var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
   p.then(function(){
@@ -792,11 +780,10 @@ function pdfPages(makePages,name,title,hq){
         var box=document.createElement("div");
         box.style.cssText="position:fixed;left:-20000px;top:0;width:"+PAGE_W+"px;height:"+PAGE_H+"px;background:#fff;overflow:hidden";
         box.innerHTML=html;document.body.appendChild(box);
-        return window.html2canvas(box,{scale:hq?4:2,backgroundColor:"#fff",width:PAGE_W,height:PAGE_H}).then(function(cv){
+        return window.html2canvas(box,{scale:2,backgroundColor:"#fff",width:PAGE_W,height:PAGE_H}).then(function(cv){
           document.body.removeChild(box);
           if(idx>0)pdf.addPage("a4","landscape");
-          if(hq)pdf.addImage(cv.toDataURL("image/png"),"PNG",8,8,281,281*PAGE_H/PAGE_W,undefined,"FAST");
-          else pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",8,8,281,281*PAGE_H/PAGE_W);
+          pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",8,8,281,281*PAGE_H/PAGE_W);
         });
       });
     });
