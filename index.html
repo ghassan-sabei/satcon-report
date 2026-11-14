@@ -78,6 +78,8 @@ button:active{transform:scale(.97)}
   .pp{width:733px;height:1062px;position:relative;overflow:hidden;page-break-after:always;break-after:page}
   .pp:last-child{page-break-after:auto;break-after:auto}
   .pp .sheet.page{position:absolute;top:0;left:0;height:733px;transform-origin:top left;transform:translateX(733px) rotate(90deg)}
+  .pp.a3{width:1062px;height:1527px}
+  .pp.a3 .sheet.page{height:1062px;transform:translateX(1062px) rotate(90deg)}
 }
 .sheet .foot{margin-top:6px;text-align:right;font-size:11px}
 </style>
@@ -464,6 +466,7 @@ function renderPlan(app){
           '<button id="zIn" class="zb">＋</button><button id="zOut" class="zb">－</button><button id="zRot" class="zb">⟳</button><button id="zFit" class="zb">⤢</button></div>'+planSvg(pl,st.dn,{rot:pl.rot||0,open:openToday(planSel),attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
 
       '<p class="hint">الأزرار على طرف المخطط: ＋ تكبير، － تصغير، ⟳ تدوير، ⤢ المخطط كامل. حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحها بالتقرير. <span style="color:#e08a00;font-weight:700">◯ برتقالي</span> = مفتوحة اليوم.</p></div>'+
+      '<div class="row" style="margin-bottom:8px"><label>حجم الورق</label><select id="plPaper"><option value="A3"'+(S.settings.planPaper!=="A4"?' selected':'')+'>A3</option><option value="A4"'+(S.settings.planPaper==="A4"?' selected':'')+'>A4</option></select></div>'+
       '<div class="two" style="margin-bottom:8px"><button class="big ok" id="plPrint">🖨 طباعة</button><button class="big pri" id="plPdf">📄 إرسال PDF</button></div>'+
       '<button class="small dan" id="plDel" style="margin-bottom:30px">حذف مخطط '+esc(pl.label)+'</button>';
   }
@@ -497,8 +500,10 @@ function renderPlan(app){
     if(!wasTap)return;var el=document.elementFromPoint(e.clientX,e.clientY),g=el&&el.closest&&el.closest("[data-pile]");if(g)pileTap(g.getAttribute("data-pile"))});
   wrap.addEventListener("pointercancel",up);
   wrap.addEventListener("wheel",function(e){e.preventDefault();var r=svg.getBoundingClientRect();zoom(e.deltaY<0?1.25:0.8,e.clientX-r.left,e.clientY-r.top)},{passive:false});
-  document.getElementById("plPrint").onclick=function(){printPages(planPages(planSel),"plan_"+planSel,function(){planPdf(planSel)})};
-  document.getElementById("plPdf").onclick=function(){planPdf(planSel)};
+  var a3=function(){return S.settings.planPaper!=="A4"};
+  document.getElementById("plPaper").onchange=function(e){S.settings.planPaper=e.target.value;save()};
+  document.getElementById("plPrint").onclick=function(){printPages(planPages(planSel,a3()),"plan_"+planSel,function(){planPdf(planSel,a3())},a3())};
+  document.getElementById("plPdf").onclick=function(){planPdf(planSel,a3())};
   document.getElementById("plDel").onclick=function(){confirmBox("حذف مخطط "+pl.label+"؟ تقاريرك ما بتتأثر.","حذف",function(){delete S.plans[planSel];planSel=null;save();render()})};
   function pileTap(n){var st=planStats(planSel),dn=st.dn;
     if(dn[n]){openModal('<h3>حفرة '+esc(n)+' ✓</h3><p>منفّذة بتاريخ '+fmtDate(dn[n])+'</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
@@ -529,13 +534,13 @@ function importPlan(file){
       openModal('<h3>ما قدرت اقرا المخطط</h3><p>'+(String(err&&err.message)==="nopiles"?'ما لقيت حفر مرقّمة بالملف. لازم تكون الحفر دواير وجوّا كل وحدة رقمها.':'تأكد إنو الملف DWG صحيح.')+'</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal});
   };
 }
-function planPages(key){var pl=S.plans[key],st=planStats(key);
+function planPages(key,a3){var pl=S.plans[key],st=planStats(key),PW=a3?A3_W:PAGE_W,PH=a3?A3_H:PAGE_H;
   var head='<table dir="ltr"><tr><td class="logo" style="height:40px;width:22%">SATCON</td><td class="ttl" dir="rtl">'+esc(S.settings.project)+'</td><td style="width:22%"><b>Piling Progress</b><br><span dir="rtl">مخطط الإنجاز</span></td></tr></table>'+
     '<table dir="rtl" style="margin-top:-1px"><tr style="height:30px"><td class="blue">البلوك</td><td><b>'+esc(pl.label)+'</b></td><td class="blue">التاريخ</td><td>'+fmtDate(isoDate(new Date()))+'</td><td class="blue">المجموع</td><td><b>'+st.total+'</b></td><td class="blue">منفّذة</td><td><b>'+st.done+'</b></td><td class="blue">باقية</td><td><b>'+st.left+'</b></td><td class="blue">الإنجاز</td><td><b>'+st.pct+'%</b></td></tr></table>';
-  var availH=PAGE_H-110,availW=PAGE_W,sc=Math.min(availW/pl.w,availH/pl.h);
-  return['<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<div style="text-align:center;margin-top:6px">'+planSvg(pl,st.dn,{attrs:'width="'+Math.floor(pl.w*sc)+'" height="'+Math.floor(pl.h*sc)+'"'})+'</div></div>'];
+  var availH=PH-110,availW=PW,sc=Math.min(availW/pl.w,availH/pl.h);
+  return['<div class="sheet page" style="width:'+PW+'px">'+head+'<div style="text-align:center;margin-top:6px">'+planSvg(pl,st.dn,{attrs:'width="'+Math.floor(pl.w*sc)+'" height="'+Math.floor(pl.h*sc)+'"'})+'</div></div>'];
 }
-function planPdf(key){pdfPages(function(){return planPages(key)},"plan_"+key+"_"+isoDate(new Date())+".pdf","مخطط "+S.plans[key].label)}
+function planPdf(key,a3){pdfPages(function(){return planPages(key,a3)},"plan_"+key+"_"+isoDate(new Date())+(a3?"_A3":"")+".pdf","مخطط "+S.plans[key].label,a3)}
 
 function renderArchive(app){
   var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الأيام السابقة</h2>'+
@@ -739,14 +744,18 @@ function sheetPages(day){
   return pages;
 }
 var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
-if(NATIVE){var st=document.createElement("style");st.textContent="@page{size:A4 landscape;margin:8mm}";document.head.appendChild(st)}
-function printPages(pages,title,fallback){
+var A3_W=1527,A3_H=1062;
+var pageStyle=document.createElement("style");document.head.appendChild(pageStyle);
+pageStyle.textContent=NATIVE?"@page{size:A4 landscape;margin:8mm}":"";
+function printPages(pages,title,fallback,a3){
   if(NATIVE){
+    pageStyle.textContent="@page{size:"+(a3?"A3":"A4")+" landscape;margin:8mm}";
     document.getElementById("printArea").innerHTML=pages.join("");
-    setTimeout(function(){window.AndroidBridge.print(title)},150);
+    setTimeout(function(){if(window.AndroidBridge.printSized)window.AndroidBridge.printSized(title,a3?"A3":"A4");else window.AndroidBridge.print(title)},150);
     return;
   }
-  document.getElementById("printArea").innerHTML=pages.map(function(x){return'<div class="pp">'+x+'</div>'}).join("");
+  pageStyle.textContent=a3?"@page{size:A3 portrait;margin:8mm}":"";
+  document.getElementById("printArea").innerHTML=pages.map(function(x){return'<div class="pp'+(a3?' a3':'')+'">'+x+'</div>'}).join("");
   var opened=false;
   function mark(){opened=true}
   window.addEventListener("beforeprint",mark,{once:true});
@@ -768,22 +777,23 @@ var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.
           "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
 function loadScript(u){return new Promise(function(res,rej){var s=document.createElement("script");s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 function busy(msg){openModal('<h3 style="text-align:center">'+esc(msg)+'</h3>')}
-function pdfPages(makePages,name,title){
+function pdfPages(makePages,name,title,a3){
+  var PW=a3?A3_W:PAGE_W,PH=a3?A3_H:PAGE_H,FMT=a3?"a3":"a4",MW=a3?404:281;
   busy("جاري تجهيز PDF...");
   var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
   p.then(function(){
     var pages=makePages();
-    var pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    var pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:FMT});
     var chain=Promise.resolve();
     pages.forEach(function(html,idx){
       chain=chain.then(function(){
         var box=document.createElement("div");
-        box.style.cssText="position:fixed;left:-20000px;top:0;width:"+PAGE_W+"px;height:"+PAGE_H+"px;background:#fff;overflow:hidden";
+        box.style.cssText="position:fixed;left:-20000px;top:0;width:"+PW+"px;height:"+PH+"px;background:#fff;overflow:hidden";
         box.innerHTML=html;document.body.appendChild(box);
-        return window.html2canvas(box,{scale:2,backgroundColor:"#fff",width:PAGE_W,height:PAGE_H}).then(function(cv){
+        return window.html2canvas(box,{scale:2,backgroundColor:"#fff",width:PW,height:PH}).then(function(cv){
           document.body.removeChild(box);
-          if(idx>0)pdf.addPage("a4","landscape");
-          pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",8,8,281,281*PAGE_H/PAGE_W);
+          if(idx>0)pdf.addPage(FMT,"landscape");
+          pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",8,8,MW,MW*PH/PW);
         });
       });
     });

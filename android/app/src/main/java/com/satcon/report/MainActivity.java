@@ -189,6 +189,19 @@ public class MainActivity extends Activity {
             });
         }
 
+        @JavascriptInterface public void printSized(String title, String size) {
+            runOnUiThread(() -> {
+                PrintManager pm = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+                PrintDocumentAdapter ad = web.createPrintDocumentAdapter(title);
+                PrintAttributes.MediaSize ms = "A3".equals(size) ? PrintAttributes.MediaSize.ISO_A3 : PrintAttributes.MediaSize.ISO_A4;
+                PrintAttributes attrs = new PrintAttributes.Builder()
+                        .setMediaSize(ms.asLandscape())
+                        .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+                        .setMinMargins(PrintAttributes.Margins.NO_MARGINS).build();
+                pm.print(title, ad, attrs);
+            });
+        }
+
         @JavascriptInterface public String shareFile(String b64, String name, String mime) {
             try {
                 File dir = new File(getCacheDir(), "pdf"); dir.mkdirs();
