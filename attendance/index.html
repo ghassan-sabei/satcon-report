@@ -392,7 +392,8 @@ function renderFuel(app){
     '<div class="box"><h2>⛽ المازوت بالخزان</h2><div class="stat" style="grid-template-columns:1fr"><div><b style="font-size:28px;color:'+(bal<0?'#d64545':'#1f6f4a')+'">'+lit(bal)+'</b><span>لتر باقي حالياً</span></div></div></div>'+
     '<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
     '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===today?' (اليوم)':'')+'</div>'+
-    '<div class="stat" style="margin-top:8px"><div><b>'+lit(dIn)+'</b><span>وارد اليوم</span></div><div><b>'+lit(dOut)+'</b><span>صرف اليوم</span></div><div><b>'+lit(balanceAt(curDate))+'</b><span>الباقي آخر اليوم</span></div></div></div>';
+    '<div class="stat" style="margin-top:8px"><div><b>'+lit(dIn)+'</b><span>وارد اليوم</span></div><div><b>'+lit(dOut)+'</b><span>صرف اليوم</span></div><div><b>'+lit(balanceAt(curDate))+'</b><span>الباقي آخر اليوم</span></div></div>'+
+    '<div class="two" style="margin-top:10px"><button class="ok" id="fdPrint">🖨 ورقة اليوم</button><button class="pri" id="fdPdf">📄 PDF اليوم</button></div></div>';
   /* deliveries */
   var ins=S.fuel.ins.filter(function(x){return x.date===curDate});
   h+='<div class="box"><h2>الوارد (حمولة جديدة)</h2>'+
@@ -430,6 +431,8 @@ function renderFuel(app){
   document.getElementById("dPick").onchange=function(e){if(e.target.value)setDate(e.target.value)};
   document.getElementById("prev").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()-1);setDate(isoDate(d))};
   document.getElementById("next").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()+1);setDate(isoDate(d))};
+  document.getElementById("fdPrint").onclick=function(){printPages(fuelDayPages(curDate),"fuel_"+curDate,function(){fuelDayPdf(curDate)})};
+  document.getElementById("fdPdf").onclick=function(){fuelDayPdf(curDate)};
   document.getElementById("fAdd").onclick=function(){var q=num2(document.getElementById("fQ").value);if(!q){document.getElementById("fQ").style.borderColor="#d64545";return}
     S.fuel.ins.push({id:S.fuel.nextIn++,date:curDate,qty:q,supplier:document.getElementById("fS").value.trim(),receipt:document.getElementById("fR").value.trim()});save();render()};
   app.querySelectorAll("[data-fdel]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-fdel");confirmBox("حذف هالوارد؟","حذف",function(){S.fuel.ins=S.fuel.ins.filter(function(x){return x.id!==id});save();render()})}});
@@ -480,6 +483,25 @@ function fuelPages(from,to){
   h+='<tr '+td+' style="font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(outQ)+'</td></tr></table></div></div>';
   return[h];
 }
+function fuelDayPages(date){
+  var prev=parseIso(date);prev.setDate(prev.getDate()-1);
+  var open=balanceAt(isoDate(prev)),inQ=sumIn(date,date),outQ=sumOut(date,date),close=open+inQ-outQ;
+  var ins=S.fuel.ins.filter(function(x){return x.date===date});
+  var rows=[];
+  dayMachines(date).forEach(function(m){var r=mrec(date,m.id,false)||{};rows.push({n:m.name,t:"آلية",who:r.driver||"",q:r.diesel,sig:r.sig})});
+  S.fuel.equip.forEach(function(q){var r=erec(date,q.id,false)||{};if(q.active===false&&!num2(r.diesel))return;rows.push({n:q.name,t:"معدّة",who:"",q:r.diesel,sig:r.sig})});
+  var n=ins.length+rows.length,rh=Math.max(26,Math.min(44,Math.floor((PAGE_H-260)/Math.max(n+3,8))));
+  var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+headTable("مازوت يومي","Daily Diesel",dayName(date)+' &nbsp; '+fmtDate(date))+
+    '<table dir="rtl" style="margin-top:-1px"><tr style="height:34px"><td class="blue">رقم البلوك</td><td><b>'+esc(blockFor(date))+'</b></td><td class="blue">رصيد أول اليوم</td><td><b>'+lit(open)+'</b></td><td class="blue">الوارد</td><td><b>'+lit(inQ)+'</b></td><td class="blue">الصرف</td><td><b>'+lit(outQ)+'</b></td><td class="blue">الباقي آخر اليوم</td><td><b>'+lit(close)+'</b></td></tr></table>'+
+    '<table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="4">الوارد (لتر)</th></tr><tr><th style="width:8%">العدد</th><th>الكمية</th><th>المورّد / السائق</th><th>رقم الوصل</th></tr>';
+  if(!ins.length)h+='<tr style="height:'+rh+'px"><td colspan="4">ما في وارد اليوم</td></tr>';
+  ins.forEach(function(x,i){h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+lit(num2(x.qty))+'</b></td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td></tr>'});
+  h+='</table><table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="6">الصرف (لتر)</th></tr><tr><th style="width:8%">العدد</th><th style="width:20%">الآلية / المعدّة</th><th style="width:10%">النوع</th><th style="width:20%">اسم السائق</th><th style="width:12%">الكمية</th><th>التوقيع</th></tr>';
+  rows.forEach(function(x,i){h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+esc(x.n)+'</b></td><td>'+x.t+'</td><td>'+esc(x.who)+'</td><td><b>'+(num2(x.q)?lit(num2(x.q)):'')+'</b></td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
+  h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="4">المجموع</td><td>'+lit(outQ)+'</td><td></td></tr></table></div>';
+  return[h];
+}
+function fuelDayPdf(date){pdfPages(function(){return fuelDayPages(date)},"fuel_"+date+".pdf","مازوت "+fmtDate(date))}
 function fuelPdf(from,to){pdfPages(function(){return fuelPages(from,to)},"fuel_"+from+"_"+to+".pdf","تقرير المازوت")}
 
 function renderSettings(app){
