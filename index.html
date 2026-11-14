@@ -580,22 +580,37 @@ function renderSettings(app){
 /* ---------- handover between supervisors ---------- */
 function utf8b64(str){var bytes=new TextEncoder().encode(str),bin="";for(var i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));return btoa(bin)}
 function shareText(text,name,mime,title){
-  if(NATIVE&&window.AndroidBridge.shareFile){window.AndroidBridge.shareFile(utf8b64(text),name,mime);return}
-  if(NATIVE){window.AndroidBridge.sharePdf(utf8b64(text),name);return}
+  if(NATIVE&&window.AndroidBridge.shareFile){var r=window.AndroidBridge.shareFile(utf8b64(text),name,mime);return!r}
+  if(NATIVE){window.AndroidBridge.sharePdf(utf8b64(text),name);return true}
   var blob=new Blob([text],{type:mime}),file=new File([blob],name,{type:mime});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:title}).catch(function(){});return}
-  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:title}).catch(function(){});return true}
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();return true;
 }
+function saveText(text,name,mime){
+  if(NATIVE&&window.AndroidBridge.saveDownload)return window.AndroidBridge.saveDownload(utf8b64(text),name,mime)==="OK";
+  if(!NATIVE){var blob=new Blob([text],{type:mime}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();return true}
+  return false}
 function allDays(st){return[st.cur].concat(st.archive||[]).filter(function(d){return d})}
 function summary(st){var ds=allDays(st),dates=ds.map(function(d){return d.date}).sort(),bl={},open=0;
   ds.forEach(function(d){var b=normBlock(d.block);if(b)bl[b]=1});(st.cur&&st.cur.piles||[]).forEach(function(p){if(!p.pourEnd)open++});
   var piles=0;ds.forEach(function(d){d.piles.forEach(function(p){if(p.pourEnd)piles++})});
   return{days:ds.filter(function(d){return d.piles.length||d.workStart||d.mortar}).length,first:dates[0],last:dates[dates.length-1],blocks:Object.keys(bl),plans:Object.keys(st.plans||{}),open:open,piles:piles}}
 function handOver(){
-  var data={app:"satcon-report",v:1,at:Date.now(),state:S};
-  var name="satcon_handover_"+isoDate(new Date())+".json";
-  shareText(JSON.stringify(data),name,"application/json","تسليم بيانات التقرير");
-  S.handedOver=Date.now();save();
+  var text=JSON.stringify({app:"satcon-report",v:1,at:Date.now(),state:S}),name="satcon_handover_"+isoDate(new Date())+".json";
+  var canSave=!NATIVE||!!(window.AndroidBridge&&window.AndroidBridge.saveDownload);
+  openModal('<h3>📤 تسليم البيانات</h3><p class="muted" style="margin-top:0">الملف: '+esc(name)+'</p>'+
+    '<div class="acts" style="flex-direction:column"><button id="hS" class="pri">📤 إرسال (واتساب...)</button>'+(canSave?'<button id="hD">💾 حفظ بمجلد التنزيلات</button>':'')+'<button id="mN">إلغاء</button></div><p class="hint" id="hMsg"></p>');
+  function msg(t,c){var m=document.getElementById("hMsg");m.textContent=t;m.style.color=c||""}
+  function ask(){openModal('<h3>سلّمت البيانات للمشرف الجديد؟</h3><p class="muted">إذا إي، رح يطلعلك تنبيه حتى ما تكمّل تسجيل على هالموبايل.</p>'+
+      '<div class="acts"><button id="hY" class="ok">إي، سلّمت</button><button id="hN">لا، لسا</button></div>');
+    document.getElementById("hY").onclick=function(){S.handedOver=Date.now();save();closeModal();view="main";render();scrollTo(0,0)};
+    document.getElementById("hN").onclick=closeModal}
+  window.__shareFailed=function(){msg("ما انفتحت قائمة الإرسال. جرّب مرة تانية أو احفظ بالتنزيلات.","#d64545")};
+  document.getElementById("hS").onclick=function(){if(shareText(text,name,"application/json","تسليم بيانات التقرير")){msg("إذا بعتّه، ارجع واكبس هون:");
+      var b=document.getElementById("hS");b.textContent="✓ بعتّه";b.className="ok";b.onclick=ask}else msg("ما زبط الإرسال. جرّب الحفظ بالتنزيلات.","#d64545")};
+  var d=document.getElementById("hD");if(d)d.onclick=function(){if(saveText(text,name,"application/json")){msg("✓ انحفظ بمجلد التنزيلات (Download) باسم "+name+". فيك تبعته من مدير الملفات.","#1f9d55");
+      var b=document.getElementById("hS");b.textContent="✓ سلّمت الملف";b.className="ok";b.onclick=ask}else msg("ما قدرت احفظ. استعمل الإرسال.","#d64545")};
+  document.getElementById("mN").onclick=closeModal;
 }
 function receive(file){
   file.text().then(function(t){var d=JSON.parse(t);if(!d||d.app!=="satcon-report"||!d.state||!d.state.cur)throw 0;return d}).then(function(d){

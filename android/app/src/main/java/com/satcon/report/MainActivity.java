@@ -189,7 +189,7 @@ public class MainActivity extends Activity {
             });
         }
 
-        @JavascriptInterface public void shareFile(String b64, String name, String mime) {
+        @JavascriptInterface public String shareFile(String b64, String name, String mime) {
             try {
                 File dir = new File(getCacheDir(), "pdf"); dir.mkdirs();
                 File f = new File(dir, name.replaceAll("[^\\w.\\-]", "_"));
@@ -200,8 +200,30 @@ public class MainActivity extends Activity {
                 i.setType(mime);
                 i.putExtra(Intent.EXTRA_STREAM, uri);
                 i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                runOnUiThread(() -> startActivity(Intent.createChooser(i, "إرسال الملف")));
-            } catch (Exception ignored) {}
+                Intent ch = Intent.createChooser(i, "إرسال الملف");
+                ch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                runOnUiThread(() -> { try { startActivity(ch); } catch (Exception e) { web.evaluateJavascript("window.__shareFailed&&window.__shareFailed()", null); } });
+                return "";
+            } catch (Exception e) { return "ERR " + e.getMessage(); }
+        }
+
+        /* save into the public Downloads folder (Android 10+) */
+        @JavascriptInterface public String saveDownload(String b64, String name, String mime) {
+            try {
+                byte[] data = Base64.decode(b64, Base64.DEFAULT);
+                if (android.os.Build.VERSION.SDK_INT >= 29) {
+                    android.content.ContentValues v = new android.content.ContentValues();
+                    v.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, name);
+                    v.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, mime);
+                    v.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS);
+                    Uri u = getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                    if (u == null) return "ERR insert";
+                    java.io.OutputStream o = getContentResolver().openOutputStream(u);
+                    o.write(data); o.close();
+                    return "OK";
+                }
+                return "ERR old";
+            } catch (Exception e) { return "ERR " + e.getMessage(); }
         }
 
         @JavascriptInterface public void sharePdf(String b64, String name) {
