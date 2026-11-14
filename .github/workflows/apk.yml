@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['android/**', 'index.html', 'manifest.json', 'attendance/**', '.github/workflows/apk.yml']
+    paths: ['android/**', 'index.html', 'manifest.json', 'attendance/**', 'dwg/**', '.github/workflows/apk.yml']
 permissions:
   contents: write
 jobs:
@@ -31,6 +31,7 @@ jobs:
             mkdir -p $A/assets/web $A/assets/lib
             cp libs/*.js $A/assets/lib/
             cp $5/index.html $5/manifest.json $5/icon-192.png $5/icon-512.png $A/assets/web/
+            if [ "$5" = "." ]; then cp -r dwg $A/assets/web/; fi
             cp -r android/icons/$6/* $A/res/
             APP_ID=$1 APP_NAME="$2" APP_REMOTE=$3 APP_MARKER=$4 gradle -p android clean assembleRelease --no-daemon 2>&1 | tee -a build.log
             cp android/app/build/outputs/apk/release/app-release.apk $7

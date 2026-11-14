@@ -11,6 +11,8 @@ import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -35,6 +37,19 @@ public class MainActivity extends Activity {
     static final String REMOTE = BuildConfig.REMOTE;
     static final String[] UPDATABLE = {"index.html"};
     WebView web;
+    ValueCallback<Uri[]> fileCb;
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        if (req == 42 && fileCb != null) {
+            Uri[] r = null;
+            if (res == RESULT_OK && data != null && data.getData() != null) r = new Uri[]{data.getData()};
+            fileCb.onReceiveValue(r);
+            fileCb = null;
+            return;
+        }
+        super.onActivityResult(req, res, data);
+    }
 
     @Override
     protected void onCreate(Bundle b) {
@@ -47,9 +62,22 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
         s.setAllowFileAccess(false);
-        s.setAllowContentAccess(false);
+        s.setAllowContentAccess(true);
         s.setCacheMode(WebSettings.LOAD_NO_CACHE);
         web.addJavascriptInterface(new Bridge(), "AndroidBridge");
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
+                if (fileCb != null) fileCb.onReceiveValue(null);
+                fileCb = cb;
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("*/*");
+                try { startActivityForResult(Intent.createChooser(i, "اختار الملف"), 42); }
+                catch (Exception e) { fileCb = null; return false; }
+                return true;
+            }
+        });
         web.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
@@ -90,7 +118,7 @@ public class MainActivity extends Activity {
     static final Map<String, String> MIME = new HashMap<>();
     static {
         MIME.put("html", "text/html"); MIME.put("js", "application/javascript");
-        MIME.put("json", "application/json"); MIME.put("png", "image/png"); MIME.put("css", "text/css");
+        MIME.put("json", "application/json"); MIME.put("png", "image/png"); MIME.put("wasm", "application/wasm"); MIME.put("mjs", "application/javascript"); MIME.put("css", "text/css");
     }
 
     WebResourceResponse serve(Uri u) {

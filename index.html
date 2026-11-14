@@ -192,6 +192,7 @@ function render(){
   var app=document.getElementById("app");
   if(view==="archive"){renderArchive(app);return}
   if(view==="blocks"){renderBlocks(app);return}
+  if(view==="plan"){renderPlan(app);return}
   if(view==="block"){renderBlock(app);return}
   if(view==="settings"){renderSettings(app);return}
   var tt=totals(day),ap=activePause(day);
@@ -254,7 +255,7 @@ function render(){
   h+='</div>';
 
   h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>'+
-     '<button class="big" id="goBlk" style="margin-bottom:8px">📊 ملخص البلوكات</button>'+
+     '<div class="two" style="margin-bottom:8px"><button class="big" id="goBlk">📊 ملخص البلوكات</button><button class="big" id="goPlan">🗺️ المخطط</button></div>'+
      '<div class="two" style="margin-bottom:24px"><button id="goArch">الأيام السابقة</button><button id="goSet">الإعدادات</button></div>'+
      '<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>';
 
@@ -304,12 +305,17 @@ function wire(app){
     var inp=document.getElementById("mP");setTimeout(function(){inp.focus()},50);
     document.getElementById("mS").onclick=function(){
       var v=inp.value.trim();if(!v){inp.style.borderColor="#d64545";return}
-      day.piles.push({id:day.nextId++,no:v,drillStart:null,drillEnd:null,concOrder:null,concArrive:null,pourStart:null,pourEnd:null,vol:"",note:""});
-      if(!day.workStart)day.workStart=Date.now();
-      closeModal();save();render();
+      var warn=pileWarning(v);
+      if(warn&&!inp.dataset.ok){inp.dataset.ok="1";var w=document.getElementById("mW");if(!w){w=document.createElement("p");w.id="mW";w.className="hint";w.style.color="#d64545";inp.after(w)}w.textContent=warn+" — اكبس إضافة مرة تانية إذا متأكد.";return}
+      addPile(v);closeModal();save();render();
     };
     document.getElementById("mN").onclick=closeModal;
   };
+  function addPile(v){
+      day.piles.push({id:day.nextId++,no:v,drillStart:null,drillEnd:null,concOrder:null,concArrive:null,pourStart:null,pourEnd:null,vol:"",note:""});
+      if(!day.workStart)day.workStart=Date.now();
+  }
+  window.__addPile=function(v){addPile(v);save()};
 
   app.querySelectorAll(".step").forEach(function(b){
     var p=findPile(b.getAttribute("data-pile")),k=b.getAttribute("data-step");
@@ -345,6 +351,7 @@ function wire(app){
 
   document.getElementById("print").onclick=function(){doPrint(S.cur)};
   document.getElementById("pdf").onclick=function(){sharePdf(S.cur)};
+  document.getElementById("goPlan").onclick=function(){planSel=normBlock(S.cur.block)||planSel;view="plan";render();scrollTo(0,0)};
   document.getElementById("goBlk").onclick=function(){view="blocks";render();scrollTo(0,0)};
   document.getElementById("goArch").onclick=function(){view="archive";render();scrollTo(0,0)};
   document.getElementById("goSet").onclick=function(){view="settings";render();scrollTo(0,0)};
@@ -357,6 +364,156 @@ function wire(app){
     });
   };
 }
+
+/* ================= site plan (DWG) ================= */
+var planSel=null;
+if(!S.plans)S.plans={};
+function donePiles(key){var m={};[S.cur].concat(S.archive).forEach(function(d){if(normBlock(d.block)!==key)return;
+  d.piles.forEach(function(p){if(p.pourEnd)m[String(p.no).trim()]=d.date})});return m}
+function pileWarning(v){var key=normBlock(S.cur.block),pl=S.plans[key];if(!pl)return"";v=String(v).trim();
+  var ok=false;pl.piles.forEach(function(p){if(p.n===v)ok=true});
+  if(!ok)return"الرقم "+v+" مش موجود بمخطط "+pl.label;
+  var dn=donePiles(key);if(dn[v])return"الحفرة "+v+" منفّذة من قبل ("+fmtDate(dn[v])+")";
+  var open=false;S.cur.piles.forEach(function(p){if(String(p.no).trim()===v&&!p.pourEnd)open=true});
+  if(open)return"الحفرة "+v+" مفتوحة اليوم";return""}
+var dwgLib=null;
+function loadDwg(){if(dwgLib)return Promise.resolve(dwgLib);
+  return import("./dwg/dist/libredwg-web.js").then(function(m){return m.LibreDwg.create("./dwg/wasm/").then(function(l){dwgLib={m:m,l:l};return dwgLib})})}
+function cleanTxt(t){return String(t||"").replace(/\\[A-Za-z][^;\\{}]*;/g,"").replace(/\\P/g," ").replace(/[{}]/g,"").replace(/%%[cC]/g,"Ø").trim()}
+/* turn the DWG database into piles + background drawing */
+function extractPlan(db){
+  var E=db.entities||[],circles=[],texts=[],out={lines:[],polys:[],circ:[],arcs:[],txt:[]};
+  E.forEach(function(e){
+    if(e.type==="CIRCLE")circles.push(e);
+    else if(e.type==="TEXT"&&e.startPoint)texts.push({t:cleanTxt(e.text),x:e.startPoint.x,y:e.startPoint.y,h:e.textHeight||0});
+    else if(e.type==="MTEXT"&&e.insertionPoint)texts.push({t:cleanTxt(e.text),x:e.insertionPoint.x,y:e.insertionPoint.y,h:e.textHeight||0,m:1});
+  });
+  /* a pile = a circle with a number written inside it */
+  var num=texts.filter(function(t){return /^\d+[A-Za-z]?$/.test(t.t)}),pairs=[];
+  num.forEach(function(t){var cx=t.x+t.t.length*t.h*0.35,cy=t.y+t.h/2,best=null,bd=1e18;
+    circles.forEach(function(c){var d=Math.hypot(c.center.x-cx,c.center.y-cy);if(d<c.radius*1.2&&d<bd){bd=d;best=c}});
+    if(best)pairs.push({t:t,c:best})});
+  if(!pairs.length)return null;
+  var rc={};pairs.forEach(function(p){var r=p.c.radius.toFixed(3);rc[r]=(rc[r]||0)+1});
+  var R=+Object.keys(rc).sort(function(a,b){return rc[b]-rc[a]})[0];
+  var used={},piles=[],seen={},dup=[];
+  pairs.forEach(function(p){if(Math.abs(p.c.radius-R)>R*0.02||used[p.c.handle])return;used[p.c.handle]=1;
+    if(seen[p.t.t]){dup.push(p.t.t);return}seen[p.t.t]=1;piles.push({n:p.t.t,x:p.c.center.x,y:p.c.center.y})});
+  var extra=circles.filter(function(c){return Math.abs(c.radius-R)<=R*0.02&&!used[c.handle]}).map(function(c){return[c.center.x,c.center.y]});
+  var minx=1e18,miny=1e18,maxx=-1e18,maxy=-1e18;piles.forEach(function(p){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y)});
+  var m=Math.max(maxx-minx,maxy-miny)*0.12+R*4;minx-=m;miny-=m;maxx+=m;maxy+=m;
+  function inb(x,y){return x>=minx&&x<=maxx&&y>=miny&&y<=maxy}
+  function X(x){return Math.round((x-minx)*100)/100}function Y(y){return Math.round((maxy-y)*100)/100}
+  E.forEach(function(e){
+    if(e.type==="LINE"){var a=e.startPoint,b=e.endPoint;if(inb(a.x,a.y)||inb(b.x,b.y))out.lines.push([X(a.x),Y(a.y),X(b.x),Y(b.y)])}
+    else if(e.type==="LWPOLYLINE"&&e.vertices&&e.vertices.length){var v=e.vertices,any=false,pts=[];v.forEach(function(q){if(inb(q.x,q.y))any=true;pts.push(X(q.x),Y(q.y))});
+      if(any){if(e.flag&1)pts.push(pts[0],pts[1]);out.polys.push(pts)}}
+    else if(e.type==="CIRCLE"&&Math.abs(e.radius-R)>R*0.02&&inb(e.center.x,e.center.y))out.circ.push([X(e.center.x),Y(e.center.y),Math.round(e.radius*100)/100]);
+    else if(e.type==="ARC"&&e.center&&inb(e.center.x,e.center.y))out.arcs.push([X(e.center.x),Y(e.center.y),e.radius,e.startAngle,e.endAngle]);
+  });
+  texts.forEach(function(t){if(/^\d+[A-Za-z]?$/.test(t.t)||!t.t||t.t.length>14||!inb(t.x,t.y))return;out.txt.push([X(t.x),Y(t.y),Math.round(Math.max(t.h,R*0.5)*100)/100,t.t])});
+  return{R:R,w:X(maxx),h:Y(miny),piles:piles.map(function(p){return{n:p.n,x:X(p.x),y:Y(p.y)}}),extra:extra.map(function(q){return[X(q[0]),Y(q[1])]}),geo:out,dup:dup};
+}
+function planSvg(pl,done,opts){opts=opts||{};var R=pl.R,g=pl.geo,sw=R*0.06;
+  var o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+pl.w+' '+pl.h+'" '+(opts.attrs||'')+'><rect width="'+pl.w+'" height="'+pl.h+'" fill="#fff"/><g stroke="#9aa3b5" stroke-width="'+sw+'" fill="none">';
+  g.lines.forEach(function(l){o+='<line x1="'+l[0]+'" y1="'+l[1]+'" x2="'+l[2]+'" y2="'+l[3]+'"/>'});
+  g.polys.forEach(function(p){var s2=[];for(var i=0;i<p.length;i+=2)s2.push(p[i]+","+p[i+1]);o+='<polyline points="'+s2.join(" ")+'"/>'});
+  g.circ.forEach(function(c){o+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'"/>'});
+  o+='</g><g fill="#7a8399" font-family="Arial" text-anchor="start">';
+  g.txt.forEach(function(t){o+='<text x="'+t[0]+'" y="'+t[1]+'" font-size="'+t[2]+'">'+esc(t[3])+'</text>'});
+  o+='</g><g stroke="#bbb" stroke-width="'+sw+'" fill="#f1f1f1">';
+  pl.extra.forEach(function(q){o+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+R+'"/>'});
+  o+='</g><g font-family="Arial" text-anchor="middle" font-weight="700">';
+  pl.piles.forEach(function(p){var d=!!done[p.n],k=R*0.62;
+    o+='<g data-pile="'+esc(p.n)+'"><circle cx="'+p.x+'" cy="'+p.y+'" r="'+R+'" fill="'+(d?'#1f9d55':'#fff')+'" stroke="'+(d?'#14532d':'#2b3a67')+'" stroke-width="'+(R*0.1)+'"/>'+
+      (d?'<path d="M'+(p.x-k)+' '+(p.y-k)+'L'+(p.x+k)+' '+(p.y+k)+'M'+(p.x+k)+' '+(p.y-k)+'L'+(p.x-k)+' '+(p.y+k)+'" stroke="#fff" stroke-width="'+(R*0.16)+'" stroke-linecap="round"/>':
+       '<text x="'+p.x+'" y="'+(p.y+R*0.32)+'" font-size="'+(R*(p.n.length>2?0.78:0.95))+'" fill="#2b3a67">'+esc(p.n)+'</text>')+'</g>'});
+  return o+'</g></svg>';
+}
+function planStats(key){var pl=S.plans[key],dn=donePiles(key),d=0;pl.piles.forEach(function(p){if(dn[p.n])d++});
+  return{total:pl.piles.length,done:d,left:pl.piles.length-d,pct:pl.piles.length?Math.round(d*1000/pl.piles.length)/10:0,dn:dn}}
+function renderPlan(app){
+  var keys=Object.keys(S.plans).sort();
+  if(!planSel||!S.plans[planSel])planSel=keys[0]||null;
+  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button>';
+  h+='<div class="box"><h2>🗺️ مخطط الحفر</h2>';
+  if(keys.length){h+='<div class="row"><label>البلوك</label><select id="plSel">';keys.forEach(function(k){h+='<option value="'+esc(k)+'"'+(k===planSel?' selected':'')+'>'+esc(S.plans[k].label)+'</option>'});h+='</select></div>'}
+  else h+='<p class="muted">ما في مخططات. استورد ملف DWG للبلوك.</p>';
+  h+='<label class="big pri" style="display:block;text-align:center;border-radius:10px;padding:14px;cursor:pointer;margin-top:6px">📥 استيراد مخطط (DWG)<input type="file" id="plFile" accept=".dwg,.DWG,application/acad,application/octet-stream,*/*" style="display:none"></label></div>';
+  if(planSel){var st=planStats(planSel),pl=S.plans[planSel];
+    h+='<div class="box"><div class="stat" style="grid-template-columns:repeat(4,1fr)"><div><b>'+st.total+'</b><span>المجموع</span></div><div><b style="color:#1f9d55">'+st.done+'</b><span>منفّذة</span></div><div><b style="color:#d64545">'+st.left+'</b><span>باقية</span></div><div><b>'+st.pct+'%</b><span>الإنجاز</span></div></div></div>'+
+      '<div class="box" style="padding:6px"><div id="plWrap" style="position:relative;width:100%;aspect-ratio:'+pl.w+'/'+pl.h+';min-height:240px;max-height:70vh;overflow:hidden;touch-action:none;background:#fff;border-radius:8px">'+planSvg(pl,st.dn,{attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
+      '<div style="display:flex;gap:6px;margin-top:6px"><button id="zIn" style="flex:1">＋</button><button id="zOut" style="flex:1">－</button><button id="zFit" style="flex:2">ملء الشاشة</button></div>'+
+      '<p class="hint">حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحلك ياها بالتقرير.</p></div>'+
+      '<div class="two" style="margin-bottom:8px"><button class="big ok" id="plPrint">🖨 طباعة</button><button class="big pri" id="plPdf">📄 إرسال PDF</button></div>'+
+      '<button class="small dan" id="plDel" style="margin-bottom:30px">حذف مخطط '+esc(pl.label)+'</button>';
+  }
+  app.innerHTML=h;
+  document.getElementById("back").onclick=function(){view="main";render()};
+  var sel=document.getElementById("plSel");if(sel)sel.onchange=function(){planSel=sel.value;render()};
+  document.getElementById("plFile").onchange=function(e){var f=e.target.files[0];if(f)importPlan(f)};
+  if(!planSel)return;
+  var pl=S.plans[planSel],svg=document.getElementById("plSvg"),wrap=document.getElementById("plWrap");
+  var vb={x:0,y:0,w:pl.w,h:pl.h};
+  function apply(){svg.setAttribute("viewBox",vb.x+" "+vb.y+" "+vb.w+" "+vb.h)}
+  function zoom(f,cx,cy){var r=svg.getBoundingClientRect();if(cx==null){cx=r.width/2;cy=r.height/2}
+    var sc=Math.max(vb.w/r.width,vb.h/r.height),px=vb.x+(cx-(r.width-vb.w/sc)/2)*sc,py=vb.y+(cy-(r.height-vb.h/sc)/2)*sc;
+    var nw=Math.min(pl.w*1.5,Math.max(pl.R*8,vb.w/f)),k=nw/vb.w;vb.x=px-(px-vb.x)*k;vb.y=py-(py-vb.y)*k;vb.w=nw;vb.h=vb.h*k;apply()}
+  document.getElementById("zIn").onclick=function(){zoom(1.6)};
+  document.getElementById("zOut").onclick=function(){zoom(1/1.6)};
+  document.getElementById("zFit").onclick=function(){vb={x:0,y:0,w:pl.w,h:pl.h};apply()};
+  var pts={},last=null,moved=0,pinch=null;
+  wrap.addEventListener("pointerdown",function(e){wrap.setPointerCapture(e.pointerId);pts[e.pointerId]={x:e.clientX,y:e.clientY};moved=0;
+    var ids=Object.keys(pts);if(ids.length===2){var a=pts[ids[0]],b=pts[ids[1]];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)}}});
+  wrap.addEventListener("pointermove",function(e){if(!pts[e.pointerId])return;var p=pts[e.pointerId],dx=e.clientX-p.x,dy=e.clientY-p.y;
+    var ids=Object.keys(pts);
+    if(ids.length===2&&pinch){pts[e.pointerId]={x:e.clientX,y:e.clientY};var a=pts[ids[0]],b=pts[ids[1]],d=Math.hypot(a.x-b.x,a.y-b.y);
+      var r=svg.getBoundingClientRect();if(d>0){zoom(d/pinch.d,(a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top);pinch.d=d}moved+=10;return}
+    var r=svg.getBoundingClientRect(),sc=Math.max(vb.w/r.width,vb.h/r.height);vb.x-=dx*sc;vb.y-=dy*sc;apply();moved+=Math.abs(dx)+Math.abs(dy);pts[e.pointerId]={x:e.clientX,y:e.clientY}});
+  function up(e){delete pts[e.pointerId];if(Object.keys(pts).length<2)pinch=null}
+  wrap.addEventListener("pointerup",function(e){var wasTap=moved<8&&Object.keys(pts).length===1;up(e);
+    if(!wasTap)return;var el=document.elementFromPoint(e.clientX,e.clientY),g=el&&el.closest&&el.closest("[data-pile]");if(g)pileTap(g.getAttribute("data-pile"))});
+  wrap.addEventListener("pointercancel",up);
+  wrap.addEventListener("wheel",function(e){e.preventDefault();var r=svg.getBoundingClientRect();zoom(e.deltaY<0?1.25:0.8,e.clientX-r.left,e.clientY-r.top)},{passive:false});
+  document.getElementById("plPrint").onclick=function(){printPages(planPages(planSel),"plan_"+planSel,function(){planPdf(planSel)})};
+  document.getElementById("plPdf").onclick=function(){planPdf(planSel)};
+  document.getElementById("plDel").onclick=function(){confirmBox("حذف مخطط "+pl.label+"؟ تقاريرك ما بتتأثر.","حذف",function(){delete S.plans[planSel];planSel=null;save();render()})};
+  function pileTap(n){var st=planStats(planSel),dn=st.dn;
+    if(dn[n]){openModal('<h3>حفرة '+esc(n)+' ✓</h3><p>منفّذة بتاريخ '+fmtDate(dn[n])+'</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+    var cb=normBlock(S.cur.block);
+    if(cb!==planSel){openModal('<h3>حفرة '+esc(n)+' — باقية</h3><p class="muted">بلوك اليوم بالتقرير '+(S.cur.block?esc(S.cur.block):'مش محطوط')+'، فما فيني افتحها هون.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+    var open=false;S.cur.piles.forEach(function(p){if(String(p.no).trim()===n&&!p.pourEnd)open=true});
+    openModal('<h3>حفرة '+esc(n)+' — باقية</h3>'+(open?'<p class="muted">مفتوحة اليوم بالتقرير.</p>':'')+'<div class="acts">'+(open?'':'<button id="mS" class="pri">ابدأ هالحفرة بالتقرير</button>')+'<button id="mN">إغلاق</button></div>');
+    document.getElementById("mN").onclick=closeModal;
+    var b=document.getElementById("mS");if(b)b.onclick=function(){window.__addPile(n);closeModal();view="main";render();scrollTo(0,0)};
+  }
+}
+function importPlan(file){
+  var defName=S.cur.block||"";
+  openModal('<h3>استيراد المخطط</h3><p class="muted" style="margin-top:0">'+esc(file.name)+'</p><div class="row"><label>رقم البلوك</label><input type="text" id="mB" value="'+esc(defName)+'"></div><div class="acts"><button id="mS" class="pri">قراءة الملف</button><button id="mN">إلغاء</button></div>');
+  document.getElementById("mN").onclick=closeModal;
+  document.getElementById("mS").onclick=function(){var label=document.getElementById("mB").value.trim();if(!label){document.getElementById("mB").style.borderColor="#d64545";return}
+    var key=normBlock(label);
+    openModal('<h3 style="text-align:center">جاري قراءة المخطط...</h3><p class="hint" style="text-align:center">أول مرة ممكن ياخد كم ثانية</p>');
+    Promise.all([loadDwg(),file.arrayBuffer()]).then(function(r){
+      var L=r[0],dwg=L.l.dwg_read_data(r[1],L.m.Dwg_File_Type.DWG);if(!dwg)throw new Error("read");
+      var db=L.l.convert(dwg);try{L.l.dwg_free(dwg)}catch(e){}
+      var pl=extractPlan(db);if(!pl||!pl.piles.length)throw new Error("nopiles");
+      pl.label=label;pl.file=file.name;pl.at=Date.now();
+      function doSave(){S.plans[key]=pl;planSel=key;save();render();
+        openModal('<h3>تم ✓</h3><p>بلوك <b>'+esc(label)+'</b>: لقيت <b>'+pl.piles.length+'</b> حفرة'+(pl.extra.length?'، و '+pl.extra.length+' داير بلا رقم (رمادية، مش محسوبة)':'')+(pl.dup.length?'. أرقام مكررة: '+esc(pl.dup.join("، ")):'')+'.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal}
+      if(S.plans[key])confirmBox("في مخطط لبلوك "+label+". بدّل القديم بالجديد؟","بدّل",doSave);else doSave();
+    }).catch(function(err){
+      openModal('<h3>ما قدرت اقرا المخطط</h3><p>'+(String(err&&err.message)==="nopiles"?'ما لقيت حفر مرقّمة بالملف. لازم تكون الحفر دواير وجوّا كل وحدة رقمها.':'تأكد إنو الملف DWG صحيح.')+'</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal});
+  };
+}
+function planPages(key){var pl=S.plans[key],st=planStats(key);
+  var head='<table dir="ltr"><tr><td class="logo" style="height:40px;width:22%">SATCON</td><td class="ttl" dir="rtl">'+esc(S.settings.project)+'</td><td style="width:22%"><b>Piling Progress</b><br><span dir="rtl">مخطط الإنجاز</span></td></tr></table>'+
+    '<table dir="rtl" style="margin-top:-1px"><tr style="height:30px"><td class="blue">البلوك</td><td><b>'+esc(pl.label)+'</b></td><td class="blue">التاريخ</td><td>'+fmtDate(isoDate(new Date()))+'</td><td class="blue">المجموع</td><td><b>'+st.total+'</b></td><td class="blue">منفّذة</td><td><b>'+st.done+'</b></td><td class="blue">باقية</td><td><b>'+st.left+'</b></td><td class="blue">الإنجاز</td><td><b>'+st.pct+'%</b></td></tr></table>';
+  var availH=PAGE_H-110,availW=PAGE_W,sc=Math.min(availW/pl.w,availH/pl.h);
+  return['<div class="sheet page" style="width:'+PAGE_W+'px">'+head+'<div style="text-align:center;margin-top:6px">'+planSvg(pl,st.dn,{attrs:'width="'+Math.floor(pl.w*sc)+'" height="'+Math.floor(pl.h*sc)+'"'})+'</div></div>'];
+}
+function planPdf(key){pdfPages(function(){return planPages(key)},"plan_"+key+"_"+isoDate(new Date())+".pdf","مخطط "+S.plans[key].label)}
 
 function renderArchive(app){
   var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الأيام السابقة</h2>'+
