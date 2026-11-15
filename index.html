@@ -99,6 +99,7 @@ button:active{transform:scale(.97)}
 (function(){
 "use strict";
 var KEY="satcon_daily_v1";
+var APP_VER="2026.11.15-a";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -447,9 +448,9 @@ function planSvg(pl,done,opts){opts=opts||{};
   o+='</g><g font-family="Arial" text-anchor="middle" font-weight="700">';
   var opn=opts.open||{},r=q(R),k=q(R*0.62);
   pl.piles.forEach(function(p){var d=!!done[p.n],x=q(p.x),y=q(p.y);
-    o+='<g data-pile="'+esc(p.n)+'">'+(opn[p.n]&&!d?'<circle cx="'+x+'" cy="'+y+'" r="'+q(R*1.4)+'" fill="none" stroke="#e08a00" stroke-width="'+q(R*0.22)+'"/>':'')+'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+(d?'#1f9d55':'#fff')+'" stroke="'+(d?'#14532d':'#2b3a67')+'" stroke-width="'+q(R*0.1)+'"/>'+
-      (d?'<path d="M'+(x-k)+' '+(y-k)+'L'+(x+k)+' '+(y+k)+'M'+(x+k)+' '+(y-k)+'L'+(x-k)+' '+(y+k)+'" stroke="#fff" stroke-width="'+q(R*0.16)+'" stroke-linecap="round"/>':
-       '<text x="'+x+'" y="'+q(p.y+R*0.32)+'" font-size="'+q(R*(p.n.length>2?0.78:0.95))+'" fill="#2b3a67"'+un(x,y)+'>'+esc(p.n)+'</text>')+'</g>'});
+    o+='<g data-pile="'+esc(p.n)+'">'+(opn[p.n]&&!d?'<circle cx="'+x+'" cy="'+y+'" r="'+q(R*1.4)+'" fill="none" stroke="#e08a00" stroke-width="'+q(R*0.22)+'"/>':'')+(d?'<circle cx="'+x+'" cy="'+y+'" r="'+q(R*0.93)+'" fill="#fff" stroke="#16a34a" stroke-width="'+q(R*0.3)+'"/>':
+         '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="#fff" stroke="#2b3a67" stroke-width="'+q(R*0.1)+'"/>')+
+      '<text x="'+x+'" y="'+q(p.y+R*0.32)+'" font-size="'+q(R*(p.n.length>2?(d?0.66:0.78):(d?0.8:0.95)))+'" fill="'+(d?'#000':'#2b3a67')+'"'+un(x,y)+'>'+esc(p.n)+'</text></g>'});
   return o+'</g></g></svg>';
 }
 function planStats(key){var pl=S.plans[key],dn=donePiles(key),d=0;pl.piles.forEach(function(p){if(dn[p.n])d++});
@@ -469,7 +470,7 @@ function renderPlan(app){
         '<div style="position:absolute;top:6px;left:6px;z-index:5;display:flex;flex-direction:column;gap:6px">'+
           '<button id="zIn" class="zb">＋</button><button id="zOut" class="zb">－</button><button id="zRot" class="zb">⟳</button><button id="zFit" class="zb">⤢</button></div>'+planSvg(pl,st.dn,{rot:pl.rot||0,open:openToday(planSel),attrs:'id="plSvg" style="width:100%;height:100%;display:block"'})+'</div>'+
 
-      '<p class="hint">الأزرار على طرف المخطط: ＋ تكبير، － تصغير، ⟳ تدوير، ⤢ المخطط كامل. حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحها بالتقرير. <span style="color:#e08a00;font-weight:700">◯ برتقالي</span> = مفتوحة اليوم.</p></div>'+
+      '<p class="hint">الأزرار على طرف المخطط: ＋ تكبير، － تصغير، ⟳ تدوير، ⤢ المخطط كامل. حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحها بالتقرير. <span style="color:#16a34a;font-weight:700">◯ أخضر</span> = خالصة · <span style="color:#e08a00;font-weight:700">◯ برتقالي</span> = مفتوحة اليوم.</p></div>'+
       '<div class="row" style="margin-bottom:8px"><label>حجم الورق</label><select id="plPaper"><option value="A3"'+(S.settings.planPaper!=="A4"?' selected':'')+'>A3</option><option value="A4"'+(S.settings.planPaper==="A4"?' selected':'')+'>A4</option></select></div>'+
       '<div class="two" style="margin-bottom:8px"><button class="big ok" id="plPrint">🖨 طباعة</button><button class="big pri" id="plPdf">📄 إرسال PDF</button></div>'+
       '<button class="small dan" id="plDel" style="margin-bottom:30px">حذف مخطط '+esc(pl.label)+'</button>';
@@ -584,6 +585,7 @@ function renderSettings(app){
    '<div class="row"><label>طول الحديد (m)</label><input type="number" inputmode="decimal" id="sS" value="'+esc(s.steel)+'"></div>'+
    '<div class="row"><label>تاريخ اليوم الحالي</label><input type="date" id="sT" value="'+esc(S.cur.date)+'"></div>'+
    '</div>'+
+   '<div class="box"><h2>التحديثات</h2><p class="muted" style="margin-top:0">نسخة الصفحة: <b dir="ltr">'+APP_VER+'</b>. التطبيق بينزّل التحديث لحاله كل ما ينفتح وفي نت.</p><button class="big" id="updBtn">🔄 فحص التحديثات</button></div>'+
    '<div class="box"><h2>تسليم واستلام بين المشرفين</h2><p class="muted" style="margin-top:0">التسليم بيطلّع ملف فيه كل شي: اليوم الحالي، الأيام السابقة، المخططات، والإعدادات. المشرف الجديد بيستلمه وبيكمّل من مكانك.</p>'+
    '<button class="big pri" id="hoOut" style="margin-bottom:8px">📤 تسليم البيانات</button>'+
    '<label class="big" style="display:block;text-align:center;border-radius:10px;padding:16px;background:#dfe5f0;cursor:pointer;font-weight:600">📥 استلام البيانات<input type="file" id="hoIn" accept=".json,application/json,*/*" style="display:none"></label>'+
@@ -594,6 +596,20 @@ function renderSettings(app){
   document.getElementById("sS").oninput=function(e){s.steel=e.target.value;S.cur.steel=e.target.value;save()};
   document.getElementById("sT").onchange=function(e){if(e.target.value){S.cur.date=e.target.value;save();render()}};
   document.getElementById("hoOut").onclick=handOver;
+  document.getElementById("updBtn").onclick=function(){
+    if(!navigator.onLine){openModal('<h3>ما في إنترنت</h3><p>شغّل النت وجرّب مرة تانية.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+    openModal('<h3 style="text-align:center">جاري فحص التحديثات...</h3>');
+    fetch("https://ghassan-sabei.github.io/satcon-report/index.html?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){
+      var m=t.match(/APP_VER="([^"]+)"/),v=m?m[1]:"";
+      if(v&&v!==APP_VER){openModal('<h3>في نسخة جديدة ✓</h3><p>النسخة الجديدة: <b dir="ltr">'+esc(v)+'</b></p><div class="acts"><button id="mS" class="ok">تحديث الآن</button><button id="mN">بعدين</button></div>');
+        document.getElementById("mS").onclick=function(){
+          if(NATIVE&&!window.AndroidBridge.checkUpdate){openModal('<h3>سكّر التطبيق وافتحه</h3><p>سكّره من قائمة التطبيقات المفتوحة وارجع افتحه وفي نت، وبيطلعلك الشريط الأخضر "تحديث الآن".</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+          if(NATIVE)window.AndroidBridge.checkUpdate();
+          openModal('<h3 style="text-align:center">جاري التحديث...</h3>');setTimeout(function(){location.reload()},NATIVE?5000:300)};
+        document.getElementById("mN").onclick=closeModal}
+      else{openModal('<h3>عندك آخر نسخة ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal}
+    }).catch(function(){openModal('<h3>ما قدرت افحص</h3><p>جرّب بعد شوي.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal});
+  };
   document.getElementById("hoIn").onchange=function(e){var f=e.target.files[0];if(f)receive(f);e.target.value=""};
 }
 
