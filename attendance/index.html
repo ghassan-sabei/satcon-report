@@ -118,7 +118,9 @@ function dropStaleSigs(){if(S.fuel)S.fuel.ins.forEach(function(x){if(x.sig&&x.si
   for(var d in S.days){var mr=S.days[d].mrecs,er=S.days[d].erecs,k,r;
   if(mr)for(k in mr){r=mr[k];if(r.sig&&r.sigFor!==sigKey(r)){delete r.sig;delete r.sigFor}}
   if(er)for(k in er){r=er[k];if(r.sig&&r.sigFor!==eqSigKey(r)){delete r.sig;delete r.sigFor}}}}
-function save(){dropStaleSigs();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){dropStaleSigs();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if(window.__syncPush)window.__syncPush()}
+/* ids unique across phones: time based, still plain numbers */
+function newId(){return Date.now()*1000+Math.floor(Math.random()*1000)}
 function sigSvg(sig,h){if(!sig)return"";var W=sig.w,H=sig.h,o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" style="height:'+h+'px;width:auto;max-width:100%;vertical-align:middle">';
   sig.s.forEach(function(st){var pts=[];for(var i=0;i<st.length;i+=2)pts.push(st[i]+","+st[i+1]);
     o+=(st.length===2?'<circle cx="'+st[0]+'" cy="'+st[1]+'" r="3" fill="#0b2a7a"/>':'<polyline points="'+pts.join(" ")+'" fill="none" stroke="#0b2a7a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>')});
@@ -181,7 +183,7 @@ function dayWorkers(date){
 /* ---------- modal ---------- */
 var M=document.getElementById("modal"),MI=document.getElementById("modalIn");
 function openModal(h){MI.innerHTML=h;M.classList.add("show")}
-function closeModal(){M.classList.remove("show");MI.innerHTML=""}
+function closeModal(){M.classList.remove("show");MI.innerHTML="";if(window.__syncKick)setTimeout(window.__syncKick,0)}
 M.addEventListener("click",function(e){if(e.target===M)closeModal()});
 function confirmBox(msg,yes,cb){
   openModal('<h3>'+esc(msg)+'</h3><div class="acts"><button id="mY" class="dan">'+esc(yes)+'</button><button id="mN">إلغاء</button></div>');
@@ -211,7 +213,7 @@ function fixOut(r){if(r.in&&r.out){while(r.out<=r.in)r.out+=86400000;while(r.out
 /* ---------- views ---------- */
 var view="day",monthSel=curDate.slice(0,7),mFrom=null,mTo=null;
 function render(){
-  document.getElementById("hdDate").textContent=dayName(isoDate(new Date()))+" "+fmtDate(isoDate(new Date()));
+  document.getElementById("hdDate").innerHTML=esc(dayName(isoDate(new Date()))+" "+fmtDate(isoDate(new Date())))+syncBadge();
   var app=document.getElementById("app");
   if(view==="workers")return renderWorkers(app);
   if(view==="month")return renderMonth(app);
@@ -346,8 +348,8 @@ function renderWorkers(app){
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("wAdd").onclick=function(){var n=document.getElementById("wN").value.trim();if(!n){document.getElementById("wN").style.borderColor="#d64545";return}
-    S.workers.push({id:S.nextWid++,name:n,job:document.getElementById("wJ").value.trim(),active:true});save();render();document.getElementById("wN").focus()};
-  document.getElementById("mAdd").onclick=function(){var n=document.getElementById("mNew").value.trim();if(!n)return;S.machines.push({id:S.nextMid++,name:n,lastDriver:document.getElementById("mNewD").value.trim(),active:true});save();render()};
+    S.workers.push({id:newId(),name:n,job:document.getElementById("wJ").value.trim(),active:true});save();render();document.getElementById("wN").focus()};
+  document.getElementById("mAdd").onclick=function(){var n=document.getElementById("mNew").value.trim();if(!n)return;S.machines.push({id:newId(),name:n,lastDriver:document.getElementById("mNewD").value.trim(),active:true});save();render()};
   app.querySelectorAll("[data-mact]").forEach(function(b){b.onclick=function(){var m=machineById(+b.getAttribute("data-mact"));m.active=m.active===false;save();render()}});
   app.querySelectorAll("[data-med]").forEach(function(b){b.onclick=function(){var m=machineById(+b.getAttribute("data-med"));
     openModal('<h3>تعديل الآلية</h3><div class="row"><label>اسم الآلية</label><input type="text" id="mA" value="'+esc(m.name)+'"></div><div class="row"><label>اسم السائق</label><input type="text" id="mDr" value="'+esc(m.lastDriver||"")+'"></div><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
@@ -439,7 +441,7 @@ function renderFuel(app){
   document.getElementById("fdPrint").onclick=function(){printPages(fuelDayPages(curDate),"fuel_"+curDate,function(){fuelDayPdf(curDate)})};
   document.getElementById("fdPdf").onclick=function(){fuelDayPdf(curDate)};
   document.getElementById("fAdd").onclick=function(){var q=num2(document.getElementById("fQ").value);if(!q){document.getElementById("fQ").style.borderColor="#d64545";return}
-    S.fuel.ins.push({id:S.fuel.nextIn++,date:curDate,qty:q,supplier:document.getElementById("fS").value.trim(),receipt:document.getElementById("fR").value.trim()});save();render()};
+    S.fuel.ins.push({id:newId(),date:curDate,qty:q,supplier:document.getElementById("fS").value.trim(),receipt:document.getElementById("fR").value.trim()});save();render()};
   app.querySelectorAll("[data-insig]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-insig"),x=null;S.fuel.ins.forEach(function(y){if(y.id===id)x=y});
     function pad(){sigPad("توقيع المورّد"+(x.supplier?" - "+x.supplier:"")+" ("+lit(num2(x.qty))+" لتر)",function(sig){x.sig=sig;x.sigFor=inSigKey(x);save();render()})}
     if(x.sig){openModal('<h3>توقيع المورّد</h3><div style="text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px">'+sigSvg(x.sig,120)+'</div><div class="acts"><button id="mS" class="pri">توقيع جديد</button><button id="mD" class="dan">مسح التوقيع</button><button id="mN">إغلاق</button></div>');
@@ -457,7 +459,7 @@ function renderFuel(app){
       document.getElementById("mD").onclick=function(){delete r.sig;delete r.sigFor;closeModal();save();render()};
       document.getElementById("mN").onclick=closeModal;return}
     pad()}});
-  document.getElementById("eqAdd").onclick=function(){var n=document.getElementById("eqNew").value.trim();if(!n)return;S.fuel.equip.push({id:S.fuel.nextEq++,name:n,active:true});save();render()};
+  document.getElementById("eqAdd").onclick=function(){var n=document.getElementById("eqNew").value.trim();if(!n)return;S.fuel.equip.push({id:newId(),name:n,active:true});save();render()};
   app.querySelectorAll("[data-eqact]").forEach(function(b){b.onclick=function(){var q=eqById(+b.getAttribute("data-eqact"));q.active=q.active===false;save();render()}});
   app.querySelectorAll("[data-eqed]").forEach(function(b){b.onclick=function(){var q=eqById(+b.getAttribute("data-eqed"));
     openModal('<h3>تعديل المعدّة</h3><input type="text" id="mA" value="'+esc(q.name)+'"><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
@@ -559,6 +561,7 @@ function renderSettings(app){
   app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
    '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.settings.project)+'"></div>'+
    '</div>'+
+   syncBox()+
    '<div class="box"><h2>🔒 كلمة سر الإدارة</h2><p class="muted" style="margin-top:0">'+(S.settings.adminPw?'محطوطة. مسح السجلات القديمة بيطلبها.':'مش محطوطة لهلق.')+'</p><button class="big" id="pwBtn">'+(S.settings.adminPw?'تغيير كلمة السر':'تعيين كلمة السر')+'</button></div>'+
    '<div class="box"><h2>مسح السجل القديم 🔒</h2><p class="muted" style="margin-top:0">بيمسح دوام كل الأيام قبل التاريخ اللي بتختاره. أسماء العمال ما بتنمسح.</p>'+
    '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="cDate"></div>'+
@@ -567,6 +570,7 @@ function renderSettings(app){
   document.getElementById("back").onclick=function(){view="day";render()};
   document.getElementById("sP").oninput=function(e){S.settings.project=e.target.value;save()};
   document.getElementById("pwBtn").onclick=pwEditor;
+  bindSyncBox();
   document.getElementById("cBtn").onclick=function(){if(!document.getElementById("cDate").value){document.getElementById("cDate").style.borderColor="#d64545";return}requireAdmin(clearAtt)};
   function clearAtt(){
     var inp=document.getElementById("cDate"),d=inp.value;
@@ -743,6 +747,138 @@ function pdfPages(makePages,name,title){
     document.getElementById("mN").onclick=closeModal});
 }
 
+/* ---------- sharing between phones (Firebase Firestore) ----------
+   every record is one document: workers w~id, machines m~id, equipment q~id, fuel in i~id,
+   settings c~key, fuel f~key, day block d~date~b, day records d~date~r|m|e~id.
+   Each phone keeps working offline; changes are queued and pushed, newest write wins. */
+var FB_CFG={apiKey:"AIzaSyBcRzNhfdbm8YwyDg2RwYOAHfMqBdyGcaY",authDomain:"satcon-attendance.firebaseapp.com",projectId:"satcon-attendance",storageBucket:"satcon-attendance.firebasestorage.app",messagingSenderId:"141747048724",appId:"1:141747048724:web:9721d3721a2cf1b557f201"};
+var SKEY="satcon_attend_sync",PKEY="satcon_attend_pending";
+var SY={};try{SY=JSON.parse(localStorage.getItem(SKEY))||{}}catch(e){}
+if(!SY.dev)SY.dev=Math.random().toString(36).slice(2,10);
+function saveSY(){try{localStorage.setItem(SKEY,JSON.stringify(SY))}catch(e){}}
+saveSY();
+var PEND={};try{PEND=JSON.parse(localStorage.getItem(PKEY))||{}}catch(e){}
+function savePend(){try{localStorage.setItem(PKEY,JSON.stringify(PEND))}catch(e){}}
+var fb=null,db=null,col=null,auth=null,ready=false,unsub=null,base=null,inbox={},inboxLast=0,inflight={},needRender=false,fbP=null;
+var st={cache:true,err:"",lastOk:0};
+function flat(s){var o={},k,d,D;
+  for(k in s.settings)if(s.settings[k]!=null)o["c~"+k]=JSON.stringify(s.settings[k]);
+  o["f~opening"]=JSON.stringify(+s.fuel.opening||0);
+  s.workers.forEach(function(x){o["w~"+x.id]=JSON.stringify(x)});
+  s.machines.forEach(function(x){o["m~"+x.id]=JSON.stringify(x)});
+  s.fuel.equip.forEach(function(x){o["q~"+x.id]=JSON.stringify(x)});
+  s.fuel.ins.forEach(function(x){o["i~"+x.id]=JSON.stringify(x)});
+  for(d in s.days){D=s.days[d];
+    if(D.block!=null)o["d~"+d+"~b"]=JSON.stringify(D.block);
+    [["recs","r"],["mrecs","m"],["erecs","e"]].forEach(function(f){var R=D[f[0]];if(R)for(k in R)o["d~"+d+"~"+f[1]+"~"+k]=JSON.stringify(R[k])})}
+  return o}
+function unflat(o){var s={settings:{},workers:[],machines:[],days:{},fuel:{opening:0,ins:[],equip:[]}},A={w:s.workers,m:s.machines,q:s.fuel.equip,i:s.fuel.ins},F={r:"recs",m:"mrecs",e:"erecs"};
+  for(var k in o){var p=k.split("~"),v;try{v=JSON.parse(o[k])}catch(e){continue}
+    if(p[0]==="c")s.settings[p[1]]=v;else if(p[0]==="f")s.fuel[p[1]]=v;else if(A[p[0]])A[p[0]].push(v);
+    else if(p[0]==="d"&&p.length>2){var D=s.days[p[1]]||(s.days[p[1]]={recs:{}});
+      if(p[2]==="b")D.block=v;else if(F[p[2]]&&p.length>3)(D[F[p[2]]]||(D[F[p[2]]]={}))[p[3]]=v}}
+  for(var a in A)A[a].sort(function(x,y){return x.id-y.id});
+  if(s.settings.project==null)s.settings.project="";
+  return s}
+function pendN(){return Object.keys(PEND).length}
+/* called after every local save */
+window.__syncPush=function(){if(!SY.code||!base)return;var now=flat(S),k,ch=0;
+  for(k in now)if(base[k]!==now[k]){PEND[k]=1;delete inbox[k];ch++}
+  for(k in base)if(!(k in now)){PEND[k]=1;delete inbox[k];ch++}
+  if(!ch)return;base=now;savePend();updBadge();clearTimeout(flushT);flushT=setTimeout(flush,500)};
+var flushT=null;
+function flush(){if(!ready)return;var keys=Object.keys(PEND).filter(function(k){var v=k in base?base[k]:null;return!(k in inflight)||inflight[k]!==v});
+  for(var i=0;i<keys.length;i+=400)(function(part){var b=fb.writeBatch(db),sent={};
+    part.forEach(function(k){var v=k in base?base[k]:null;sent[k]=v;inflight[k]=v;b.set(fb.doc(col,k),{v:v,t:fb.serverTimestamp(),by:SY.dev})});
+    b.commit().then(function(){part.forEach(function(k){var v=k in base?base[k]:null;if(inflight[k]===sent[k])delete inflight[k];if(v===sent[k])delete PEND[k]});savePend();updBadge()})
+     .catch(function(e){part.forEach(function(k){if(inflight[k]===sent[k])delete inflight[k]});st.err=String(e&&e.code||e);updBadge()})})(keys.slice(i,i+400));
+  updBadge()}
+function listen(){if(unsub){unsub();unsub=null}
+  var since=Math.max(0,(SY.last||0)-15*60000);
+  unsub=fb.onSnapshot(fb.query(col,fb.where("t",">",fb.Timestamp.fromMillis(since))),{includeMetadataChanges:true},function(snap){
+    st.cache=snap.metadata.fromCache;st.err="";if(!st.cache)st.lastOk=Date.now();
+    snap.docChanges().forEach(function(c){if(c.type==="removed")return;var d=c.doc;if(d.metadata.hasPendingWrites)return;
+      var x=d.data(),t=x.t&&x.t.toMillis?x.t.toMillis():0;if(t>inboxLast)inboxLast=t;
+      if(PEND[d.id])return;inbox[d.id]=x.v==null?null:x.v});
+    applyInbox();updBadge()},
+   function(e){st.err=String(e&&e.code||e);updBadge();unsub=null;setTimeout(function(){if(ready&&!unsub)listen()},20000)})}
+function modalOpen(){return M.classList.contains("show")}
+function typing(){var a=document.activeElement;return a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)}
+function applyInbox(){var ks=Object.keys(inbox);
+  if(!ks.length){if(inboxLast>(SY.last||0)){SY.last=inboxLast;saveSY()}return}
+  if(modalOpen())return; /* the open window may hold records; apply when it closes */
+  var ch=0;ks.forEach(function(k){var v=inbox[k];if(PEND[k])return;
+    if(v==null){if(k in base){delete base[k];ch++}}else if(base[k]!==v){base[k]=v;ch++}});
+  inbox={};if(inboxLast>(SY.last||0)){SY.last=inboxLast;saveSY()}
+  if(!ch)return;
+  S=unflat(base);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(typing())needRender=true;else render()}
+window.__syncKick=function(){if(SY.code&&base)applyInbox()};
+setInterval(function(){if(!SY.code)return;
+  if(Object.keys(inbox).length)applyInbox();
+  if(needRender&&!typing()&&!modalOpen()){needRender=false;render()}},1500);
+setInterval(function(){if(ready&&pendN())flush()},30000);
+function ensureFb(){if(fbP)return fbP;
+  fbP=(window.FB?Promise.resolve():loadScript("fb.js")).then(function(){fb=window.FB;
+    var app=fb.initializeApp(FB_CFG);
+    try{auth=fb.initializeAuth(app,{persistence:[fb.indexedDBLocalPersistence,fb.browserLocalPersistence]})}catch(e){auth=fb.initializeAuth(app,{persistence:fb.inMemoryPersistence})}
+    try{db=fb.initializeFirestore(app,{localCache:fb.persistentLocalCache({tabManager:fb.persistentMultipleTabManager()})})}catch(e){db=fb.initializeFirestore(app,{localCache:fb.memoryLocalCache()})}
+    return new Promise(function(res){var first=true;
+      fb.onAuthStateChanged(auth,function(u){if(u){res(u);return}if(!first)return;first=false;
+        (function tryIn(){fb.signInAnonymously(auth).catch(function(e){st.err="auth:"+(e&&e.code||e);updBadge();setTimeout(tryIn,20000)})})()})})});
+  fbP.catch(function(){fbP=null;st.err="nofb";updBadge()});
+  return fbP}
+function go(){col=fb.collection(db,"p",SY.code,"r");ready=true;listen();flush();updBadge()}
+function startSync(){if(!SY.code)return;base=flat(S);ensureFb().then(go)}
+function withNet(p){return Promise.race([p,new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},25000)})])}
+function hasData(code){return fb.getDocsFromServer(fb.query(fb.collection(db,"p",code,"r"),fb.limit(1))).then(function(q){return!q.empty})}
+function syncBadge(){if(!SY.code)return"";return' <span id="syncB">'+badgeTxt()+'</span>'}
+function badgeTxt(){var n=pendN();if(st.err&&st.err!=="nofb"&&!ready)return"🔴";if(st.err==="nofb")return"⚪";
+  if(!ready||st.cache)return"🟠"+(n?" "+n:"");return n?"🟠 "+n:"🟢"}
+function updBadge(){var b=document.getElementById("syncB");if(b)b.textContent=badgeTxt();var x=document.getElementById("syS");if(x)x.innerHTML=syncStatus()}
+function syncStatus(){var n=pendN();
+  if(st.err==="nofb")return"⚪ أدوات المشاركة مش موجودة بهالنسخة. نزّل APK الجديد.";
+  if(!ready)return"🟠 عم يتصل..."+(st.err?" ("+esc(st.err)+")":"");
+  return(st.cache?"🟠 بدون إنترنت، رح يزامن لحاله لما يرجع النت":"🟢 متصل")+
+    (n?"<br>بانتظار الرفع: <b>"+n+"</b>":"<br>كل شي مرفوع ✓")+
+    (st.lastOk?"<br><span class='muted'>آخر اتصال: "+hm(st.lastOk)+"</span>":"")+(st.err?"<br><span class='muted'>"+esc(st.err)+"</span>":"")}
+function syncBox(){
+  if(!SY.code)return'<div class="box"><h2>🔗 المشاركة بين الهواتف</h2><p class="muted" style="margin-top:0">كل الهواتف (والكمبيوتر) اللي عندها نفس <b>رمز المشروع</b> بتسجّل وبتشوف نفس البيانات: العمال، الدوام، الآليات والمازوت.</p>'+
+    '<div class="row"><label>رمز المشروع</label><input type="text" id="syC" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="مثلاً satcon-j3-2026"></div>'+
+    '<p class="hint" id="syE" style="color:#d64545;display:none"></p>'+
+    '<button class="big pri" id="syJ">📥 انضمام لمشروع موجود</button>'+
+    '<button class="big" id="syU" style="margin-top:8px">📤 أول هاتف: ارفع بيانات هالهاتف 🔒</button>'+
+    '<p class="hint">بدو إنترنت وقت الانضمام بس. بعدها بيشتغل بدون نت وبيزامن لحاله لما يرجع النت.</p></div>';
+  return'<div class="box"><h2>🔗 المشاركة بين الهواتف</h2><p style="margin-top:0">رمز المشروع: <b dir="ltr">'+esc(SY.code)+'</b></p><p id="syS">'+syncStatus()+'</p>'+
+    '<div class="two"><button id="syR">🔄 تنزيل الكل من جديد</button><button class="dan" id="syD">فصل هالهاتف 🔒</button></div></div>'}
+function bindSyncBox(){
+  function msg(h){openModal(h+'<div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal}
+  var c=document.getElementById("syC");
+  if(c){function code(){var v=c.value.trim().toLowerCase(),e=document.getElementById("syE");
+      if(!/^[a-z0-9_-]{6,40}$/.test(v)){e.textContent="الرمز لازم يكون 6 أحرف إنكليزي أو أرقام على الأقل، بدون فراغات";e.style.display="";return null}return v}
+    document.getElementById("syJ").onclick=function(){var v=code();if(!v)return;
+      function doJoin(){openModal('<h3 style="text-align:center">عم يتصل...</h3>');
+        withNet(ensureFb().then(function(){return hasData(v)})).then(function(has){
+          if(!has)return msg('<h3>ما في بيانات بهالرمز</h3><p>تأكد من الرمز. إذا هيدا أول هاتف، استعمل <b>ارفع بيانات هالهاتف</b>.</p>');
+          S=unflat({});try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+          SY.code=v;SY.last=0;saveSY();PEND={};savePend();base={};go();closeModal();render();
+          msg('<h3>انضمّيت ✓</h3><p>البيانات عم تنزل هلق، بتاخد ثواني.</p>')})
+        .catch(function(){msg('<h3>ما قدر يتصل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})}
+      if(S.workers.length||Object.keys(S.days).length)confirmBox("رح تنمسح بيانات هالهاتف وتنزل بيانات المشروع. متأكد؟","انضمام",doJoin);else doJoin()};
+    document.getElementById("syU").onclick=function(){var v=code();if(!v)return;
+      requireAdmin(function(){openModal('<h3 style="text-align:center">عم يتصل...</h3>');
+        withNet(ensureFb().then(function(){return hasData(v)})).then(function(has){
+          if(has)return msg('<h3>في بيانات بهالرمز</h3><p>هيدا الرمز مستعمل. إذا بدك تشارك معهم استعمل <b>انضمام</b>، أو اختار رمز جديد.</p>');
+          SY.code=v;SY.last=0;saveSY();base=flat(S);PEND={};for(var k in base)PEND[k]=1;savePend();go();closeModal();render();
+          msg('<h3>انرفعت البيانات ✓</h3><p>هلق على باقي الهواتف: الإعدادات ← اكتب نفس الرمز <b dir="ltr">'+esc(v)+'</b> ← انضمام.</p>')})
+        .catch(function(){msg('<h3>ما قدر يتصل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})})}}
+  var r=document.getElementById("syR");
+  if(r){r.onclick=function(){if(!ready)return;SY.last=0;saveSY();listen();msg('<h3>عم ينزّل كل البيانات من جديد</h3>')};
+    document.getElementById("syD").onclick=function(){requireAdmin(function(){
+      confirmBox("فصل هالهاتف عن المشاركة؟ البيانات بتضل عليه بس ما بتعود تتزامن.","فصل",function(){
+        SY.code=null;SY.last=0;saveSY();PEND={};savePend();location.reload()})})}}
+}
+startSync();
 window.__updateReady=function(){
   if(document.getElementById("updBar"))return;
   var b=document.createElement("div");b.id="updBar";
