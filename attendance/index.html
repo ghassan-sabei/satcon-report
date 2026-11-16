@@ -221,6 +221,7 @@ function render(){
   if(view==="fuel")return renderFuel(app);
   renderDay(app);
 }
+var _render=render;render=function(){_render();lockUI()};
 
 function renderDay(app){
   var ws=dayWorkers(curDate),pres=0,abs=0,ot=0;
@@ -228,7 +229,7 @@ function renderDay(app){
   var h='<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
     '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===isoDate(new Date())?' (اليوم)':'')+'</div>'+
     '<div class="row" style="margin:10px 0 0"><input type="text" id="dFind" inputmode="numeric" placeholder="🔍 التاريخ: 13-11"><button class="pri" id="dGo">اذهب</button></div>'+
-    '<div class="row" style="margin:10px 0 0"><label>رقم البلوك</label><input type="text" id="dBlock" value="'+esc(blockFor(curDate))+'"></div></div>';
+    '<div class="row" style="margin:10px 0 0"><label>رقم البلوك</label><input type="text" id="dBlock" value="'+esc(blockFor(curDate))+'"></div></div>'+lockBar();
   if(!S.workers.length){
     h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
   }else{
@@ -340,7 +341,7 @@ function renderWorkers(app){
       '<button class="small" data-ed="'+w.id+'">تعديل</button><button class="small" data-act="'+w.id+'">'+(w.active===false?'تفعيل':'إيقاف')+'</button>'+(w.active===false?'<button class="small dan" data-del="'+w.id+'">حذف</button>':'')+'</div>';
   });
   h+='<p class="hint">"إيقاف" بيخفي العامل من الدوام اليومي وبيحافظ على سجلّه القديم. العامل الموقوف بيطلع جنبه زر "حذف".</p></div>';
-  h+='<div class="box"><h2>الآليات</h2>';
+  h+='<div class="box"><h2>الآليات</h2>'+machBar();
   S.machines.forEach(function(m){h+='<div class="wk"><div class="nm"><b style="'+(m.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(m.name)+'</b><span>'+(m.lastDriver?'السائق: '+esc(m.lastDriver):'')+(m.active===false?' (موقوفة)':'')+'</span></div>'+
     '<button class="small" data-med="'+m.id+'">تعديل</button><button class="small" data-mact="'+m.id+'">'+(m.active===false?'تفعيل':'إيقاف')+'</button>'+(m.active===false?'<button class="small dan" data-mdel="'+m.id+'">حذف</button>':'')+'</div>'});
   h+='<div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px"><div class="row"><label>اسم الآلية</label><input type="text" id="mNew"></div>'+
@@ -397,7 +398,7 @@ function renderFuel(app){
     '<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
     '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===today?' (اليوم)':'')+'</div>'+
     '<div class="stat" style="margin-top:8px"><div><b>'+lit(dIn)+'</b><span>وارد اليوم</span></div><div><b>'+lit(dOut)+'</b><span>صرف اليوم</span></div><div><b>'+lit(balanceAt(curDate))+'</b><span>الباقي آخر اليوم</span></div></div>'+
-    '<div class="two" style="margin-top:10px"><button class="ok" id="fdPrint">🖨 ورقة اليوم</button><button class="pri" id="fdPdf">📄 PDF اليوم</button></div></div>';
+    '<div class="two" style="margin-top:10px"><button class="ok" id="fdPrint">🖨 ورقة اليوم</button><button class="pri" id="fdPdf">📄 PDF اليوم</button></div></div>'+lockBar();
   /* deliveries */
   var ins=S.fuel.ins.filter(function(x){return x.date===curDate});
   h+='<div class="box"><h2>الوارد (حمولة جديدة)</h2>'+
@@ -879,6 +880,44 @@ function bindSyncBox(){
         SY.code=null;SY.last=0;saveSY();PEND={};savePend();location.reload()})})}}
 }
 startSync();
+
+/* ---------- day lock ----------
+   a locked day is stored as settings "lk_<date>" so it reaches every phone.
+   Unlocking with the admin password opens it on THIS device only, for 10 minutes.
+   The machines list is always closed unless unlocked the same way. */
+var UKEY="satcon_attend_unlk",UNLOCK_MS=10*60000;
+var DAY_SEL="#dBlock,#allIn,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-eq],[data-eqsig]";
+var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd";
+function unl(){var u={};try{u=JSON.parse(localStorage.getItem(UKEY))||{}}catch(e){}var n=Date.now(),k;for(k in u)if(u[k]<=n)delete u[k];return u}
+function setUnl(k,v){var u=unl();if(v)u[k]=v;else delete u[k];try{localStorage.setItem(UKEY,JSON.stringify(u))}catch(e){}}
+function dayLocked(d){return!!S.settings["lk_"+d]}
+function zoneOf(el){if(view!=="workers"&&el.closest(DAY_SEL))return"d:"+curDate;if(view==="workers"&&el.closest(MACH_SEL))return"mach";return null}
+function zoneClosed(z){if(!z)return false;if(z.indexOf("d:")===0&&!dayLocked(z.slice(2)))return false;return!unl()[z]}
+function left(z){var t=unl()[z];if(!t)return"";var s=Math.max(0,Math.round((t-Date.now())/1000));return Math.floor(s/60)+":"+pad(s%60)}
+function lockBar(){var z="d:"+curDate;
+  if(!dayLocked(curDate))return'<button class="big" id="lkBtn" style="margin-bottom:12px">🔒 إقفال اليوم</button>';
+  if(unl()[z])return'<div class="box" style="background:#fff7e0;border:2px solid #f0b429;display:flex;align-items:center;justify-content:space-between;gap:8px"><span>🔓 مفتوح على هالجهاز <b data-lkt="'+z+'" dir="ltr">'+left(z)+'</b></span><button id="lkNow" class="dan">🔒 قفل الآن</button></div>';
+  return'<div class="box" style="background:#eef1f8;border:2px solid #2b3a67"><b>🔒 هاليوم مقفل</b><br><span class="muted">فيك تشوف وتطبع. للتعديل اكبس على أي شي، بيطلب كلمة سر الإدارة.</span></div>'}
+function machBar(){if(unl().mach)return'<div style="background:#fff7e0;border:2px solid #f0b429;border-radius:10px;padding:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span>🔓 مفتوح <b data-lkt="mach" dir="ltr">'+left("mach")+'</b></span><button class="small dan" id="lkMach">🔒 قفل الآن</button></div>';
+  return'<p class="muted" style="margin-top:0">🔒 تعديل الآليات بدو كلمة سر الإدارة</p>'}
+function askUnlock(z){requireAdmin(function(){setUnl(z,Date.now()+UNLOCK_MS);render()})}
+function lockUI(){var app=document.getElementById("app");
+  ["d:"+curDate,"mach"].forEach(function(z){if(!zoneClosed(z))return;
+    app.querySelectorAll(z==="mach"?MACH_SEL:DAY_SEL).forEach(function(el){if(view==="workers"?z!=="mach":z==="mach")return;el.style.opacity=".55";if(el.tagName==="INPUT")el.readOnly=true})});
+  var b=document.getElementById("lkBtn");if(b)b.onclick=function(){
+    if(!S.settings.adminPw){openModal('<h3>حط كلمة سر الإدارة أول</h3><p>بدونها ما حدا بيقدر يفتح اليوم بعد ما يتقفل. من <b>الإعدادات ← كلمة سر الإدارة</b>.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+    confirmBox("إقفال يوم "+fmtDate(curDate)+"؟ بعدها التعديل بس بكلمة سر الإدارة.","🔒 إقفال",function(){S.settings["lk_"+curDate]=Date.now();setUnl("d:"+curDate,0);save();render()})};
+  var n=document.getElementById("lkNow");if(n)n.onclick=function(){setUnl("d:"+curDate,0);render()};
+  var m=document.getElementById("lkMach");if(m)m.onclick=function(){setUnl("mach",0);render()}}
+/* block every edit control of a closed zone before its own handlers run */
+["pointerdown","pointerup","click","focusin","change","input","keydown"].forEach(function(t){
+  document.addEventListener(t,function(e){var el=e.target&&e.target.closest?e.target:null;if(!el||!el.closest("#app"))return;
+    var z=zoneOf(el);if(!zoneClosed(z))return;
+    e.preventDefault();e.stopImmediatePropagation();
+    if((t==="click"||t==="focusin")&&!modalOpen()){if(el.blur)el.blur();askUnlock(z)}},true)});
+setInterval(function(){var els=document.querySelectorAll("[data-lkt]"),gone=false;
+  els.forEach(function(e){var z=e.getAttribute("data-lkt"),v=left(z);if(!v)gone=true;else e.textContent=v});
+  if(gone&&!modalOpen())render()},1000);
 window.__updateReady=function(){
   if(document.getElementById("updBar"))return;
   var b=document.createElement("div");b.id="updBar";
