@@ -93,14 +93,23 @@ button:active{transform:scale(.97)}
 </style>
 </head>
 <body>
-<header class="top"><h1>دوام العمال</h1><div class="d" id="hdDate"></div></header>
+<header class="top"><h1 id="hdP" style="cursor:pointer">دوام العمال</h1><div class="d" id="hdDate"></div></header>
 <main id="app"></main>
 <div id="printArea"></div>
 <div class="modal" id="modal"><div class="in" id="modalIn"></div></div>
 <script>
 (function(){
 "use strict";
-var KEY="satcon_attend_v1";
+/* several projects on one device: each one is a "slot" with its own storage keys.
+   slot "" keeps the original keys so existing data stays where it is. */
+var RKEY="satcon_attend_projects";
+var REG=null;try{REG=JSON.parse(localStorage.getItem(RKEY))}catch(e){}
+if(!REG||!REG.slots||!REG.slots.length)REG={slots:[""],cur:""};
+if(REG.slots.indexOf(REG.cur)<0)REG.cur=REG.slots[0];
+function saveReg(){try{localStorage.setItem(RKEY,JSON.stringify(REG))}catch(e){}}
+saveReg();
+var SLOT=REG.cur;
+var KEY="satcon_attend_v1"+SLOT;
 
 var DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
 var MONTHS=["كانون الثاني","شباط","آذار","نيسان","أيار","حزيران","تموز","آب","أيلول","تشرين الأول","تشرين الثاني","كانون الأول"];
@@ -213,6 +222,7 @@ function fixOut(r){if(r.in&&r.out){while(r.out<=r.in)r.out+=86400000;while(r.out
 /* ---------- views ---------- */
 var view="day",monthSel=curDate.slice(0,7),mFrom=null,mTo=null;
 function render(){
+  document.getElementById("hdP").textContent=projTitle();
   document.getElementById("hdDate").innerHTML=esc(dayName(isoDate(new Date()))+" "+fmtDate(isoDate(new Date())))+syncBadge();
   var app=document.getElementById("app");
   if(view==="workers")return renderWorkers(app);
@@ -753,7 +763,7 @@ function pdfPages(makePages,name,title){
    settings c~key, fuel f~key, day block d~date~b, day records d~date~r|m|e~id.
    Each phone keeps working offline; changes are queued and pushed, newest write wins. */
 var FB_CFG={apiKey:"AIzaSyBcRzNhfdbm8YwyDg2RwYOAHfMqBdyGcaY",authDomain:"satcon-attendance.firebaseapp.com",projectId:"satcon-attendance",storageBucket:"satcon-attendance.firebasestorage.app",messagingSenderId:"141747048724",appId:"1:141747048724:web:9721d3721a2cf1b557f201"};
-var SKEY="satcon_attend_sync",PKEY="satcon_attend_pending";
+var SKEY="satcon_attend_sync"+SLOT,PKEY="satcon_attend_pending"+SLOT;
 var SY={};try{SY=JSON.parse(localStorage.getItem(SKEY))||{}}catch(e){}
 if(!SY.dev)SY.dev=Math.random().toString(36).slice(2,10);
 function saveSY(){try{localStorage.setItem(SKEY,JSON.stringify(SY))}catch(e){}}
@@ -830,7 +840,7 @@ function ensureFb(){if(fbP)return fbP;
   fbP.catch(function(){fbP=null;st.err="nofb";updBadge()});
   return fbP}
 function go(){col=fb.collection(db,"p",SY.code,"r");ready=true;listen();flush();updBadge()}
-function startSync(){if(!SY.code)return;base=flat(S);ensureFb().then(go)}
+function startSync(){if(!SY.code)return;base=flat(S);if(SY.uploadAll){for(var k in base)PEND[k]=1;savePend();delete SY.uploadAll;saveSY()}ensureFb().then(go)}
 function withNet(p){return Promise.race([p,new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},25000)})])}
 function hasData(code){return fb.getDocsFromServer(fb.query(fb.collection(db,"p",code,"r"),fb.limit(1))).then(function(q){return!q.empty})}
 function syncBadge(){if(!SY.code)return"";return' <span id="syncB">'+badgeTxt()+'</span>'}
@@ -877,6 +887,7 @@ function bindSyncBox(){
   if(r){r.onclick=function(){if(!ready)return;SY.last=0;saveSY();listen();msg('<h3>عم ينزّل كل البيانات من جديد</h3>')};
     document.getElementById("syD").onclick=function(){requireAdmin(function(){
       confirmBox("فصل هالهاتف عن المشاركة؟ البيانات بتضل عليه بس ما بتعود تتزامن.","فصل",function(){
+        if(REG.slots.length>1){dropSlot(SLOT);REG.cur=REG.slots[0];saveReg();location.reload();return}
         SY.code=null;SY.last=0;saveSY();PEND={};savePend();location.reload()})})}}
 }
 startSync();
@@ -885,7 +896,7 @@ startSync();
    a locked day is stored as settings "lk_<date>" so it reaches every phone.
    Unlocking with the admin password opens it on THIS device only, for 10 minutes.
    The machines list is always closed unless unlocked the same way. */
-var UKEY="satcon_attend_unlk",UNLOCK_MS=10*60000;
+var UKEY="satcon_attend_unlk"+SLOT,UNLOCK_MS=10*60000;
 var DAY_SEL="#dBlock,#allIn,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-eq],[data-eqsig]";
 var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd";
 function unl(){var u={};try{u=JSON.parse(localStorage.getItem(UKEY))||{}}catch(e){}var n=Date.now(),k;for(k in u)if(u[k]<=n)delete u[k];return u}
@@ -918,6 +929,58 @@ function lockUI(){var app=document.getElementById("app");
 setInterval(function(){var els=document.querySelectorAll("[data-lkt]"),gone=false;
   els.forEach(function(e){var z=e.getAttribute("data-lkt"),v=left(z);if(!v)gone=true;else e.textContent=v});
   if(gone&&!modalOpen())render()},1000);
+
+/* ---------- projects (switch between sites) ---------- */
+function slotData(sl){var o=null;try{o=JSON.parse(localStorage.getItem("satcon_attend_v1"+sl))}catch(e){}return o}
+function slotSync(sl){var o=null;try{o=JSON.parse(localStorage.getItem("satcon_attend_sync"+sl))}catch(e){}return o||{}}
+function slotName(sl){var d=sl===SLOT?S:slotData(sl),n=d&&d.settings&&d.settings.project;return n||"مشروع بدون اسم"}
+function projTitle(){return REG.slots.length>1?slotName(SLOT)+" ▾":"دوام العمال"}
+function dropSlot(sl){["satcon_attend_v1","satcon_attend_sync","satcon_attend_pending","satcon_attend_unlk"].forEach(function(k){try{localStorage.removeItem(k+sl)}catch(e){}});
+  REG.slots=REG.slots.filter(function(x){return x!==sl});if(!REG.slots.length)REG.slots=[""];saveReg()}
+function switchTo(sl){REG.cur=sl;saveReg();location.reload()}
+function projMenu(){
+  var h='<h3>المشاريع على هالجهاز</h3>';
+  REG.slots.forEach(function(sl){var c=slotSync(sl).code;
+    h+='<div class="wk"><div class="nm"><b>'+(sl===SLOT?'✓ ':'')+esc(slotName(sl))+'</b><span dir="ltr">'+esc(c||"بدون مشاركة")+'</span></div>'+
+      (sl===SLOT?'<span class="muted">مفتوح</span>':'<button class="small pri" data-psw="'+esc(sl)+'">فتح</button><button class="small dan" data-pdel="'+esc(sl)+'">🗑</button>')+'</div>'});
+  h+='<div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px"><h3 style="margin-top:0">➕ إضافة مشروع</h3>'+
+    '<div class="row"><label>رمز المشروع</label><input type="text" id="pC" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
+    '<p class="hint" id="pE" style="color:#d64545;display:none"></p>'+
+    '<button class="big pri" id="pJ">📥 انضمام لمشروع موجود</button>'+
+    '<div class="row" style="margin-top:12px"><label>أو مشروع جديد، اسمه</label><input type="text" id="pN" placeholder="مثلاً مشروع بسماية"></div>'+
+    '<button class="big" id="pNew">🆕 إنشاء مشروع جديد 🔒</button></div>'+
+    '<div class="acts"><button id="mN">إغلاق</button></div>';
+  openModal(h);
+  document.getElementById("mN").onclick=closeModal;
+  MI.querySelectorAll("[data-psw]").forEach(function(b){b.onclick=function(){switchTo(b.getAttribute("data-psw"))}});
+  MI.querySelectorAll("[data-pdel]").forEach(function(b){b.onclick=function(){var sl=b.getAttribute("data-pdel"),nm=slotName(sl);closeModal();
+    requireAdmin(function(){confirmBox("شيل «"+nm+"» من هالجهاز؟ بياناته بتضل على السيرفر وفيك ترجع تنضم بالرمز.","شيل",function(){dropSlot(sl);render()})})}});
+  function err(t){var e=document.getElementById("pE");e.textContent=t;e.style.display=""}
+  function code(){var v=document.getElementById("pC").value.trim().toLowerCase();
+    if(!/^[a-z0-9_-]{6,40}$/.test(v)){err("الرمز لازم يكون 6 أحرف إنكليزي أو أرقام على الأقل، بدون فراغات");return null}
+    for(var i=0;i<REG.slots.length;i++)if(slotSync(REG.slots[i]).code===v){err("هالمشروع موجود بالقائمة");return null}return v}
+  function msg(h){openModal(h+'<div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal}
+  /* reuse the current slot if it is empty and not shared, otherwise make a new slot */
+  function target(c){if(!SY.code&&!S.workers.length&&!Object.keys(S.days).length)return SLOT;return"@"+c}
+  function open(c,data,sync){var sl=target(c);
+    try{localStorage.setItem("satcon_attend_v1"+sl,JSON.stringify(data));localStorage.setItem("satcon_attend_sync"+sl,JSON.stringify(sync));localStorage.setItem("satcon_attend_pending"+sl,"{}")}catch(e){}
+    if(REG.slots.indexOf(sl)<0)REG.slots.push(sl);switchTo(sl)}
+  document.getElementById("pJ").onclick=function(){var c=code();if(!c)return;openModal('<h3 style="text-align:center">عم يتصل...</h3>');
+    withNet(ensureFb().then(function(){return hasData(c)})).then(function(has){
+      if(!has)return msg('<h3>ما في بيانات بهالرمز</h3><p>تأكد من الرمز.</p>');
+      open(c,unflat({}),{code:c,last:0,dev:SY.dev})})
+    .catch(function(){msg('<h3>ما قدر يتصل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})};
+  document.getElementById("pNew").onclick=function(){var c=code();if(!c)return;var nm=document.getElementById("pN").value.trim();
+    if(!nm){document.getElementById("pN").style.borderColor="#d64545";return}
+    var pw=S.settings.adminPw;
+    requireAdmin(function(){openModal('<h3 style="text-align:center">عم يتصل...</h3>');
+      withNet(ensureFb().then(function(){return hasData(c)})).then(function(has){
+        if(has)return msg('<h3>هالرمز مستعمل</h3><p>اختار رمز تاني، أو استعمل <b>انضمام</b>.</p>');
+        var d={settings:{project:nm,adminPw:pw},workers:[],machines:[{id:1,name:"بوكلن",active:true},{id:2,name:"كرين",active:true}],days:{},fuel:{opening:0,ins:[],equip:[]}};
+        open(c,d,{code:c,last:0,dev:SY.dev,uploadAll:true})})
+      .catch(function(){msg('<h3>ما قدر يتصل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})})};
+}
+document.getElementById("hdP").onclick=projMenu;
 window.__updateReady=function(){
   if(document.getElementById("updBar"))return;
   var b=document.createElement("div");b.id="updBar";
