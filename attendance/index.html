@@ -948,13 +948,13 @@ function projMenu(){
     '<p class="hint" id="pE" style="color:#d64545;display:none"></p>'+
     '<button class="big pri" id="pJ">📥 انضمام لمشروع موجود</button>'+
     '<div class="row" style="margin-top:12px"><label>أو مشروع جديد، اسمه</label><input type="text" id="pN" placeholder="مثلاً مشروع بسماية"></div>'+
-    '<button class="big" id="pNew">🆕 إنشاء مشروع جديد 🔒</button></div>'+
+    '<button class="big" id="pNew">🆕 إنشاء مشروع جديد</button></div>'+
     '<div class="acts"><button id="mN">إغلاق</button></div>';
   openModal(h);
   document.getElementById("mN").onclick=closeModal;
   MI.querySelectorAll("[data-psw]").forEach(function(b){b.onclick=function(){switchTo(b.getAttribute("data-psw"))}});
   MI.querySelectorAll("[data-pdel]").forEach(function(b){b.onclick=function(){var sl=b.getAttribute("data-pdel"),nm=slotName(sl);closeModal();
-    requireAdmin(function(){confirmBox("شيل «"+nm+"» من هالجهاز؟ بياناته بتضل على السيرفر وفيك ترجع تنضم بالرمز.","شيل",function(){dropSlot(sl);render()})})}});
+    confirmBox("شيل «"+nm+"» من هالجهاز؟ بياناته بتضل على السيرفر وفيك ترجع تنضم بالرمز.","شيل",function(){dropSlot(sl);render()})}});
   function err(t){var e=document.getElementById("pE");e.textContent=t;e.style.display=""}
   function code(){var v=document.getElementById("pC").value.trim().toLowerCase();
     if(!/^[a-z0-9_-]{6,40}$/.test(v)){err("الرمز لازم يكون 6 أحرف إنكليزي أو أرقام على الأقل، بدون فراغات");return null}
@@ -973,14 +973,14 @@ function projMenu(){
   document.getElementById("pNew").onclick=function(){var c=code();if(!c)return;var nm=document.getElementById("pN").value.trim();
     if(!nm){document.getElementById("pN").style.borderColor="#d64545";return}
     var pw=S.settings.adminPw;
-    requireAdmin(function(){openModal('<h3 style="text-align:center">عم يتصل...</h3>');
+    (function(){openModal('<h3 style="text-align:center">عم يتصل...</h3>');
       withNet(ensureFb().then(function(){return hasData(c)})).then(function(has){
         if(has)return msg('<h3>هالرمز مستعمل</h3><p>اختار رمز تاني، أو استعمل <b>انضمام</b>.</p>');
         var d={settings:{project:nm,adminPw:pw},workers:[],machines:[{id:1,name:"بوكلن",active:true},{id:2,name:"كرين",active:true}],days:{},fuel:{opening:0,ins:[],equip:[]}};
         open(c,d,{code:c,last:0,dev:SY.dev,uploadAll:true})})
-      .catch(function(){msg('<h3>ما قدر يتصل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})})};
+      .catch(function(){msg('<h3>ما قدر يتصل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})})()};
 }
-document.getElementById("hdP").onclick=projMenu;
+document.getElementById("hdP").onclick=function(){requireAdmin(projMenu)};
 window.__updateReady=function(){
   if(document.getElementById("updBar"))return;
   var b=document.createElement("div");b.id="updBar";
