@@ -342,7 +342,7 @@ function renderDay(app){
 }
 
 function renderWorkers(app){
-  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>إضافة عامل</h2>'+
+  var h='<button id="back" style="margin-bottom:12px">→ رجوع</button>'+machBar()+'<div class="box"><h2>إضافة عامل</h2>'+
     '<div class="row"><label>الاسم</label><input type="text" id="wN"></div>'+
     '<div class="row"><label>المهنة (اختياري)</label><input type="text" id="wJ"></div>'+
     '<button class="big pri" id="wAdd">+ إضافة</button></div><div class="box"><h2>العمال ('+S.workers.filter(function(w){return w.active!==false}).length+')</h2>';
@@ -351,7 +351,7 @@ function renderWorkers(app){
       '<button class="small" data-ed="'+w.id+'">تعديل</button><button class="small" data-act="'+w.id+'">'+(w.active===false?'تفعيل':'إيقاف')+'</button>'+(w.active===false?'<button class="small dan" data-del="'+w.id+'">حذف</button>':'')+'</div>';
   });
   h+='<p class="hint">"إيقاف" بيخفي العامل من الدوام اليومي وبيحافظ على سجلّه القديم. العامل الموقوف بيطلع جنبه زر "حذف".</p></div>';
-  h+='<div class="box"><h2>الآليات</h2>'+machBar();
+  h+='<div class="box"><h2>الآليات</h2>';
   S.machines.forEach(function(m){h+='<div class="wk"><div class="nm"><b style="'+(m.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(m.name)+'</b><span>'+(m.lastDriver?'السائق: '+esc(m.lastDriver):'')+(m.active===false?' (موقوفة)':'')+'</span></div>'+
     '<button class="small" data-med="'+m.id+'">تعديل</button><button class="small" data-mact="'+m.id+'">'+(m.active===false?'تفعيل':'إيقاف')+'</button>'+(m.active===false?'<button class="small dan" data-mdel="'+m.id+'">حذف</button>':'')+'</div>'});
   h+='<div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px"><div class="row"><label>اسم الآلية</label><input type="text" id="mNew"></div>'+
@@ -429,7 +429,7 @@ function renderFuel(app){
   if(!S.fuel.equip.length)h+='<p class="muted">ضيف المعدات من تحت (مولدة، كمبريسر...)</p>';
   h+='</div>';
   /* equipment management */
-  h+='<div class="box"><h2>المعدات</h2>';
+  h+='<div class="box"><h2>المعدات</h2>'+machBar();
   S.fuel.equip.forEach(function(q){h+='<div class="wk"><div class="nm"><b style="'+(q.active===false?'color:#999;text-decoration:line-through':'')+'">'+esc(q.name)+'</b></div>'+
     '<button class="small" data-eqed="'+q.id+'">تعديل</button><button class="small" data-eqact="'+q.id+'">'+(q.active===false?'تفعيل':'إيقاف')+'</button>'+(q.active===false?'<button class="small dan" data-eqdel="'+q.id+'">حذف</button>':'')+'</div>'});
   h+='<div class="row" style="margin-top:10px"><input type="text" id="eqNew" placeholder="اسم المعدّة (مثلاً مولدة)"><button class="pri" id="eqAdd">+ إضافة</button></div></div>';
@@ -898,28 +898,29 @@ startSync();
    The machines list is always closed unless unlocked the same way. */
 var UKEY="satcon_attend_unlk"+SLOT,UNLOCK_MS=10*60000;
 var DAY_SEL="#dBlock,#allIn,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-eq],[data-eqsig]";
-var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd";
+/* lists (workers, machines, fuel equipment, opening balance): always closed for supervisors */
+var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd,#wN,#wJ,#wAdd,[data-ed],[data-act],[data-del],[data-eqed],[data-eqact],[data-eqdel],#eqNew,#eqAdd,#fOpen";
 function unl(){var u={};try{u=JSON.parse(localStorage.getItem(UKEY))||{}}catch(e){}var n=Date.now(),k;for(k in u)if(u[k]<=n)delete u[k];return u}
 function setUnl(k,v){var u=unl();if(v)u[k]=v;else delete u[k];try{localStorage.setItem(UKEY,JSON.stringify(u))}catch(e){}}
 function dayLocked(d){return!!S.settings["lk_"+d]}
-function zoneOf(el){if(view!=="workers"&&el.closest(DAY_SEL))return"d:"+curDate;if(view==="workers"&&el.closest(MACH_SEL))return"mach";return null}
+function zoneOf(el){if(el.closest(MACH_SEL))return"mach";if(view!=="workers"&&el.closest(DAY_SEL))return"d:"+curDate;return null}
 function zoneClosed(z){if(!z)return false;if(z.indexOf("d:")===0&&!dayLocked(z.slice(2)))return false;return!unl()[z]}
 function left(z){var t=unl()[z];if(!t)return"";var s=Math.max(0,Math.round((t-Date.now())/1000));return Math.floor(s/60)+":"+pad(s%60)}
 function lockBar(){var z="d:"+curDate;
   if(!dayLocked(curDate))return'<button class="big" id="lkBtn" style="margin-bottom:12px">🔒 إقفال اليوم</button>';
   if(unl()[z])return'<div class="box" style="background:#fff7e0;border:2px solid #f0b429;display:flex;align-items:center;justify-content:space-between;gap:8px"><span>🔓 مفتوح على هالجهاز <b data-lkt="'+z+'" dir="ltr">'+left(z)+'</b></span><button id="lkNow" class="dan">🔒 قفل الآن</button></div>';
   return'<div class="box" style="background:#eef1f8;border:2px solid #2b3a67"><b>🔒 هاليوم مقفل</b><br><span class="muted">فيك تشوف وتطبع. للتعديل اكبس على أي شي، بيطلب كلمة سر الإدارة.</span></div>'}
-function machBar(){if(unl().mach)return'<div style="background:#fff7e0;border:2px solid #f0b429;border-radius:10px;padding:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span>🔓 مفتوح <b data-lkt="mach" dir="ltr">'+left("mach")+'</b></span><button class="small dan" id="lkMach">🔒 قفل الآن</button></div>';
-  return'<p class="muted" style="margin-top:0">🔒 تعديل الآليات بدو كلمة سر الإدارة</p>'}
+function machBar(){if(unl().mach)return'<div style="background:#fff7e0;border:2px solid #f0b429;border-radius:10px;padding:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span>🔓 التعديل مفتوح <b data-lkt="mach" dir="ltr">'+left("mach")+'</b></span><button class="small dan lkMach">🔒 قفل الآن</button></div>';
+  return'<p class="muted" style="margin:0 0 10px">🔒 إضافة وتعديل وحذف العمال والآليات والمعدات بدو كلمة سر الإدارة</p>'}
 function askUnlock(z){requireAdmin(function(){setUnl(z,Date.now()+UNLOCK_MS);render()})}
 function lockUI(){var app=document.getElementById("app");
   ["d:"+curDate,"mach"].forEach(function(z){if(!zoneClosed(z))return;
-    app.querySelectorAll(z==="mach"?MACH_SEL:DAY_SEL).forEach(function(el){if(view==="workers"?z!=="mach":z==="mach")return;el.style.opacity=".55";if(el.tagName==="INPUT")el.readOnly=true})});
+    app.querySelectorAll(z==="mach"?MACH_SEL:DAY_SEL).forEach(function(el){el.style.opacity=".55";if(el.tagName==="INPUT")el.readOnly=true})});
   var b=document.getElementById("lkBtn");if(b)b.onclick=function(){
     if(!S.settings.adminPw){openModal('<h3>حط كلمة سر الإدارة أول</h3><p>بدونها ما حدا بيقدر يفتح اليوم بعد ما يتقفل. من <b>الإعدادات ← كلمة سر الإدارة</b>.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
     confirmBox("إقفال يوم "+fmtDate(curDate)+"؟ بعدها التعديل بس بكلمة سر الإدارة.","🔒 إقفال",function(){S.settings["lk_"+curDate]=Date.now();setUnl("d:"+curDate,0);save();render()})};
   var n=document.getElementById("lkNow");if(n)n.onclick=function(){setUnl("d:"+curDate,0);render()};
-  var m=document.getElementById("lkMach");if(m)m.onclick=function(){setUnl("mach",0);render()}}
+  app.querySelectorAll(".lkMach").forEach(function(m){m.onclick=function(){setUnl("mach",0);render()}})}
 /* block every edit control of a closed zone before its own handlers run */
 ["pointerdown","pointerup","click","focusin","change","input","keydown"].forEach(function(t){
   document.addEventListener(t,function(e){var el=e.target&&e.target.closest?e.target:null;if(!el||!el.closest("#app"))return;
