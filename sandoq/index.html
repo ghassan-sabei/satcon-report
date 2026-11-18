@@ -298,10 +298,10 @@ function dayView(){
 /* ---------- add / edit a movement ---------- */
 function formView(t,newType){
   var ed=!!t,f=ed?{type:t.type,cur:t.cur,amount:String(t.amount),date:t.date,desc:t.desc,inv:t.inv,rcpt:t.rcpt,worker:t.worker||"",bld:t.bld||""}
-    :{worker:"",bld:"",type:newType,cur:S.lastCur||"IQD",amount:"",date:today(),desc:newType==="in"?"من صاحب العمل":"",inv:"",rcpt:""};
+    :{worker:"",bld:"",type:newType,cur:S.lastCur||"IQD",amount:"",date:today(),desc:"",inv:"",rcpt:""};
   var descs={};sorted().reverse().forEach(function(x){if(x.desc&&Object.keys(descs).length<60)descs[x.desc]=1});
   var wks=workers().map(function(w){return'<option value="'+esc(w.name)+'">'}).join("");
-  app.innerHTML='<div class="box"><h2>'+(ed?'تعديل حركة':({in:'وارد جديد',out:'صادر جديد',adv:'سلفة جديدة'})[f.type])+'</h2>'+
+  app.innerHTML='<div class="box"><h2 id="fTtl"></h2>'+
     '<div class="row"><label>النوع</label><div class="seg" style="grid-template-columns:1fr 1fr 1fr"><button id="tIn" class="in">+ وارد</button><button id="tOut" class="out">− صادر</button><button id="tAdv" class="adv">سلفة</button></div></div>'+
     '<div class="row" id="wkRow"><label>اسم العامل</label><input type="text" id="fWk" list="wl" autocomplete="off" value="'+esc(f.worker)+'"></div>'+
     '<datalist id="wl">'+wks+'</datalist>'+
@@ -322,6 +322,7 @@ function formView(t,newType){
     document.getElementById("tIn").className="in"+(f.type==="in"?" on":"");
     document.getElementById("tOut").className="out"+(f.type==="out"?" on":"");
     document.getElementById("tAdv").className="adv"+(f.type==="adv"?" on":"");
+    document.getElementById("fTtl").textContent=ed?'تعديل حركة':({in:'وارد جديد',out:'صادر جديد',adv:'سلفة جديدة'})[f.type];
     document.getElementById("wkRow").style.display=f.type==="adv"?"":"none";
     document.getElementById("bRow").style.display=f.type==="out"?"":"none";
     Array.prototype.forEach.call(document.querySelectorAll("#fB button"),function(x){x.className=x.getAttribute("data-b")===f.bld?"on":""});
@@ -330,9 +331,9 @@ function formView(t,newType){
     var a=parseAmt(document.getElementById("fAmt").value);
     document.getElementById("fPrev").textContent=isNaN(a)||!a?"":"= "+fmtAmt(a,f.cur)+" "+CUR[f.cur].n;
   }
-  document.getElementById("tIn").onclick=function(){if(!ed&&f.type!=="in"&&!document.getElementById("fDesc").value)document.getElementById("fDesc").value="من صاحب العمل";f.type="in";paint()};
-  document.getElementById("tOut").onclick=function(){var d=document.getElementById("fDesc");if(!ed&&d.value==="من صاحب العمل")d.value="";f.type="out";paint()};
-  document.getElementById("tAdv").onclick=function(){var d=document.getElementById("fDesc");if(!ed&&d.value==="من صاحب العمل")d.value="";f.type="adv";paint()};
+  document.getElementById("tIn").onclick=function(){f.type="in";paint()};
+  document.getElementById("tOut").onclick=function(){f.type="out";paint()};
+  document.getElementById("tAdv").onclick=function(){f.type="adv";paint()};
   Array.prototype.forEach.call(document.querySelectorAll("#fB button"),function(x){x.onclick=function(){f.bld=x.getAttribute("data-b");paint()}});
   document.getElementById("cIQD").onclick=function(){f.cur="IQD";paint()};
   document.getElementById("cUSD").onclick=function(){f.cur="USD";paint()};
