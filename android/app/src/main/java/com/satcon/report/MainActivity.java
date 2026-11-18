@@ -179,6 +179,7 @@ public class MainActivity extends Activity {
 
     class Bridge {
         @JavascriptInterface public boolean isNative() { return true; }
+        @JavascriptInterface public String appId() { return BuildConfig.APPLICATION_ID; }
         @JavascriptInterface public void checkUpdate() { MainActivity.this.checkUpdate(); }
 
         @JavascriptInterface public void print(String title) {

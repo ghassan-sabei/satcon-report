@@ -121,6 +121,9 @@ button:active{transform:scale(.97)}
 /* All storage keys start with satcon_sandoq_ so this app never touches the
    daily report or attendance data (they share the same site in the browser). */
 var KEY="satcon_sandoq_v1";
+var COPY=1;try{var _id=window.AndroidBridge&&window.AndroidBridge.appId&&window.AndroidBridge.appId(),_m=/sandoq(\d+)$/.exec(_id||"");if(_m)COPY=+_m[1]}catch(e){}
+var APPNAME=COPY>1?"الصندوق "+COPY:"الصندوق";
+if(COPY>1){var _c=["#2b3a67","#0f6b5c","#7a2e5a","#6b4a12"][(COPY-1)%4];document.write('<style>header.top{background:'+_c+'}</style>');var _tc=document.querySelector('meta[name=theme-color]');if(_tc)_tc.content=_c}
 var CUR={IQD:{n:"دينار",s:"د.ع"},USD:{n:"دولار",s:"$"}};
 var S=load();
 if(S.__fixB){delete S.__fixB;S.blds=splitBlds(S.blds.join(","));save()}
@@ -193,7 +196,7 @@ function go(h){location.hash=h}
 window.addEventListener("hashchange",function(){closeModal();render();scrollTo(0,0)});
 var app=document.getElementById("app");
 function render(){
-  document.getElementById("hdP").textContent=S.project?"الصندوق - "+S.project:"الصندوق";
+  document.getElementById("hdP").textContent=S.project?APPNAME+" - "+S.project:APPNAME;
   document.getElementById("hdDate").textContent=fmtDate(today());
   var h=location.hash.replace(/^#/,"");
   if(h==="new-in")return formView(null,"in");
@@ -608,7 +611,7 @@ function saveText(text,name,mime){
   if(!NATIVE){var blob=new Blob([text],{type:mime}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();return true}
   return false}
 function backup(){
-  var text=JSON.stringify({app:"satcon-sandoq",v:1,at:Date.now(),state:S}),name="sandoq_backup_"+today()+".json";
+  var text=JSON.stringify({app:"satcon-sandoq",v:1,copy:COPY,at:Date.now(),state:S}),name="sandoq"+(COPY>1?COPY:"")+"_backup_"+today()+".json";
   var canSave=!NATIVE||!!(window.AndroidBridge&&window.AndroidBridge.saveDownload);
   openModal('<h3>💾 نسخة احتياطية</h3><p class="muted" style="margin-top:0">'+S.tx.length+' حركة · الملف: '+esc(name)+'</p>'+
     '<div class="acts" style="flex-direction:column"><button id="bS" class="pri">📤 إرسال (واتساب...)</button>'+(canSave?'<button id="bD">💾 حفظ بمجلد التنزيلات</button>':'')+'<button id="mN">إغلاق</button></div><p class="hint" id="bMsg"></p>');
@@ -623,7 +626,9 @@ function restore(file){
   file.text().then(function(t){var d=JSON.parse(t);if(!d||d.app!=="satcon-sandoq"||!d.state||!Array.isArray(d.state.tx))throw 0;return d}).then(function(d){
     var inc=d.state,b0=blank(),k;for(k in b0)if(inc[k]===undefined)inc[k]=b0[k];
     var mine=S;S=inc;var bi=balances(),ni=inc.tx.length;S=mine;var bm=balances();
-    openModal('<h3>📥 استرجاع نسخة</h3><p style="margin:0 0 8px">نسخة بتاريخ <b>'+fmtDate(isoDate(new Date(d.at)))+'</b></p>'+
+    var fromCopy=d.copy||1,other=fromCopy!==COPY||((inc.project||"")!==(S.project||"")&&S.tx.length);
+    openModal('<h3>📥 استرجاع نسخة</h3><p style="margin:0 0 8px">نسخة بتاريخ <b>'+fmtDate(isoDate(new Date(d.at)))+'</b> من <b>'+(fromCopy>1?"الصندوق "+fromCopy:"الصندوق")+(inc.project?' - '+esc(inc.project):'')+'</b></p>'+
+      (other?'<p class="hint" style="color:#d64545;font-weight:700">⚠ هالملف من '+(fromCopy!==COPY?'تطبيق تاني':'موقع تاني')+'. تأكد إنك عم تسترجعه بالمكان الصح.</p>':'')+
       '<div class="kv"><span>عدد الحركات</span><b>'+ni+'</b></div><div class="kv"><span>رصيد الدينار</span><b>'+fmtAmt(bi.IQD,"IQD")+'</b></div><div class="kv"><span>رصيد الدولار</span><b>'+fmtAmt(bi.USD,"USD")+'</b></div>'+
       (S.tx.length?'<p class="hint" style="color:#a15c00">انتبه: اللي عندك هلأ ('+S.tx.length+' حركة، دينار '+fmtAmt(bm.IQD,"IQD")+'، دولار '+fmtAmt(bm.USD,"USD")+') رح ينمسح وينحط مكانه الملف.</p>':'')+
       '<div class="acts"><button id="mY" class="dan">استرجاع</button><button id="mN">إلغاء</button></div>');
