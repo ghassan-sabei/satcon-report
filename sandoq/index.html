@@ -188,6 +188,7 @@ function render(){
   if(h==="new-adv")return formView(null,"adv");
   if(/^edit-\d+$/.test(h)){var t=txById(+h.slice(5));if(t)return formView(t);}
   if(h==="day")return dayView();
+  if(h==="worker")return workerView();
   if(h==="log")return logView();
   if(h==="print")return printView();
   if(h==="settings")return settingsView();
@@ -208,9 +209,25 @@ var TAB="out";
 function tabBar(id){return'<div class="seg" style="margin-bottom:10px;grid-template-columns:1fr 1fr 1fr"><button id="'+id+'Out" class="out'+(TAB==="out"?" on":"")+'">− الصادر</button><button id="'+id+'In" class="in'+(TAB==="in"?" on":"")+'">+ الوارد</button><button id="'+id+'Adv" class="adv'+(TAB==="adv"?" on":"")+'">السلف</button></div>'}
 function bindTabs(id,cb){document.getElementById(id+"Out").onclick=function(){TAB="out";cb()};document.getElementById(id+"In").onclick=function(){TAB="in";cb()};document.getElementById(id+"Adv").onclick=function(){TAB="adv";cb()}}
 function workersBox(){var ws=workers();if(!ws.length)return'';
-  return'<h2 style="color:#b26a00">السلف حسب العامل</h2>'+ws.map(function(w){var a=[];if(w.IQD)a.push(fmtAmt(w.IQD,"IQD")+' د.ع');if(w.USD)a.push(fmtAmt(w.USD,"USD")+' $');
+  return'<h2 style="color:#b26a00">السلف حسب العامل</h2><input type="text" id="wkQ" placeholder="🔍 ابحث عن اسم العامل" style="width:100%;margin-bottom:4px">'+ws.map(function(w){var a=[];if(w.IQD)a.push(fmtAmt(w.IQD,"IQD")+' د.ع');if(w.USD)a.push(fmtAmt(w.USD,"USD")+' $');
     return'<div class="wk" data-name="'+esc(w.name)+'"><div><b>'+esc(w.name)+'</b><br><span>'+w.n+' سلفة · آخر وحدة '+fmtDate(w.last)+'</span></div><div class="t">'+a.join('<br>')+'</div></div>'}).join("")+'<h2 style="margin-top:14px">آخر السلف</h2>'}
-function bindWorkers(){Array.prototype.forEach.call(app.querySelectorAll(".wk"),function(el){el.onclick=function(){TAB="adv";LF.q=el.getAttribute("data-name");LF.from="";LF.to="";LF.cur="";go("log")}})}
+function bindWorkers(){Array.prototype.forEach.call(app.querySelectorAll(".wk"),function(el){el.onclick=function(){WK=el.getAttribute("data-name");go("worker")}});
+  var q=document.getElementById("wkQ");if(q)q.oninput=function(){var v=q.value.trim().replace(/\s+/g," ");
+    Array.prototype.forEach.call(app.querySelectorAll(".wk"),function(el){el.style.display=!v||el.getAttribute("data-name").indexOf(v)>=0?"":"none"})}}
+/* ---------- one worker: everything he took ---------- */
+var WK="";
+function workerView(){
+  var list=sorted().reverse().filter(function(t){return t.type==="adv"&&t.worker===WK}),s=curTotals(list);
+  if(!WK||!list.length){go("");return}
+  app.innerHTML='<div class="box"><h2 style="color:#b26a00">سلف '+esc(WK)+'</h2>'+
+    '<div class="bal"><div><span>مجموع السلف دينار</span><b>'+fmtAmt(s.IQD,"IQD")+' د.ع</b></div><div><span>مجموع السلف دولار</span><b>'+fmtAmt(s.USD,"USD")+' $</b></div></div>'+
+    '<p class="hint">'+list.length+' سلفة · أول وحدة '+fmtDate(list[list.length-1].date)+' · آخر وحدة '+fmtDate(list[0].date)+'</p></div>'+
+    '<div class="box">'+list.map(txRow).join("")+'</div>'+
+    '<button class="big pri" id="wPr">🖨 طباعة سلف '+esc(WK)+'</button><button class="big" id="wBack" style="margin-top:8px">رجوع</button>';
+  bindRows();
+  document.getElementById("wPr").onclick=function(){PF.kind="adv";PF.worker=WK;PF.from=list[list.length-1].date;PF.to=list[0].date>today()?list[0].date:today();go("print")};
+  document.getElementById("wBack").onclick=function(){history.back()};
+}
 function mainView(){
   var b=balances(),h="";
   var last=sorted().reverse().filter(function(t){return t.type===TAB}).slice(0,15);
@@ -228,7 +245,7 @@ function mainView(){
   document.getElementById("bOut").onclick=function(){go("new-out")};
   document.getElementById("bDay").onclick=function(){DAY=today();go("day")};
   document.getElementById("bLog").onclick=function(){go("log")};
-  document.getElementById("bPr").onclick=function(){go("print")};
+  document.getElementById("bPr").onclick=function(){PF.worker="";go("print")};
   document.getElementById("bSet").onclick=function(){go("settings")};
   var bk=document.getElementById("bkNow");if(bk)bk.onclick=backup;
 }
@@ -370,13 +387,14 @@ function logView(){
 
 /* ---------- printing ---------- */
 var PAGE_W=1062,PAGE_H=733,TOP_H=74,TH_H=30,FT_H=22;
-var PF={from:"",to:"",kind:"out",daily:false};
+var PF={from:"",to:"",kind:"out",daily:false,worker:""};
 var KINDS={out:"كشف الصادر",in:"كشف الوارد",adv:"كشف السلف",all:"كشف الصندوق الكامل"};
 function monthRange(off){var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+off);var a=isoDate(d);d.setMonth(d.getMonth()+1);d.setDate(0);return[a,isoDate(d)]}
 function printView(){
   if(!PF.from){var m=monthRange(0);PF.from=m[0];PF.to=today()}
   app.innerHTML='<div class="box"><h2>الطباعة</h2>'+
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px" id="pK"><button class="small" data-k="out">الصادر</button><button class="small" data-k="in">الوارد</button><button class="small" data-k="adv">السلف</button><button class="small" data-k="all">الكامل</button></div>'+
+    '<div class="row" id="pWr"><label>العامل</label><select id="pW"><option value="">كل العمال</option>'+workers().map(function(w){return'<option value="'+esc(w.name)+'"'+(w.name===PF.worker?' selected':'')+'>'+esc(w.name)+'</option>'}).join("")+'</select></div>'+
     '<div class="row"><label>من</label><input type="date" id="pF" value="'+PF.from+'"></div>'+
     '<div class="row"><label>إلى</label><input type="date" id="pT" value="'+PF.to+'"></div>'+
     '<div class="three" style="margin-bottom:10px"><button class="small" id="q0">هالشهر</button><button class="small" id="q1">الشهر الماضي</button><button class="small" id="qA">الكل</button></div>'+
@@ -386,9 +404,9 @@ function printView(){
     '</div><button class="big" id="pBack">رجوع</button>';
   function paintK(){Array.prototype.forEach.call(document.querySelectorAll("#pK button"),function(b){var k=b.getAttribute("data-k");
     b.style.cssText=k===PF.kind?(k==="in"?"background:#d8f0e1;color:#14532d;border:2px solid #1f9d55":k==="out"?"background:#fde2e2;color:#8a1c1c;border:2px solid #d64545":k==="adv"?"background:#ffe9c7;color:#7a4b00;border:2px solid #e08a00":"background:#dce8fb;color:#1a3f8a;border:2px solid #2f6fd6"):"border:2px solid transparent";
-    b.style.fontWeight="600"});document.getElementById("pDw").style.display=PF.kind==="all"?"none":""}
+    b.style.fontWeight="600"});document.getElementById("pDw").style.display=PF.kind==="all"?"none":"";document.getElementById("pWr").style.display=PF.kind==="adv"?"":"none"}
   Array.prototype.forEach.call(document.querySelectorAll("#pK button"),function(b){b.onclick=function(){PF.kind=b.getAttribute("data-k");paintK();upd()}});
-  function upd(){PF.from=document.getElementById("pF").value;PF.to=document.getElementById("pT").value;PF.daily=document.getElementById("pD").checked;
+  function upd(){PF.worker=document.getElementById("pW").value;PF.from=document.getElementById("pF").value;PF.to=document.getElementById("pT").value;PF.daily=document.getElementById("pD").checked;
     if(!PF.from||!PF.to||PF.from>PF.to){document.getElementById("pInfo").innerHTML='<p class="err">الفترة غلط.</p>';return}
     var n=makePages().length,h='';
     if(PF.kind==="all"){var L=ledger(PF.from,PF.to);
@@ -400,7 +418,7 @@ function printView(){
   document.getElementById("q0").onclick=function(){var m=monthRange(0);set(m[0],today())};
   document.getElementById("q1").onclick=function(){var m=monthRange(-1);set(m[0],m[1])};
   document.getElementById("qA").onclick=function(){var s=sorted();set(s.length?s[0].date:today(),s.length&&s[s.length-1].date>today()?s[s.length-1].date:today())};
-  ["pF","pT","pD"].forEach(function(id){document.getElementById(id).onchange=upd});
+  ["pF","pT","pD","pW"].forEach(function(id){document.getElementById(id).onchange=upd});
   document.getElementById("pPr").onclick=function(){if(PF.from>PF.to)return;printPages(makePages(),KINDS[PF.kind],function(){doPdf()})};
   document.getElementById("pPdf").onclick=function(){if(PF.from>PF.to)return;doPdf()};
   document.getElementById("pBack").onclick=function(){history.back()};
@@ -428,7 +446,7 @@ function paginate(o){
       '<table>'+o.colg+o.head+pg.map(function(r){return r.html}).join("")+'</table>'+
       '<div class="ft"><span>تاريخ الطباعة: '+printed+'</span><span>صفحة '+(pi+1)+' من '+N+'</span></div></div>'});
 }
-function kindRows(kind,from,to){return sorted().filter(function(t){return t.type===kind&&t.date>=from&&t.date<=to})}
+function kindRows(kind,from,to){var w=kind==="adv"?PF.worker:"";return sorted().filter(function(t){return t.type===kind&&t.date>=from&&t.date<=to&&(!w||t.worker===w)})}
 /* in-only or out-only sheet: amount columns per currency, optional total under each day */
 function kindPages(kind,from,to,daily){
   var list=kindRows(kind,from,to),rows=[],tot={IQD:0,USD:0},day={IQD:0,USD:0},isAdv=kind==="adv",name={in:"الوارد",out:"الصادر",adv:"السلف"}[kind];
@@ -443,7 +461,7 @@ function kindPages(kind,from,to,daily){
       rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="5">مجموع يوم '+fmtDate(t.date)+'</td>'+nCell(day.IQD||"","IQD")+nCell(day.USD||"","USD")+'</tr>'});
       day={IQD:0,USD:0}}
   });
-  if(isAdv&&list.length){
+  if(isAdv&&list.length&&!PF.worker){
     var m={};list.forEach(function(t){var w=m[t.worker]||(m[t.worker]={n:0,IQD:0,USD:0});w.n++;w[t.cur]=r2(w[t.cur]+t.amount)});
     rows.push({h:26,html:'<tr class="tot"><td colspan="7">المجموع حسب العامل</td></tr>'});
     Object.keys(m).sort(function(a,b){return a.localeCompare(b,"ar")}).forEach(function(k){
@@ -451,9 +469,9 @@ function kindPages(kind,from,to,daily){
   }
   var last=[];
   if(!list.length)last.push({h:30,html:'<tr><td colspan="7" style="height:30px">ما في '+(isAdv?'سلف':TL[kind])+' بهالفترة</td></tr>'});
-  last.push({h:28,html:'<tr class="tot"><td colspan="5">مجموع '+name+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'});
+  last.push({h:28,html:'<tr class="tot"><td colspan="5">مجموع '+name+(isAdv&&PF.worker?' '+esc(PF.worker):'')+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'});
   var c=' style="background:'+({in:"#a9d18e",out:"#f4b183",adv:"#ffd966"})[kind]+'"';
-  return paginate({title:KINDS[kind],from:from,to:to,first:[],rows:rows,last:last,
+  return paginate({title:KINDS[kind]+(isAdv&&PF.worker?' - '+esc(PF.worker):''),from:from,to:to,first:[],rows:rows,last:last,
     colg:'<colgroup><col style="width:40px"><col style="width:90px">'+(isAdv?'<col style="width:170px"><col>':'<col><col style="width:110px">')+'<col style="width:100px"><col style="width:150px"><col style="width:130px"></colgroup>',
     head:'<tr><th'+c+'>ت</th><th'+c+'>التاريخ</th>'+(isAdv?'<th'+c+'>اسم العامل</th><th'+c+'>الشرح</th>':'<th'+c+'>الشرح</th><th'+c+'>رقم الفاتورة</th>')+'<th'+c+'>رقم الوصل</th><th class="iq">المبلغ دينار</th><th class="us">المبلغ دولار $</th></tr>'});
 }
