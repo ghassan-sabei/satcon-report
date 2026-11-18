@@ -584,7 +584,11 @@ function renderSettings(app){
   bindSyncBox();
   document.querySelectorAll("[data-lmode]").forEach(function(b){b.onclick=function(){var m=b.getAttribute("data-lmode");
     if((m==="auto")===autoLock())return;
-    requireAdmin(function(){if(m==="auto")S.settings.lockMode="auto";else delete S.settings.lockMode;save();render()})}});
+    requireAdmin(function(){if(m==="auto")S.settings.lockMode="auto";else{
+      /* going back to manual: days that were locked by the auto rule stay locked for good */
+      var t=todaySafe(),now=Date.now(),ds={};Object.keys(S.days).forEach(function(d){ds[d]=1});(S.fuel.ins||[]).forEach(function(x){if(x.date)ds[x.date]=1});
+      Object.keys(ds).forEach(function(d){if(d<t&&!S.settings["lk_"+d])S.settings["lk_"+d]=now});
+      delete S.settings.lockMode}save();render()})}});
   document.getElementById("cBtn").onclick=function(){if(!document.getElementById("cDate").value){document.getElementById("cDate").style.borderColor="#d64545";return}requireAdmin(clearAtt)};
   function clearAtt(){
     var inp=document.getElementById("cDate"),d=inp.value;
@@ -938,7 +942,7 @@ function lockModeBox(){var a=autoLock();
   return'<div class="box"><h2>🔒 طريقة قفل الأيام</h2><div class="two">'+
     '<button data-lmode="manual" class="'+(a?'':'pri')+'">'+(a?'':'✓ ')+'يدوي</button>'+
     '<button data-lmode="auto" class="'+(a?'pri':'')+'">'+(a?'✓ ':'')+'أوتوماتيك</button></div>'+
-    '<p class="hint">'+(a?'كل يوم بيتقفل لحاله بعد 12 بالليل. وزر الإقفال بيضل موجود إذا بدك تقفل قبل.':'اليوم ما بيتقفل إلا بزر "إقفال اليوم".')+'<br>التغيير بس للإدارة.</p></div>'}
+    '<p class="hint">'+(a?'كل يوم بيتقفل لحاله بعد 12 بالليل. وزر الإقفال بيضل موجود إذا بدك تقفل قبل. إذا رجعت ليدوي، الأيام المقفلة بتضل مقفلة.':'اليوم ما بيتقفل إلا بزر "إقفال اليوم".')+'<br>التغيير بس للإدارة.</p></div>'}
 var lastToday=todaySafe();
 setInterval(function(){if(todaySafe()!==lastToday){lastToday=todaySafe();if(!modalOpen())render()}},30000);
 setInterval(function(){var els=document.querySelectorAll("[data-lkt]"),gone=false;
