@@ -797,9 +797,10 @@ function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
   function advTxt(){var p={};for(var k in adv)p[k]=adv[k];return payTxt(p)}
   var head=headTable("كشف حساب عامل","Worker Statement",'من '+fmtDate(from)+' &nbsp; إلى '+fmtDate(to),["Period","الفترة"])+
     '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue" style="width:14%">الاسم</td><td style="font-size:17px"><b>'+esc(w.name)+'</b></td><td class="blue" style="width:14%">المهنة</td><td style="width:22%">'+esc(w.job||"")+'</td></tr></table>';
-  function col(part){var h='<table class="grid" dir="rtl"><tr><th style="width:21%">التاريخ</th><th style="width:17%">اليوم</th><th style="width:16%">الساعات</th><th>المبلغ</th><th>السلفة</th></tr>';
-    for(var i=0;i<RPC;i++){var x=part[i];
-      h+='<tr style="height:24px">'+(x?'<td>'+fmtDate(x.d).slice(0,5)+'</td><td style="font-size:13px">'+dayName(x.d)+'</td><td>'+(x.min!=null?dur(x.min):'')+'</td><td>'+(x.amt!=null?money(x.amt,x.cur):'')+'</td><td style="line-height:1.05">'+(x.adv?money(x.adv,x.acur)+(x.by?'<br><span style="font-size:10px">'+esc(x.by.join("، "))+'</span>':''):'')+'</td>':'<td></td><td></td><td></td><td></td><td></td>')+'</tr>'}
+  /* only rows with something in them: no empty filler rows */
+  function col(part){var h='<table class="grid" dir="rtl"><tr><th style="width:15%">التاريخ</th><th style="width:14%">اليوم</th><th style="width:13%">الساعات</th><th style="width:18%">المبلغ</th><th style="width:17%">السلفة</th><th>السلفة من مين</th></tr>';
+    part.forEach(function(x){
+      h+='<tr style="height:24px"><td>'+fmtDate(x.d).slice(0,5)+'</td><td style="font-size:13px">'+dayName(x.d)+'</td><td>'+(x.min!=null?dur(x.min):'')+'</td><td>'+(x.amt!=null?money(x.amt,x.cur):'')+'</td><td>'+(x.adv?money(x.adv,x.acur):'')+'</td><td style="font-size:13px">'+(x.by?esc(x.by.join("، ")):'')+'</td></tr>'});
     return h+'</table>'}
   for(var p=0;p<n;p++){var chunk=list.slice(p*per,(p+1)*per);
     var h='<div class="sheet page" style="width:'+PAGE_H+'px;height:'+PAGE_W+'px;position:relative">'+head+'<div style="margin-top:8px">'+col(chunk)+'</div>';
