@@ -18,7 +18,7 @@ main{padding:12px;max-width:680px;margin:0 auto;padding-bottom:40px}
 .box h2{font-size:16px;margin:0 0 10px;color:#2b3a67}
 .row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
 .row label{min-width:96px;font-size:14px;color:#555}
-input[type=text],input[type=number],input[type=date],select,textarea{font:inherit;padding:10px;border:1px solid #c8cfdb;border-radius:8px;flex:1;min-width:0;background:#fff}
+input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],select,textarea{font:inherit;padding:10px;border:1px solid #c8cfdb;border-radius:8px;flex:1;min-width:0;background:#fff}
 input.bad{border-color:#d64545;background:#fff5f5}
 button{font:inherit;border:0;border-radius:10px;padding:12px 14px;cursor:pointer;background:#dfe5f0;color:#1d2433}
 button:active{transform:scale(.97)}
@@ -111,7 +111,7 @@ button:active{transform:scale(.97)}
 </style>
 </head>
 <body>
-<header class="top"><h1 id="hdP" style="cursor:pointer">الصندوق</h1><div class="d" id="hdDate"></div></header>
+<header class="top"><h1 id="hdP" style="cursor:pointer">الصندوق</h1><div class="d"><span id="syncB" style="cursor:pointer"></span> <span id="hdDate"></span></div></header>
 <main id="app"></main>
 <div id="printArea"></div>
 <div class="modal" id="modal"><div class="in" id="modalIn"></div></div>
@@ -138,7 +138,7 @@ function siteName(id,st){st=st||siteState(id);return st.project||("الموقع 
 function siteColor(id){return SITE_COLORS[SITES.ids.indexOf(id)%SITE_COLORS.length]}
 function balOf(st){var b={IQD:(st.open&&st.open.IQD)||0,USD:(st.open&&st.open.USD)||0};(st.tx||[]).forEach(function(t){b[t.cur]=r2(b[t.cur]+(t.type==="in"?t.amount:-t.amount))});return b}
 function resetViews(){TAB="out";LF={from:"",to:"",cur:"",q:"",bld:""};PF={from:"",to:"",kind:"out",daily:false,worker:"",bld:""};BF={from:"",to:""};WK="";DAY=""}
-function switchSite(id){SITES.cur=id;saveSites();KEY=siteKey(id);S=load();resetViews();closeModal();if(location.hash&&location.hash!=="#")go("");else render();scrollTo(0,0)}
+function switchSite(id){SITES.cur=id;saveSites();KEY=siteKey(id);S=load();if(SY.on)shadowInit();resetViews();closeModal();if(location.hash&&location.hash!=="#")go("");else render();scrollTo(0,0)}
 function sitePicker(){
   var h='<h3>المواقع</h3>'+SITES.ids.map(function(id){var st=siteState(id),b=balOf(st),on=id===SITES.cur;
     return'<div class="wk" data-site="'+id+'" style="border-right:6px solid '+siteColor(id)+';padding-right:10px'+(on?';background:#f3f6fb':'')+'"><div><b>'+(on?'✓ ':'')+esc(siteName(id,st))+'</b><br><span>'+(st.tx||[]).length+' حركة</span></div>'+
@@ -152,9 +152,9 @@ function sitePicker(){
     var nm=document.getElementById("nsName").value.trim().replace(/\s+/g," ");
     if(!nm){document.getElementById("nsErr").textContent="اكتب اسم الموقع.";return}
     if(SITES.ids.some(function(id){return siteName(id)===nm})){document.getElementById("nsErr").textContent="في موقع بهالاسم.";return}
-    var id=String(SITES.next++),st=blank();st.project=nm;
+    var id=newId("s"),st=blank();st.project=nm;
     try{localStorage.setItem(siteKey(id),JSON.stringify(st))}catch(e){document.getElementById("nsErr").textContent="ما قدر يحفظ.";return}
-    SITES.ids.push(id);saveSites();switchSite(id);go("settings")};
+    SITES.ids.push(id);saveSites();syncSiteCreated(id);switchSite(id);go("settings")};
 }
 function deleteSite(){
   var id=SITES.cur,nm=siteName(id),n=S.tx.length,b=balances();
@@ -164,8 +164,8 @@ function deleteSite(){
   document.getElementById("mN").onclick=closeModal;
   document.getElementById("mY").onclick=function(){
     if(document.getElementById("dsN").value.trim().replace(/\s+/g," ")!==nm){document.getElementById("dsE").textContent="الاسم مش مطابق.";return}
-    try{localStorage.removeItem(siteKey(id))}catch(e){}
-    SITES.ids=SITES.ids.filter(function(x){return x!==id});saveSites();switchSite(SITES.ids[0])};
+    syncSiteDeleting(id,S);try{localStorage.removeItem(siteKey(id))}catch(e){}
+    SITES.ids=SITES.ids.filter(function(x){return x!==id});saveSites();switchSite(SITES.ids[0]);setTimeout(flush,300)};
 }
 var CUR={IQD:{n:"دينار",s:"د.ع"},USD:{n:"دولار",s:"$"}};
 var S=load();
@@ -175,9 +175,10 @@ function load(){var s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){
   if(!s||!s.tx)s=blank();
   var b=blank(),k;for(k in b)if(s[k]===undefined)s[k]=b[k];
   if(!s.open)s.open={IQD:0,USD:0};
+  s.tx.forEach(function(t){if(typeof t.id!=="string")t.id=String(t.id)});
   if(s.blds&&s.blds.length)s.__fixB=1;
   return s}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("ما قدر يحفظ! الذاكرة ممتلئة؟")}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("ما قدر يحفظ! الذاكرة ممتلئة؟")}syncChanged()}
 
 /* ---------- helpers ---------- */
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
@@ -194,9 +195,11 @@ function fmtAmt(n,cur){
   var t=cur==="USD"?n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2}):Math.round(n).toLocaleString("en-US");
   return(neg?"-":"")+t}
 function normRcpt(s){return normDigits(s).trim().replace(/\s+/g," ")}
-function byOrder(a,b){return a.date<b.date?-1:a.date>b.date?1:a.id-b.id}
+/* ids are text and unique across devices (a phone and a laptop never pick the same one) */
+function newId(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function byOrder(a,b){if(a.date!==b.date)return a.date<b.date?-1:1;var x=a.at||0,y=b.at||0;if(x!==y)return x-y;var i=+a.id,j=+b.id;if(!isNaN(i)&&!isNaN(j))return i-j;return String(a.id)<String(b.id)?-1:1}
 function sorted(){return S.tx.slice().sort(byOrder)}
-function txById(id){for(var i=0;i<S.tx.length;i++)if(S.tx[i].id===id)return S.tx[i];return null}
+function txById(id){id=String(id);for(var i=0;i<S.tx.length;i++)if(S.tx[i].id===id)return S.tx[i];return null}
 function sign(t){return t.type==="in"?t.amount:-t.amount}
 /* an advance (سلفة) leaves the box like any expense but is kept apart and tied to a worker */
 var TL={in:"وارد",out:"صادر",adv:"سلفة"};
@@ -239,6 +242,7 @@ function go(h){location.hash=h}
 window.addEventListener("hashchange",function(){closeModal();render();scrollTo(0,0)});
 var app=document.getElementById("app");
 function render(){
+  updBadge();document.getElementById("syncB").onclick=function(){go("settings")};
   var hp=document.getElementById("hdP");hp.textContent=APPNAME+" - "+siteName(SITES.cur)+" ▾";hp.onclick=sitePicker;
   var col=siteColor(SITES.cur);document.querySelector("header.top").style.background=col;var tc=document.querySelector('meta[name=theme-color]');if(tc)tc.content=col;
   document.getElementById("hdDate").textContent=fmtDate(today());
@@ -246,7 +250,7 @@ function render(){
   if(h==="new-in")return formView(null,"in");
   if(h==="new-out")return formView(null,"out");
   if(h==="new-adv")return formView(null,"adv");
-  if(/^edit-\d+$/.test(h)){var t=txById(+h.slice(5));if(t)return formView(t);}
+  if(/^edit-.+$/.test(h)){var t=txById(h.slice(5));if(t)return formView(t);}
   if(h==="day")return dayView();
   if(h==="blds")return bldsView();
   if(h==="worker")return workerView();
@@ -259,9 +263,10 @@ function balBox(b){
   return'<div class="bal">'+["IQD","USD"].map(function(c){
     return'<div class="'+(b[c]<0?"neg":"")+'"><span>رصيد ال'+CUR[c].n+'</span><b>'+fmtAmt(b[c],c)+' '+CUR[c].s+'</b></div>'}).join("")+'</div>'}
 function txRow(t){
+  var dup=t.rcpt&&rcptUsed(t.rcpt,t.id);
   var title=t.type==="adv"?esc(t.worker)+(t.desc?' · '+esc(t.desc):''):esc(t.desc||TL[t.type]);
-  return'<div class="tx" data-id="'+t.id+'"><div class="ic '+t.type+'">'+(t.type==="in"?"+":t.type==="adv"?"س":"−")+'</div>'+
-    '<div class="mid"><b>'+title+'</b><span>'+fmtDate(t.date)+(t.type==="out"&&t.bld?' · '+esc(bldLabel(t.bld)):'')+(t.rcpt?' · وصل '+esc(t.rcpt):'')+(t.inv?' · فاتورة '+esc(t.inv):'')+'</span></div>'+
+  return'<div class="tx" data-id="'+t.id+'"'+(dup?' style="background:#fde2e2"':'')+'><div class="ic '+t.type+'">'+(t.type==="in"?"+":t.type==="adv"?"س":"−")+'</div>'+
+    '<div class="mid"><b>'+title+'</b><span>'+fmtDate(t.date)+(t.type==="out"&&t.bld?' · '+esc(bldLabel(t.bld)):'')+(t.rcpt?' · وصل '+esc(t.rcpt)+(dup?' <b style="color:#c62828">⚠ مكرر</b>':''):'')+(t.inv?' · فاتورة '+esc(t.inv):'')+'</span></div>'+
     '<div class="am '+t.type+'">'+(t.type==="in"?"+":"-")+fmtAmt(t.amount,t.cur)+' '+CUR[t.cur].s+'</div></div>'}
 function bindRows(){Array.prototype.forEach.call(app.querySelectorAll(".tx"),function(el){el.onclick=function(){go("edit-"+el.getAttribute("data-id"))}})}
 
@@ -401,13 +406,13 @@ function formView(t,newType){
     var wk=document.getElementById("fWk").value.trim().replace(/\s+/g," ");
     if(f.type==="adv"&&!wk)return bad("fWk","اكتب اسم العامل.");
     if(f.type==="out"&&bldList().length&&!f.bld){err.textContent="اختار البناية (أو عام إذا للموقع كله).";return}
-    var u=rc?rcptUsed(rc,ed?t.id:-1):null;
+    var u=rc?rcptUsed(rc,ed?t.id:null):null;
     if(u)return bad("fRc","رقم الوصل "+rc+" مستعمل قبل ("+fmtDate(u.date)+" · "+(u.desc||"")+" · "+fmtAmt(u.amount,u.cur)+" "+CUR[u.cur].s+").");
-    var o=ed?t:{id:S.seq++,at:Date.now()};
+    var o=ed?(txById(t.id)||t):{id:newId("t"),at:Date.now()};
     o.type=f.type;o.cur=f.cur;o.amount=f.cur==="USD"?r2(amt):Math.round(amt);o.date=date;o.desc=desc;o.inv=inv;o.rcpt=rc;
     if(f.type==="adv")o.worker=wk;else delete o.worker;
     if(f.type==="out"&&f.bld)o.bld=f.bld;else delete o.bld;
-    if(ed)o.edited=Date.now();else S.tx.push(o);
+    if(ed){o.edited=Date.now();if(!txById(o.id))S.tx.push(o)}else S.tx.push(o);
     S.lastCur=f.cur;TAB=f.type;save();history.back();
   };
   if(ed)document.getElementById("fDel").onclick=function(){
@@ -681,7 +686,7 @@ function restore(file){
   }).catch(function(){info("الملف مو نسخة صندوق","اختار ملف sandoq_backup_....json")});
 }
 function settingsView(){
-  app.innerHTML='<div class="box"><h2>الإعدادات</h2>'+
+  app.innerHTML=syncBox()+'<div class="box"><h2>الإعدادات</h2>'+
     '<div class="row"><label>اسم الموقع</label><input type="text" id="sP" value="'+esc(S.project)+'"></div>'+
     '<p class="hint" style="margin:-4px 0 10px">يطلع بأعلى الشاشة وبورقة الطباعة.</p>'+
     '<div class="row"><label>البنايات</label><input type="text" id="sB" placeholder="مثلاً: 1، 2، 3، 4، 5" value="'+esc((S.blds||[]).join("، "))+'"></div>'+
@@ -705,6 +710,201 @@ function settingsView(){
   document.getElementById("sIn").onchange=function(e){var f=e.target.files[0];if(f)restore(f);e.target.value=""};
   document.getElementById("sBack").onclick=function(){history.back()};
   var del=document.getElementById("sDel");if(del)del.onclick=deleteSite;
+  bindSyncBox();
+}
+
+/* ---------- sync between devices (Firebase) ----------
+   Each site is a document s/{siteId}; each movement is s/{siteId}/t/{id}.
+   The phone and the laptop keep their own copy in localStorage and work without internet.
+   Every local change is noted in PEND until the server confirms it, so nothing is lost
+   if the app closes while offline. Changes from the server never overwrite a movement that
+   still has an unsent local change. */
+var FB_CFG={apiKey:"AIzaSyDuQOZFZbkyk85wOZNrzNDDuRAceHnmJuk",authDomain:"satcon-assad.firebaseapp.com",projectId:"satcon-assad",
+  storageBucket:"satcon-assad.firebasestorage.app",messagingSenderId:"606771906756",appId:"1:606771906756:web:726c48ee040eb73fbda191"};
+var SY_KEY="satcon_sandoq_sync",PEND_KEY="satcon_sandoq_pend";
+var SY=(function(){try{return JSON.parse(localStorage.getItem(SY_KEY))||{}}catch(e){return{}}})();
+var PEND=(function(){try{return JSON.parse(localStorage.getItem(PEND_KEY))||{}}catch(e){return{}}})();
+var SST={ready:false,cache:true,err:"",lastOk:0,flushing:false};
+var fbx=null,fauth=null,fdb=null,fbP=null,unsubSites=null,txSubs={},SHADOW=null,needRender=false;
+function saveSY(){try{localStorage.setItem(SY_KEY,JSON.stringify(SY))}catch(e){}}
+function savePend(){try{localStorage.setItem(PEND_KEY,JSON.stringify(PEND))}catch(e){}}
+function pendN(){var n=0;for(var s in PEND)n+=Object.keys(PEND[s]).length;return n}
+function mark(sid,key){(PEND[sid]||(PEND[sid]={}))[key]=Date.now()+Math.random()}
+var TXF=["id","type","cur","amount","date","desc","inv","rcpt","worker","bld","at","edited"];
+function canonTx(t){var o={};TXF.forEach(function(k){if(t[k]!==undefined&&t[k]!==null)o[k]=t[k]});o.id=String(o.id);return o}
+function canonMeta(st){return{project:st.project||"",open:{IQD:+((st.open&&st.open.IQD)||0),USD:+((st.open&&st.open.USD)||0)},blds:(st.blds||[]).slice()}}
+function readSite(sid){if(sid===SITES.cur)return S;var s=null;try{s=JSON.parse(localStorage.getItem(siteKey(sid)))}catch(e){}
+  if(!s)s=blank();var b=blank(),k;for(k in b)if(s[k]===undefined)s[k]=b[k];return s}
+function writeSite(sid,st){try{localStorage.setItem(siteKey(sid),JSON.stringify(st))}catch(e){}}
+/* what this device last sent or received for the open site; save() compares against it */
+function shadowInit(){var m={};S.tx.forEach(function(t){m[t.id]=JSON.stringify(canonTx(t))});SHADOW={sid:SITES.cur,meta:JSON.stringify(canonMeta(S)),tx:m}}
+function syncChanged(){
+  if(typeof SY==="undefined"||!SY||!SY.on)return;
+  if(!SHADOW||SHADOW.sid!==SITES.cur){shadowInit();return}
+  var sid=SITES.cur,ch=false,meta=JSON.stringify(canonMeta(S)),seen={};
+  if(meta!==SHADOW.meta){mark(sid,"__site");SHADOW.meta=meta;ch=true}
+  S.tx.forEach(function(t){var j=JSON.stringify(canonTx(t));seen[t.id]=1;if(SHADOW.tx[t.id]!==j){mark(sid,t.id);SHADOW.tx[t.id]=j;ch=true}});
+  for(var id in SHADOW.tx)if(!seen[id]){mark(sid,id);delete SHADOW.tx[id];ch=true}
+  if(ch){savePend();updBadge();setTimeout(flush,300)}
+}
+function syncSiteCreated(sid){if(!SY.on)return;mark(sid,"__site");savePend();setTimeout(flush,300)}
+function syncSiteDeleting(sid,st){if(!SY.on)return;mark(sid,"__site");st.tx.forEach(function(t){mark(sid,t.id)});savePend()}
+function withNet(p){return Promise.race([p,new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},25000)})])}
+function ensureFb(){if(fbP)return fbP;
+  fbP=(window.FBS?Promise.resolve():loadScript("fb.js")).then(function(){fbx=window.FBS;
+    var app=fbx.initializeApp(FB_CFG);
+    try{fauth=fbx.initializeAuth(app,{persistence:[fbx.indexedDBLocalPersistence,fbx.browserLocalPersistence]})}catch(e){fauth=fbx.initializeAuth(app,{persistence:fbx.inMemoryPersistence})}
+    try{fdb=fbx.initializeFirestore(app,{localCache:fbx.persistentLocalCache({tabManager:fbx.persistentMultipleTabManager()})})}catch(e){fdb=fbx.initializeFirestore(app,{localCache:fbx.memoryLocalCache()})}
+  });
+  fbP.catch(function(){fbP=null;SST.err="nofb";updBadge()});
+  return fbP}
+function authUser(){return new Promise(function(res){var done=false,un=fbx.onAuthStateChanged(fauth,function(u){if(done)return;done=true;res(u);setTimeout(function(){try{un()}catch(e){}},0)})})}
+function startSync(){
+  if(!SY.on)return;
+  ensureFb().then(authUser).then(function(u){
+    if(!u){SST.err="out";updBadge();return}
+    SST.err="";SST.ready=true;listen();flush();updBadge();
+  });
+}
+function stopListen(){if(unsubSites){try{unsubSites()}catch(e){}unsubSites=null}for(var k in txSubs){try{txSubs[k]()}catch(e){}}txSubs={}}
+function listen(){
+  stopListen();
+  unsubSites=fbx.onSnapshot(fbx.collection(fdb,"s"),{includeMetadataChanges:true},function(snap){
+    SST.cache=snap.metadata.fromCache;if(!SST.cache)SST.lastOk=Date.now();
+    var sitesChanged=false;
+    snap.docs.forEach(function(d){var sid=d.id,data=d.data()||{},pend=PEND[sid]||{},have=SITES.ids.indexOf(sid)>=0;
+      if(pend.__site)return; /* this device has an unsent change to this site */
+      if(data.deleted){ /* deleted on the other device */
+        if(txSubs[sid]){try{txSubs[sid]()}catch(e){}delete txSubs[sid]}
+        if(!have||SITES.ids.length<=1)return;
+        try{localStorage.removeItem(siteKey(sid))}catch(e){}
+        SITES.ids=SITES.ids.filter(function(x){return x!==sid});sitesChanged=true;
+        if(SITES.cur===sid){saveSites();switchSite(SITES.ids[0])}
+        return}
+      var m=canonMeta(data);
+      if(!have){var st=blank();st.project=m.project;st.open=m.open;st.blds=m.blds;writeSite(sid,st);SITES.ids.push(sid);sitesChanged=true}
+      else{var st2=readSite(sid);
+        if(JSON.stringify(canonMeta(st2))!==JSON.stringify(m)){st2.project=m.project;st2.open=m.open;st2.blds=m.blds;writeSite(sid,st2);
+          if(sid===SITES.cur&&SHADOW&&SHADOW.sid===sid)SHADOW.meta=JSON.stringify(m);sitesChanged=true}}
+      if(!txSubs[sid])listenTx(sid);
+    });
+    if(sitesChanged){saveSites();needRender=true}
+    updBadge();
+  },function(e){SST.err=String(e&&e.code||e);updBadge()});
+}
+function listenTx(sid){
+  txSubs[sid]=fbx.onSnapshot(fbx.collection(fdb,"s",sid,"t"),{includeMetadataChanges:true},function(snap){
+    if(SITES.ids.indexOf(sid)<0)return;
+    var st=readSite(sid),pend=PEND[sid]||{},byId={},ch=false,cur=sid===SITES.cur&&SHADOW&&SHADOW.sid===sid,gone={};
+    st.tx.forEach(function(t,i){byId[t.id]=i});
+    snap.docs.forEach(function(d){var id=d.id,data=d.data()||{};if(pend[id])return;
+      if(data.deleted){if(byId[id]!==undefined){gone[id]=1;ch=true;if(cur)delete SHADOW.tx[id]}return}
+      var nt=canonTx(Object.assign({},data,{id:id})),j=JSON.stringify(nt);
+      if(byId[id]===undefined){st.tx.push(nt);byId[id]=st.tx.length-1;ch=true}
+      else if(JSON.stringify(canonTx(st.tx[byId[id]]))!==j){st.tx[byId[id]]=nt;ch=true}else return;
+      if(cur)SHADOW.tx[id]=j});
+    if(Object.keys(gone).length){var keep=st.tx.filter(function(t){return!gone[t.id]});st.tx.length=0;Array.prototype.push.apply(st.tx,keep)}
+    if(ch){writeSite(sid,st);if(sid===SITES.cur)needRender=true}
+  },function(e){SST.err=String(e&&e.code||e);updBadge()});
+}
+/* send what is in PEND; a change made while sending stays in PEND for the next round */
+function flush(){
+  if(!SY.on||!SST.ready||SST.flushing||!pendN())return;
+  SST.flushing=true;
+  var b=fbx.writeBatch(fdb),taken=[],n=0;
+  for(var sid in PEND){if(n>=400)break;
+    var exists=SITES.ids.indexOf(sid)>=0,st=exists?readSite(sid):null,map={};
+    if(st)st.tx.forEach(function(t){map[t.id]=t});
+    for(var key in PEND[sid]){if(n>=400)break;
+      if(key==="__site"){if(exists)b.set(fbx.doc(fdb,"s",sid),canonMeta(st));else b.set(fbx.doc(fdb,"s",sid),{deleted:true,at:Date.now()})}
+      else if(map[key])b.set(fbx.doc(fdb,"s",sid,"t",key),canonTx(map[key]));
+      else b.set(fbx.doc(fdb,"s",sid,"t",key),{id:key,deleted:true,at:Date.now()});
+      taken.push([sid,key,PEND[sid][key]]);n++}}
+  b.commit().then(function(){
+    taken.forEach(function(x){var p=PEND[x[0]];if(p&&p[x[1]]===x[2]){delete p[x[1]];if(!Object.keys(p).length)delete PEND[x[0]]}});
+    savePend();SST.flushing=false;SST.lastOk=Date.now();SST.err="";updBadge();if(pendN())setTimeout(flush,200);
+  },function(e){SST.flushing=false;SST.err=String(e&&e.code||e);updBadge();setTimeout(flush,15000)});
+}
+setInterval(function(){if(SY.on&&SST.ready&&pendN()&&!SST.flushing)flush()},20000);
+/* redraw lists when the other device changed something, but never under the user's fingers */
+setInterval(function(){if(!needRender)return;
+  var h=location.hash.replace(/^#/,""),busy=document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if(modal.classList.contains("show")||busy)return;
+  if(h===""||h==="log"||h==="day"||h==="blds"||h==="worker"){needRender=false;render()}
+},1500);
+function badgeTxt(){if(!SY.on)return"";var n=pendN();
+  if(SST.err==="out")return"🔴";if(SST.err==="nofb")return"⚪";
+  if(!SST.ready||SST.cache)return"🟠"+(n?" "+n:"");return n?"🟠 "+n:"🟢"}
+function updBadge(){var b=document.getElementById("syncB");if(b)b.textContent=badgeTxt();var x=document.getElementById("syS");if(x)x.innerHTML=syncStatus()}
+function hm(ts){var d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())+" "+fmtDate(isoDate(d))}
+function syncStatus(){var n=pendN();
+  if(SST.err==="nofb")return"⚪ أدوات المزامنة مش موجودة بهالنسخة. ثبّت ملف الـAPK الجديد.";
+  if(SST.err==="out")return"🔴 لازم تفوت بحسابك من جديد.";
+  if(!SST.ready)return"🟠 عم يتصل...";
+  return(SST.cache?"🟠 بدون إنترنت، رح يزامن لحاله لما يرجع النت":"🟢 متصل")+
+    (n?"<br>بانتظار الرفع: <b>"+n+"</b>":"<br>كل شي مرفوع ✓")+(SST.lastOk?"<br><span class='muted'>آخر اتصال: "+hm(SST.lastOk)+"</span>":"")}
+function authMsg(e){var c=String(e&&e.code||e&&e.message||e);
+  if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c))return"الإيميل أو كلمة السر غلط.";
+  if(/network|timeout|unavailable/.test(c))return"ما في إنترنت، أو الاتصال ضعيف. جرّب مرة تانية.";
+  if(/too-many/.test(c))return"محاولات كتير. استنى شوي وجرّب.";
+  return"صار خطأ: "+c}
+function syncBox(){
+  var form='<div class="row"><input type="email" id="syE" dir="ltr" autocomplete="username" placeholder="الإيميل" value="'+esc(SY.email||"")+'"></div>'+
+    '<div class="row"><input type="password" id="syP" dir="ltr" autocomplete="current-password" placeholder="كلمة السر"></div><p class="err" id="syErr"></p>';
+  if(!SY.on)return'<div class="box"><h2>☁ المزامنة بين الأجهزة</h2><p class="muted" style="margin-top:0">فوت بحسابك على التلفون واللابتوب، وكل شي بتسجله بيطلع على التاني. بيشتغل بدون إنترنت وبيزامن لما يرجع النت.</p>'+
+    form+'<button class="big pri" id="syIn">دخول وربط</button></div>';
+  if(SST.err==="out")return'<div class="box"><h2>☁ المزامنة</h2><p id="syS">'+syncStatus()+'</p>'+form+'<button class="big pri" id="syIn">دخول</button></div>';
+  return'<div class="box"><h2>☁ المزامنة</h2><p style="margin-top:0">الحساب: <b dir="ltr">'+esc(SY.email||"")+'</b></p><p id="syS">'+syncStatus()+'</p>'+
+    '<div class="two"><button id="syNow">🔄 مزامنة الآن</button><button class="dan" id="syOut">خروج</button></div></div>'}
+function bindSyncBox(){
+  var bIn=document.getElementById("syIn");
+  if(bIn)bIn.onclick=function(){
+    var em=document.getElementById("syE").value.trim(),pw=document.getElementById("syP").value,er=document.getElementById("syErr");
+    if(!em||!pw){er.textContent="اكتب الإيميل وكلمة السر.";return}
+    bIn.disabled=true;er.style.color="#555";er.textContent="عم يتصل...";
+    withNet(ensureFb().then(function(){return fbx.signInWithEmailAndPassword(fauth,em,pw)})).then(function(cred){
+      SY.email=em;SY.uid=cred.user.uid;saveSY();
+      if(SY.on){SST.err="";SST.ready=true;shadowInit();listen();flush();render();return}
+      return withNet(fbx.getDocsFromServer(fbx.query(fbx.collection(fdb,"s"),fbx.limit(1)))).then(function(q){
+        if(q.empty)return firstUpload();
+        var local=SITES.ids.reduce(function(a,id){return a+readSite(id).tx.length},0);
+        if(!local)return download();
+        openModal('<h3>في بيانات على السيرفر</h3><p>هالجهاز رح ياخد بيانات السيرفر، و<b>بيانات هالجهاز ('+local+' حركة) رح تنمسح</b>.</p><p class="hint">إذا هالجهاز فيه شي مش موجود بالسيرفر، اعمل نسخة احتياطية أول.</p>'+
+          '<div class="acts" style="flex-direction:column"><button id="mBk">💾 نسخة احتياطية أول</button><button id="mY" class="dan">كمّل وخود بيانات السيرفر</button><button id="mN">إلغاء</button></div>');
+        document.getElementById("mBk").onclick=backup;
+        document.getElementById("mN").onclick=function(){closeModal();fbx.signOut(fauth);render()};
+        document.getElementById("mY").onclick=function(){closeModal();download()};
+      });
+    }).catch(function(e){bIn.disabled=false;er.style.color="";er.textContent=authMsg(e)});
+  };
+  var bNow=document.getElementById("syNow");if(bNow)bNow.onclick=function(){if(!SST.ready)startSync();else flush();updBadge()};
+  var bOut=document.getElementById("syOut");if(bOut)bOut.onclick=function(){var n=pendN();
+    openModal('<h3>خروج من المزامنة؟</h3><p>بياناتك بتضل على هالجهاز، بس ما عاد بتتزامن.</p>'+(n?'<p class="err">في '+n+' تغيير لسا ما انرفع، رح يضيع من السيرفر.</p>':'')+
+      '<div class="acts"><button id="mY" class="dan">خروج</button><button id="mN">إلغاء</button></div>');
+    document.getElementById("mN").onclick=closeModal;
+    document.getElementById("mY").onclick=function(){stopListen();try{fbx.signOut(fauth)}catch(e){}SY.on=false;saveSY();PEND={};savePend();SST.ready=false;closeModal();render()}};
+}
+/* first device: send every site and movement on this device */
+function firstUpload(){
+  SITES.ids.forEach(function(sid){mark(sid,"__site");readSite(sid).tx.forEach(function(t){mark(sid,t.id)})});
+  savePend();SY.on=true;saveSY();SST.ready=true;shadowInit();listen();flush();
+  info("✓ انربط","عم يرفع بيانات هالجهاز ("+pendN()+"). خلّي التطبيق مفتوح والنت شغال لحتى تصير الإشارة 🟢، وبعدين فوت من الجهاز التاني.");render()}
+/* other devices: take the server's data in place of this device's */
+function download(){
+  openModal('<h3 style="text-align:center">عم ينزّل البيانات...</h3>');
+  withNet(fbx.getDocsFromServer(fbx.collection(fdb,"s"))).then(function(q){
+    var sites=q.docs.filter(function(d){return!(d.data()||{}).deleted}).map(function(d){return{id:d.id,data:d.data()}});
+    if(!sites.length)throw{code:"empty"};
+    return Promise.all(sites.map(function(s){return withNet(fbx.getDocsFromServer(fbx.collection(fdb,"s",s.id,"t"))).then(function(tq){s.tx=tq.docs.filter(function(d){return!(d.data()||{}).deleted}).map(function(d){return canonTx(Object.assign({},d.data(),{id:d.id}))});return s})}));
+  }).then(function(sites){
+    SITES.ids.forEach(function(id){try{localStorage.removeItem(siteKey(id))}catch(e){}});
+    sites.sort(function(a,b){return a.id==="1"?-1:b.id==="1"?1:0});
+    sites.forEach(function(s){var st=blank(),m=canonMeta(s.data||{});st.project=m.project;st.open=m.open;st.blds=m.blds;st.tx=s.tx;writeSite(s.id,st)});
+    SITES={cur:sites[0].id,ids:sites.map(function(s){return s.id}),next:2};saveSites();
+    KEY=siteKey(SITES.cur);S=load();resetViews();PEND={};savePend();SY.on=true;saveSY();SST.ready=true;shadowInit();listen();
+    closeModal();go("");render();
+    setTimeout(function(){info("✓ انربط","نزلت "+sites.length+" موقع. أي شي بتسجله هون بيطلع على الجهاز التاني.")},150);
+  }).catch(function(e){closeModal();info("ما زبط التنزيل",authMsg(e));try{fbx.signOut(fauth)}catch(x){}});
 }
 
 window.__updateReady=function(){
@@ -714,7 +914,9 @@ window.__updateReady=function(){
   b.innerHTML='<span>في نسخة جديدة من التطبيق</span><button style="background:#fff;color:#1f9d55;font-weight:700">تحديث الآن</button>';
   b.querySelector("button").onclick=function(){location.reload()};document.body.appendChild(b);
 };
+if(SY.on)shadowInit();
 render();
+startSync();
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!NATIVE){navigator.serviceWorker.register("sw.js",{scope:"./"}).catch(function(){})}
 })();
 </script>
