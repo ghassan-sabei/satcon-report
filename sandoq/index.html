@@ -58,6 +58,7 @@ button:active{transform:scale(.97)}
 .tx .ic.adv{background:#ffe9c7;color:#b26a00}
 .tx .am.adv{color:#b26a00}
 .seg button.on.adv{background:#ffe9c7;color:#7a4b00;border-color:#e08a00}
+.bseg{display:flex;flex-wrap:wrap;gap:6px;flex:1}.bseg button{padding:10px 14px;background:#eef1f6;border:2px solid transparent;font-weight:600;min-width:52px}.bseg button.on{background:#e6dcfb;color:#4b2a8a;border-color:#7a4fd6}
 .adv-btn{background:#e08a00;color:#fff}
 .wk{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #eee;cursor:pointer}
 .wk b{font-size:15px}.wk span{font-size:12px;color:#777}.wk .t{direction:ltr;text-align:left;font-weight:700;color:#b26a00;font-size:14px}
@@ -122,7 +123,7 @@ button:active{transform:scale(.97)}
 var KEY="satcon_sandoq_v1";
 var CUR={IQD:{n:"دينار",s:"د.ع"},USD:{n:"دولار",s:"$"}};
 var S=load();
-function blank(){return{v:1,project:"",open:{IQD:0,USD:0},tx:[],seq:1,lastBackup:0,lastCur:"IQD"}}
+function blank(){return{v:1,project:"",open:{IQD:0,USD:0},tx:[],seq:1,lastBackup:0,lastCur:"IQD",blds:[]}}
 function load(){var s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
   if(!s||!s.tx)s=blank();
   var b=blank(),k;for(k in b)if(s[k]===undefined)s[k]=b[k];
@@ -151,7 +152,15 @@ function txById(id){for(var i=0;i<S.tx.length;i++)if(S.tx[i].id===id)return S.tx
 function sign(t){return t.type==="in"?t.amount:-t.amount}
 /* an advance (سلفة) leaves the box like any expense but is kept apart and tied to a worker */
 var TL={in:"وارد",out:"صادر",adv:"سلفة"};
-function txDesc(t){return t.type==="adv"?"سلفة - "+(t.worker||"")+(t.desc?" - "+t.desc:""):(t.desc||"")}
+/* each expense (صادر) belongs to a building, or to "عام" when it is for the whole site */
+var GEN="عام";
+function byName(a,b){return a.localeCompare(b,"ar",{numeric:true})}
+function bldLabel(b){return!b||b===GEN?"عام":(/^[0-9٠-٩]/.test(b)?"بناية "+b:b)}
+function bldList(){var m={};(S.blds||[]).forEach(function(b){m[b]=1});S.tx.forEach(function(t){if(t.type==="out"&&t.bld&&t.bld!==GEN)m[t.bld]=1});return Object.keys(m).sort(byName)}
+function bldSummary(from,to){var m={},keys=bldList().concat([GEN]);keys.forEach(function(k){m[k]={n:0,IQD:0,USD:0}});
+  S.tx.forEach(function(t){if(t.type!=="out")return;if((from&&t.date<from)||(to&&t.date>to))return;var r=m[t.bld||GEN];r.n++;r[t.cur]=r2(r[t.cur]+t.amount)});
+  return keys.filter(function(k){return k!==GEN||m[k].n}).map(function(k){return{b:k,n:m[k].n,IQD:m[k].IQD,USD:m[k].USD}})}
+function txDesc(t){return t.type==="adv"?"سلفة - "+(t.worker||"")+(t.desc?" - "+t.desc:""):(t.desc||"")+(t.type==="out"&&t.bld?(t.desc?" - ":"")+bldLabel(t.bld):"")}
 function workers(){var m={};S.tx.forEach(function(t){if(t.type!=="adv"||!t.worker)return;var w=m[t.worker]||(m[t.worker]={name:t.worker,n:0,IQD:0,USD:0,last:""});w.n++;w[t.cur]=r2(w[t.cur]+t.amount);if(t.date>w.last)w.last=t.date});
   return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return a.name.localeCompare(b.name,"ar")})}
 
@@ -188,6 +197,7 @@ function render(){
   if(h==="new-adv")return formView(null,"adv");
   if(/^edit-\d+$/.test(h)){var t=txById(+h.slice(5));if(t)return formView(t);}
   if(h==="day")return dayView();
+  if(h==="blds")return bldsView();
   if(h==="worker")return workerView();
   if(h==="log")return logView();
   if(h==="print")return printView();
@@ -200,7 +210,7 @@ function balBox(b){
 function txRow(t){
   var title=t.type==="adv"?esc(t.worker)+(t.desc?' · '+esc(t.desc):''):esc(t.desc||TL[t.type]);
   return'<div class="tx" data-id="'+t.id+'"><div class="ic '+t.type+'">'+(t.type==="in"?"+":t.type==="adv"?"س":"−")+'</div>'+
-    '<div class="mid"><b>'+title+'</b><span>'+fmtDate(t.date)+(t.rcpt?' · وصل '+esc(t.rcpt):'')+(t.inv?' · فاتورة '+esc(t.inv):'')+'</span></div>'+
+    '<div class="mid"><b>'+title+'</b><span>'+fmtDate(t.date)+(t.type==="out"&&t.bld?' · '+esc(bldLabel(t.bld)):'')+(t.rcpt?' · وصل '+esc(t.rcpt):'')+(t.inv?' · فاتورة '+esc(t.inv):'')+'</span></div>'+
     '<div class="am '+t.type+'">'+(t.type==="in"?"+":"-")+fmtAmt(t.amount,t.cur)+' '+CUR[t.cur].s+'</div></div>'}
 function bindRows(){Array.prototype.forEach.call(app.querySelectorAll(".tx"),function(el){el.onclick=function(){go("edit-"+el.getAttribute("data-id"))}})}
 
@@ -237,15 +247,16 @@ function mainView(){
   h+='<div class="box">'+balBox(b)+'</div>'+
     '<div class="three" style="margin-bottom:12px"><button class="big ok" id="bIn">+ وارد</button><button class="big dan" id="bOut">− صادر</button><button class="big adv-btn" id="bAdv">سلفة</button></div>'+
     '<div class="box">'+tabBar("mt")+(TAB==="adv"?workersBox():'')+(last.length?last.map(txRow).join(""):'<p class="muted">ما في '+(TAB==="adv"?'سلف':TL[TAB])+' لهلأ.</p>')+'</div>'+
-    '<div class="two" style="margin-bottom:8px"><button id="bDay">📅 كل يوم بيومو</button><button id="bLog">📋 السجل</button></div>'+
+    '<div class="three" style="margin-bottom:8px"><button id="bDay">📅 كل يوم بيومو</button><button id="bBl">🏢 البنايات</button><button id="bLog">📋 السجل</button></div>'+
     '<div class="two"><button id="bPr">🖨 الطباعة</button><button id="bSet">⚙ الإعدادات</button></div>';
   app.innerHTML=h;bindRows();bindWorkers();bindTabs("mt",mainView);
   document.getElementById("bAdv").onclick=function(){go("new-adv")};
   document.getElementById("bIn").onclick=function(){go("new-in")};
   document.getElementById("bOut").onclick=function(){go("new-out")};
   document.getElementById("bDay").onclick=function(){DAY=today();go("day")};
-  document.getElementById("bLog").onclick=function(){go("log")};
-  document.getElementById("bPr").onclick=function(){PF.worker="";go("print")};
+  document.getElementById("bLog").onclick=function(){LF.bld="";go("log")};
+  document.getElementById("bBl").onclick=function(){go("blds")};
+  document.getElementById("bPr").onclick=function(){PF.worker="";PF.bld="";go("print")};
   document.getElementById("bSet").onclick=function(){go("settings")};
   var bk=document.getElementById("bkNow");if(bk)bk.onclick=backup;
 }
@@ -282,14 +293,15 @@ function dayView(){
 
 /* ---------- add / edit a movement ---------- */
 function formView(t,newType){
-  var ed=!!t,f=ed?{type:t.type,cur:t.cur,amount:String(t.amount),date:t.date,desc:t.desc,inv:t.inv,rcpt:t.rcpt,worker:t.worker||""}
-    :{worker:"",type:newType,cur:S.lastCur||"IQD",amount:"",date:today(),desc:newType==="in"?"من صاحب العمل":"",inv:"",rcpt:""};
+  var ed=!!t,f=ed?{type:t.type,cur:t.cur,amount:String(t.amount),date:t.date,desc:t.desc,inv:t.inv,rcpt:t.rcpt,worker:t.worker||"",bld:t.bld||""}
+    :{worker:"",bld:"",type:newType,cur:S.lastCur||"IQD",amount:"",date:today(),desc:newType==="in"?"من صاحب العمل":"",inv:"",rcpt:""};
   var descs={};sorted().reverse().forEach(function(x){if(x.desc&&Object.keys(descs).length<60)descs[x.desc]=1});
   var wks=workers().map(function(w){return'<option value="'+esc(w.name)+'">'}).join("");
   app.innerHTML='<div class="box"><h2>'+(ed?'تعديل حركة':({in:'وارد جديد',out:'صادر جديد',adv:'سلفة جديدة'})[f.type])+'</h2>'+
     '<div class="row"><label>النوع</label><div class="seg" style="grid-template-columns:1fr 1fr 1fr"><button id="tIn" class="in">+ وارد</button><button id="tOut" class="out">− صادر</button><button id="tAdv" class="adv">سلفة</button></div></div>'+
     '<div class="row" id="wkRow"><label>اسم العامل</label><input type="text" id="fWk" list="wl" autocomplete="off" value="'+esc(f.worker)+'"></div>'+
     '<datalist id="wl">'+wks+'</datalist>'+
+    '<div class="row" id="bRow"><label>البناية</label>'+(bldList().length?'<div class="bseg" id="fB">'+bldList().concat([GEN]).map(function(b){return'<button data-b="'+esc(b)+'">'+esc(b)+'</button>'}).join("")+'</div>':'<span class="hint" style="flex:1">ضيف أرقام البنايات من ⚙ الإعدادات</span>')+'</div>'+
     '<div class="row"><label>العملة</label><div class="seg"><button id="cIQD" class="cur">دينار</button><button id="cUSD" class="cur">دولار</button></div></div>'+
     '<div class="row"><label>المبلغ</label><input type="text" id="fAmt" inputmode="decimal" autocomplete="off" value="'+esc(f.amount)+'"></div>'+
     '<div class="prev" id="fPrev"></div>'+
@@ -307,6 +319,8 @@ function formView(t,newType){
     document.getElementById("tOut").className="out"+(f.type==="out"?" on":"");
     document.getElementById("tAdv").className="adv"+(f.type==="adv"?" on":"");
     document.getElementById("wkRow").style.display=f.type==="adv"?"":"none";
+    document.getElementById("bRow").style.display=f.type==="out"?"":"none";
+    Array.prototype.forEach.call(document.querySelectorAll("#fB button"),function(x){x.className=x.getAttribute("data-b")===f.bld?"on":""});
     document.getElementById("cIQD").className="cur"+(f.cur==="IQD"?" on":"");
     document.getElementById("cUSD").className="cur"+(f.cur==="USD"?" on":"");
     var a=parseAmt(document.getElementById("fAmt").value);
@@ -315,6 +329,7 @@ function formView(t,newType){
   document.getElementById("tIn").onclick=function(){if(!ed&&f.type!=="in"&&!document.getElementById("fDesc").value)document.getElementById("fDesc").value="من صاحب العمل";f.type="in";paint()};
   document.getElementById("tOut").onclick=function(){var d=document.getElementById("fDesc");if(!ed&&d.value==="من صاحب العمل")d.value="";f.type="out";paint()};
   document.getElementById("tAdv").onclick=function(){var d=document.getElementById("fDesc");if(!ed&&d.value==="من صاحب العمل")d.value="";f.type="adv";paint()};
+  Array.prototype.forEach.call(document.querySelectorAll("#fB button"),function(x){x.onclick=function(){f.bld=x.getAttribute("data-b");paint()}});
   document.getElementById("cIQD").onclick=function(){f.cur="IQD";paint()};
   document.getElementById("cUSD").onclick=function(){f.cur="USD";paint()};
   document.getElementById("fAmt").oninput=paint;
@@ -333,11 +348,13 @@ function formView(t,newType){
     if(!date)return bad("fDate","اختار التاريخ.");
     var wk=document.getElementById("fWk").value.trim().replace(/\s+/g," ");
     if(f.type==="adv"&&!wk)return bad("fWk","اكتب اسم العامل.");
+    if(f.type==="out"&&bldList().length&&!f.bld){err.textContent="اختار البناية (أو عام إذا للموقع كله).";return}
     var u=rc?rcptUsed(rc,ed?t.id:-1):null;
     if(u)return bad("fRc","رقم الوصل "+rc+" مستعمل قبل ("+fmtDate(u.date)+" · "+(u.desc||"")+" · "+fmtAmt(u.amount,u.cur)+" "+CUR[u.cur].s+").");
     var o=ed?t:{id:S.seq++,at:Date.now()};
     o.type=f.type;o.cur=f.cur;o.amount=f.cur==="USD"?r2(amt):Math.round(amt);o.date=date;o.desc=desc;o.inv=inv;o.rcpt=rc;
     if(f.type==="adv")o.worker=wk;else delete o.worker;
+    if(f.type==="out"&&f.bld)o.bld=f.bld;else delete o.bld;
     if(ed)o.edited=Date.now();else S.tx.push(o);
     S.lastCur=f.cur;TAB=f.type;save();history.back();
   };
@@ -350,24 +367,26 @@ function formView(t,newType){
 }
 
 /* ---------- log with filters ---------- */
-var LF={from:"",to:"",cur:"",q:""};
+var LF={from:"",to:"",cur:"",q:"",bld:""};
 function logView(){
   app.innerHTML='<div class="box"><h2>السجل</h2>'+tabBar("lt")+
     '<div class="row"><input type="text" id="lQ" placeholder="بحث: رقم وصل، فاتورة، شرح، اسم عامل" value="'+esc(LF.q)+'"></div>'+
     '<div class="two" style="margin-bottom:8px"><input type="date" id="lF" value="'+LF.from+'"><input type="date" id="lT" value="'+LF.to+'"></div>'+
-    '<select id="lC" style="width:100%"><option value="">كل العملات</option><option value="IQD">دينار</option><option value="USD">دولار</option></select>'+
+    '<div class="'+(TAB==="out"?'two':'')+'"><select id="lC" style="width:100%"><option value="">كل العملات</option><option value="IQD">دينار</option><option value="USD">دولار</option></select>'+
+    (TAB==="out"?'<select id="lB" style="width:100%"><option value="">كل البنايات</option>'+bldList().concat([GEN]).map(function(b){return'<option value="'+esc(b)+'"'+(b===LF.bld?' selected':'')+'>'+esc(bldLabel(b))+'</option>'}).join("")+'</select>':'')+'</div>'+
     '<div id="lSum"></div></div><div class="box" id="lList"></div><button class="big" id="lBack">رجوع</button>';
   document.getElementById("lC").value=LF.cur;
   bindTabs("lt",logView);
   function upd(){
     LF.q=document.getElementById("lQ").value;LF.from=document.getElementById("lF").value;LF.to=document.getElementById("lT").value;
-    LF.cur=document.getElementById("lC").value;
+    LF.cur=document.getElementById("lC").value;var lb=document.getElementById("lB");LF.bld=lb?lb.value:"";
     var q=normDigits(LF.q).trim().toLowerCase();
     var list=sorted().reverse().filter(function(t){
       if(t.type!==TAB)return false;
       if(LF.from&&t.date<LF.from)return false;if(LF.to&&t.date>LF.to)return false;
       if(LF.cur&&t.cur!==LF.cur)return false;
-      if(q&&(normRcpt(t.rcpt)+" "+(t.inv||"")+" "+(t.desc||"")+" "+(t.worker||"")).toLowerCase().indexOf(q)<0)return false;
+      if(TAB==="out"&&LF.bld&&(t.bld||GEN)!==LF.bld)return false;
+      if(q&&(normRcpt(t.rcpt)+" "+(t.inv||"")+" "+(t.desc||"")+" "+(t.worker||"")+" "+(t.bld||"")).toLowerCase().indexOf(q)<0)return false;
       return true});
     var tot=curTotals(list);
     document.getElementById("lSum").innerHTML='<div class="sum">'+["IQD","USD"].map(function(c){
@@ -380,20 +399,46 @@ function logView(){
   /* the search box redraws on typing only; redrawing on its "change" (fired when it loses focus)
      would replace the list under the finger and swallow the tap on a result */
   document.getElementById("lQ").oninput=upd;
-  ["lF","lT","lC"].forEach(function(id){document.getElementById(id).onchange=upd});
+  ["lF","lT","lC","lB"].forEach(function(id){var e=document.getElementById(id);if(e)e.onchange=upd});
   document.getElementById("lBack").onclick=function(){history.back()};
   upd();
 }
 
+/* ---------- buildings: how much went out for each ---------- */
+var BF={from:"",to:""};
+function bldsView(){
+  var L=bldSummary(BF.from,BF.to),t={n:0,IQD:0,USD:0};
+  L.forEach(function(r){t.n+=r.n;t.IQD=r2(t.IQD+r.IQD);t.USD=r2(t.USD+r.USD)});
+  app.innerHTML='<div class="box"><h2>🏢 صادر كل بناية</h2>'+
+    '<div class="two" style="margin-bottom:8px"><input type="date" id="bF" value="'+BF.from+'"><input type="date" id="bT" value="'+BF.to+'"></div>'+
+    '<div class="three" style="margin-bottom:6px"><button class="small" id="b0">هالشهر</button><button class="small" id="b1">الشهر الماضي</button><button class="small" id="bA">الكل</button></div>'+
+    '<p class="hint">'+(BF.from||BF.to?'من '+(fmtDate(BF.from)||'البداية')+' إلى '+(fmtDate(BF.to)||'اليوم'):'كل الفترة')+'</p></div>'+
+    '<div class="box">'+(L.length?L.map(function(r){var a=[];a.push(fmtAmt(r.IQD,"IQD")+' د.ع');if(r.USD)a.push(fmtAmt(r.USD,"USD")+' $');
+      return'<div class="wk" data-b="'+esc(r.b)+'"><div><b>'+esc(bldLabel(r.b))+'</b><br><span>'+r.n+' فاتورة</span></div><div class="t" style="color:#4b2a8a">'+a.join('<br>')+'</div></div>'}).join("")+
+      '<div class="kv" style="border:0;margin-top:6px"><span><b>المجموع</b> ('+t.n+')</span><b>'+fmtAmt(t.IQD,"IQD")+' د.ع'+(t.USD?' · '+fmtAmt(t.USD,"USD")+' $':'')+'</b></div>'
+      :'<p class="muted">ضيف أرقام البنايات من ⚙ الإعدادات، وبعدين اختار البناية لما تسجل صادر.</p>')+'</div>'+
+    '<button class="big pri" id="bPrint">🖨 طباعة ملخص البنايات</button><button class="big" id="bBack" style="margin-top:8px">رجوع</button>';
+  Array.prototype.forEach.call(app.querySelectorAll(".wk"),function(el){el.onclick=function(){TAB="out";LF={from:BF.from,to:BF.to,cur:"",q:"",bld:el.getAttribute("data-b")};go("log")}});
+  function set(a,b){BF.from=a;BF.to=b;bldsView()}
+  document.getElementById("bF").onchange=function(){set(this.value,BF.to)};
+  document.getElementById("bT").onchange=function(){set(BF.from,this.value)};
+  document.getElementById("b0").onclick=function(){var m=monthRange(0);set(m[0],today())};
+  document.getElementById("b1").onclick=function(){var m=monthRange(-1);set(m[0],m[1])};
+  document.getElementById("bA").onclick=function(){set("","")};
+  document.getElementById("bPrint").onclick=function(){var s=sorted();PF.kind="bld";PF.from=BF.from||(s.length?s[0].date:today());PF.to=BF.to||today();go("print")};
+  document.getElementById("bBack").onclick=function(){history.back()};
+}
+
 /* ---------- printing ---------- */
 var PAGE_W=1062,PAGE_H=733,TOP_H=74,TH_H=30,FT_H=22;
-var PF={from:"",to:"",kind:"out",daily:false,worker:""};
-var KINDS={out:"كشف الصادر",in:"كشف الوارد",adv:"كشف السلف",all:"كشف الصندوق الكامل"};
+var PF={from:"",to:"",kind:"out",daily:false,worker:"",bld:""};
+var KINDS={out:"كشف الصادر",in:"كشف الوارد",adv:"كشف السلف",bld:"ملخص البنايات",all:"كشف الصندوق الكامل"};
 function monthRange(off){var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+off);var a=isoDate(d);d.setMonth(d.getMonth()+1);d.setDate(0);return[a,isoDate(d)]}
 function printView(){
   if(!PF.from){var m=monthRange(0);PF.from=m[0];PF.to=today()}
   app.innerHTML='<div class="box"><h2>الطباعة</h2>'+
-    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px" id="pK"><button class="small" data-k="out">الصادر</button><button class="small" data-k="in">الوارد</button><button class="small" data-k="adv">السلف</button><button class="small" data-k="all">الكامل</button></div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px" id="pK"><button class="small" data-k="out">الصادر</button><button class="small" data-k="in">الوارد</button><button class="small" data-k="adv">السلف</button><button class="small" data-k="bld">ملخص البنايات</button><button class="small" data-k="all" style="grid-column:span 2">الكشف الكامل</button></div>'+
+    '<div class="row" id="pBr"><label>البناية</label><select id="pB"><option value="">كل البنايات</option>'+bldList().concat([GEN]).map(function(b){return'<option value="'+esc(b)+'"'+(b===PF.bld?' selected':'')+'>'+esc(bldLabel(b))+'</option>'}).join("")+'</select></div>'+
     '<div class="row" id="pWr"><label>العامل</label><select id="pW"><option value="">كل العمال</option>'+workers().map(function(w){return'<option value="'+esc(w.name)+'"'+(w.name===PF.worker?' selected':'')+'>'+esc(w.name)+'</option>'}).join("")+'</select></div>'+
     '<div class="row"><label>من</label><input type="date" id="pF" value="'+PF.from+'"></div>'+
     '<div class="row"><label>إلى</label><input type="date" id="pT" value="'+PF.to+'"></div>'+
@@ -403,14 +448,16 @@ function printView(){
     '<div class="two" style="margin-top:10px"><button class="big pri" id="pPr">🖨 طباعة</button><button class="big ok" id="pPdf">📄 PDF</button></div>'+
     '</div><button class="big" id="pBack">رجوع</button>';
   function paintK(){Array.prototype.forEach.call(document.querySelectorAll("#pK button"),function(b){var k=b.getAttribute("data-k");
-    b.style.cssText=k===PF.kind?(k==="in"?"background:#d8f0e1;color:#14532d;border:2px solid #1f9d55":k==="out"?"background:#fde2e2;color:#8a1c1c;border:2px solid #d64545":k==="adv"?"background:#ffe9c7;color:#7a4b00;border:2px solid #e08a00":"background:#dce8fb;color:#1a3f8a;border:2px solid #2f6fd6"):"border:2px solid transparent";
-    b.style.fontWeight="600"});document.getElementById("pDw").style.display=PF.kind==="all"?"none":"";document.getElementById("pWr").style.display=PF.kind==="adv"?"":"none"}
+    b.style.cssText=k===PF.kind?(k==="in"?"background:#d8f0e1;color:#14532d;border:2px solid #1f9d55":k==="out"?"background:#fde2e2;color:#8a1c1c;border:2px solid #d64545":k==="adv"?"background:#ffe9c7;color:#7a4b00;border:2px solid #e08a00":k==="bld"?"background:#e6dcfb;color:#4b2a8a;border:2px solid #7a4fd6":"background:#dce8fb;color:#1a3f8a;border:2px solid #2f6fd6"):"border:2px solid transparent";
+    b.style.fontWeight="600"});document.getElementById("pDw").style.display=PF.kind==="all"||PF.kind==="bld"?"none":"";document.getElementById("pBr").style.display=PF.kind==="out"?"":"none";document.getElementById("pWr").style.display=PF.kind==="adv"?"":"none"}
   Array.prototype.forEach.call(document.querySelectorAll("#pK button"),function(b){b.onclick=function(){PF.kind=b.getAttribute("data-k");paintK();upd()}});
-  function upd(){PF.worker=document.getElementById("pW").value;PF.from=document.getElementById("pF").value;PF.to=document.getElementById("pT").value;PF.daily=document.getElementById("pD").checked;
+  function upd(){PF.worker=document.getElementById("pW").value;PF.bld=document.getElementById("pB").value;PF.from=document.getElementById("pF").value;PF.to=document.getElementById("pT").value;PF.daily=document.getElementById("pD").checked;
     if(!PF.from||!PF.to||PF.from>PF.to){document.getElementById("pInfo").innerHTML='<p class="err">الفترة غلط.</p>';return}
     var n=makePages().length,h='';
     if(PF.kind==="all"){var L=ledger(PF.from,PF.to);
       h='<div class="kv"><span>عدد الحركات</span><b>'+L.rows.length+'</b></div><div class="kv"><span>رصيد الدينار آخر الفترة</span><b>'+fmtAmt(L.end.IQD,"IQD")+'</b></div><div class="kv"><span>رصيد الدولار آخر الفترة</span><b>'+fmtAmt(L.end.USD,"USD")+'</b></div>'}
+    else if(PF.kind==="bld"){var bs=bldSummary(PF.from,PF.to);
+      h=bs.map(function(r){return'<div class="kv"><span>'+esc(bldLabel(r.b))+' ('+r.n+')</span><b>'+fmtAmt(r.IQD,"IQD")+(r.USD?' · '+fmtAmt(r.USD,"USD")+' $':'')+'</b></div>'}).join("")||'<p class="muted">ما في بنايات.</p>'}
     else{var list=kindRows(PF.kind,PF.from,PF.to),s=curTotals(list);
       h='<div class="kv"><span>عدد الحركات</span><b>'+list.length+'</b></div><div class="kv"><span>المجموع دينار</span><b>'+fmtAmt(s.IQD,"IQD")+'</b></div><div class="kv"><span>المجموع دولار</span><b>'+fmtAmt(s.USD,"USD")+'</b></div>'}
     document.getElementById("pInfo").innerHTML=h+'<div class="kv"><span>عدد الأوراق</span><b>'+n+'</b></div>'}
@@ -418,14 +465,14 @@ function printView(){
   document.getElementById("q0").onclick=function(){var m=monthRange(0);set(m[0],today())};
   document.getElementById("q1").onclick=function(){var m=monthRange(-1);set(m[0],m[1])};
   document.getElementById("qA").onclick=function(){var s=sorted();set(s.length?s[0].date:today(),s.length&&s[s.length-1].date>today()?s[s.length-1].date:today())};
-  ["pF","pT","pD","pW"].forEach(function(id){document.getElementById(id).onchange=upd});
+  ["pF","pT","pD","pW","pB"].forEach(function(id){document.getElementById(id).onchange=upd});
   document.getElementById("pPr").onclick=function(){if(PF.from>PF.to)return;printPages(makePages(),KINDS[PF.kind],function(){doPdf()})};
   document.getElementById("pPdf").onclick=function(){if(PF.from>PF.to)return;doPdf()};
   document.getElementById("pBack").onclick=function(){history.back()};
   paintK();upd();
 }
-function makePages(){return PF.kind==="all"?ledgerPages(PF.from,PF.to):kindPages(PF.kind,PF.from,PF.to,PF.daily)}
-function doPdf(){var nm={out:"sadir",in:"warid",adv:"sulaf",all:"sandoq"}[PF.kind];pdfPages(makePages,nm+"_"+PF.from+(PF.to!==PF.from?"_"+PF.to:"")+".pdf",KINDS[PF.kind])}
+function makePages(){return PF.kind==="all"?ledgerPages(PF.from,PF.to):PF.kind==="bld"?bldPages(PF.from,PF.to):kindPages(PF.kind,PF.from,PF.to,PF.daily)}
+function doPdf(){var nm={out:"sadir",in:"warid",adv:"sulaf",bld:"binayat",all:"sandoq"}[PF.kind];pdfPages(makePages,nm+"_"+PF.from+(PF.to!==PF.from?"_"+PF.to:"")+".pdf",KINDS[PF.kind])}
 function nCell(v,cur,cls){if(v===""||v==null)return'<td class="n'+(cls?" "+cls:"")+'"></td>';return'<td class="n'+(cls?" "+cls:"")+(v<0?" neg":"")+'">'+fmtAmt(v,cur)+'</td>'}
 function descH(t,perLine){var n=(t.desc||"").length,lines=Math.max(1,Math.min(3,Math.ceil(n/perLine)));return 22+(lines-1)*15}
 /* lays rows out on landscape pages: the column header repeats on every page,
@@ -446,34 +493,47 @@ function paginate(o){
       '<table>'+o.colg+o.head+pg.map(function(r){return r.html}).join("")+'</table>'+
       '<div class="ft"><span>تاريخ الطباعة: '+printed+'</span><span>صفحة '+(pi+1)+' من '+N+'</span></div></div>'});
 }
-function kindRows(kind,from,to){var w=kind==="adv"?PF.worker:"";return sorted().filter(function(t){return t.type===kind&&t.date>=from&&t.date<=to&&(!w||t.worker===w)})}
+function kindRows(kind,from,to){var w=kind==="adv"?PF.worker:"",bl=kind==="out"?PF.bld:"";return sorted().filter(function(t){return t.type===kind&&t.date>=from&&t.date<=to&&(!w||t.worker===w)&&(!bl||(t.bld||GEN)===bl)})}
 /* in-only or out-only sheet: amount columns per currency, optional total under each day */
 function kindPages(kind,from,to,daily){
   var list=kindRows(kind,from,to),rows=[],tot={IQD:0,USD:0},day={IQD:0,USD:0},isAdv=kind==="adv",name={in:"الوارد",out:"الصادر",adv:"السلف"}[kind];
-  /* advances: the worker's name takes the invoice column's place */
+  var showB=kind==="out"&&!PF.bld,nc=showB?6:5;
+  /* advances: the worker's name takes the invoice column's place; expenses for all buildings get a building column */
   list.forEach(function(t,i){
-    var h=descH(t,72);
-    rows.push({h:h,html:'<tr style="height:'+h+'px"><td>'+(i+1)+'</td><td>'+fmtDate(t.date)+'</td>'+(isAdv?'<td><b>'+esc(t.worker)+'</b></td>':'')+'<td class="ds"><div>'+esc(t.desc)+'</div></td>'+(isAdv?'':'<td>'+esc(t.inv)+'</td>')+'<td>'+esc(t.rcpt)+'</td>'+
+    var h=descH(t,showB?62:72);
+    rows.push({h:h,html:'<tr style="height:'+h+'px"><td>'+(i+1)+'</td><td>'+fmtDate(t.date)+'</td>'+(isAdv?'<td><b>'+esc(t.worker)+'</b></td>':'')+(showB?'<td><b>'+esc(t.bld||GEN)+'</b></td>':'')+'<td class="ds"><div>'+esc(t.desc)+'</div></td>'+(isAdv?'':'<td>'+esc(t.inv)+'</td>')+'<td>'+esc(t.rcpt)+'</td>'+
       nCell(t.cur==="IQD"?t.amount:"","IQD")+nCell(t.cur==="USD"?t.amount:"","USD")+'</tr>'});
     tot[t.cur]=r2(tot[t.cur]+t.amount);day[t.cur]=r2(day[t.cur]+t.amount);
     var nx=list[i+1];
     if(daily&&(!nx||nx.date!==t.date)){
-      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="5">مجموع يوم '+fmtDate(t.date)+'</td>'+nCell(day.IQD||"","IQD")+nCell(day.USD||"","USD")+'</tr>'});
+      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="'+nc+'">مجموع يوم '+fmtDate(t.date)+'</td>'+nCell(day.IQD||"","IQD")+nCell(day.USD||"","USD")+'</tr>'});
       day={IQD:0,USD:0}}
   });
-  if(isAdv&&list.length&&!PF.worker){
-    var m={};list.forEach(function(t){var w=m[t.worker]||(m[t.worker]={n:0,IQD:0,USD:0});w.n++;w[t.cur]=r2(w[t.cur]+t.amount)});
-    rows.push({h:26,html:'<tr class="tot"><td colspan="7">المجموع حسب العامل</td></tr>'});
-    Object.keys(m).sort(function(a,b){return a.localeCompare(b,"ar")}).forEach(function(k){
-      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="2">'+m[k].n+' سلفة</td><td colspan="3"><b>'+esc(k)+'</b></td>'+nCell(m[k].IQD||"","IQD")+nCell(m[k].USD||"","USD")+'</tr>'})});
+  function groupRows(title,keyOf,label){
+    var m={};list.forEach(function(t){var k=keyOf(t),w=m[k]||(m[k]={n:0,IQD:0,USD:0});w.n++;w[t.cur]=r2(w[t.cur]+t.amount)});
+    rows.push({h:26,html:'<tr class="tot"><td colspan="'+(nc+2)+'">'+title+'</td></tr>'});
+    Object.keys(m).sort(byName).forEach(function(k){
+      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="2">'+m[k].n+' '+label+'</td><td colspan="'+(nc-2)+'"><b>'+esc(k)+'</b></td>'+nCell(m[k].IQD||"","IQD")+nCell(m[k].USD||"","USD")+'</tr>'})});
   }
-  var last=[];
-  if(!list.length)last.push({h:30,html:'<tr><td colspan="7" style="height:30px">ما في '+(isAdv?'سلف':TL[kind])+' بهالفترة</td></tr>'});
-  last.push({h:28,html:'<tr class="tot"><td colspan="5">مجموع '+name+(isAdv&&PF.worker?' '+esc(PF.worker):'')+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'});
+  if(isAdv&&list.length&&!PF.worker)groupRows("المجموع حسب العامل",function(t){return t.worker},"سلفة");
+  if(showB&&list.length)groupRows("المجموع حسب البناية",function(t){return t.bld||GEN},"فاتورة");
+  var last=[],who=isAdv&&PF.worker?' '+esc(PF.worker):kind==="out"&&PF.bld?' '+esc(bldLabel(PF.bld)):'';
+  if(!list.length)last.push({h:30,html:'<tr><td colspan="'+(nc+2)+'" style="height:30px">ما في '+(isAdv?'سلف':TL[kind])+' بهالفترة</td></tr>'});
+  last.push({h:28,html:'<tr class="tot"><td colspan="'+nc+'">مجموع '+name+who+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'});
   var c=' style="background:'+({in:"#a9d18e",out:"#f4b183",adv:"#ffd966"})[kind]+'"';
-  return paginate({title:KINDS[kind]+(isAdv&&PF.worker?' - '+esc(PF.worker):''),from:from,to:to,first:[],rows:rows,last:last,
-    colg:'<colgroup><col style="width:40px"><col style="width:90px">'+(isAdv?'<col style="width:170px"><col>':'<col><col style="width:110px">')+'<col style="width:100px"><col style="width:150px"><col style="width:130px"></colgroup>',
-    head:'<tr><th'+c+'>ت</th><th'+c+'>التاريخ</th>'+(isAdv?'<th'+c+'>اسم العامل</th><th'+c+'>الشرح</th>':'<th'+c+'>الشرح</th><th'+c+'>رقم الفاتورة</th>')+'<th'+c+'>رقم الوصل</th><th class="iq">المبلغ دينار</th><th class="us">المبلغ دولار $</th></tr>'});
+  return paginate({title:KINDS[kind]+(who?' -'+who:''),from:from,to:to,first:[],rows:rows,last:last,
+    colg:'<colgroup><col style="width:40px"><col style="width:90px">'+(isAdv?'<col style="width:170px"><col>':(showB?'<col style="width:90px">':'')+'<col><col style="width:110px">')+'<col style="width:100px"><col style="width:150px"><col style="width:130px"></colgroup>',
+    head:'<tr><th'+c+'>ت</th><th'+c+'>التاريخ</th>'+(isAdv?'<th'+c+'>اسم العامل</th><th'+c+'>الشرح</th>':(showB?'<th'+c+'>البناية</th>':'')+'<th'+c+'>الشرح</th><th'+c+'>رقم الفاتورة</th>')+'<th'+c+'>رقم الوصل</th><th class="iq">المبلغ دينار</th><th class="us">المبلغ دولار $</th></tr>'});
+}
+/* one line per building: how much went out for it */
+function bldPages(from,to){
+  var L=bldSummary(from,to),rows=[],tot={n:0,IQD:0,USD:0},c=' style="background:#c9b8f0"';
+  L.forEach(function(r,i){tot.n+=r.n;tot.IQD=r2(tot.IQD+r.IQD);tot.USD=r2(tot.USD+r.USD);
+    rows.push({h:30,html:'<tr style="height:30px"><td>'+(i+1)+'</td><td style="font-size:15px"><b>'+esc(bldLabel(r.b))+'</b></td><td>'+r.n+'</td>'+nCell(r.IQD,"IQD")+nCell(r.USD,"USD")+'</tr>'})});
+  return paginate({title:KINDS.bld,from:from,to:to,first:[],rows:rows,
+    last:[{h:32,html:'<tr class="tot" style="height:32px"><td colspan="2">المجموع</td><td>'+tot.n+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'}],
+    colg:'<colgroup><col style="width:50px"><col><col style="width:150px"><col style="width:230px"><col style="width:230px"></colgroup>',
+    head:'<tr><th'+c+'>ت</th><th'+c+'>البناية</th><th'+c+'>عدد الفواتير</th><th class="iq">مجموع الصادر دينار</th><th class="us">مجموع الصادر دولار $</th></tr>'});
 }
 /* full statement: in and out side by side with the running balance of each currency */
 function ledgerPages(from,to){
@@ -570,6 +630,8 @@ function settingsView(){
   app.innerHTML='<div class="box"><h2>الإعدادات</h2>'+
     '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.project)+'"></div>'+
     '<p class="hint" style="margin:-4px 0 10px">يطلع بأعلى الشاشة وبورقة الطباعة.</p>'+
+    '<div class="row"><label>البنايات</label><input type="text" id="sB" placeholder="مثلاً: 1، 2، 3، 4، 5" value="'+esc((S.blds||[]).join("، "))+'"></div>'+
+    '<p class="hint" style="margin:-4px 0 10px">افصل بينهن بفاصلة. بتطلع أزرار لما تسجل صادر.</p>'+
     '<h2 style="margin-top:14px">الرصيد الافتتاحي</h2><p class="hint" style="margin:-6px 0 10px">الفلوس اللي كانت بالصندوق قبل أول حركة سجلتها.</p>'+
     '<div class="row"><label>دينار</label><input type="text" id="sOI" inputmode="decimal" value="'+(S.open.IQD||"")+'"></div>'+
     '<div class="row"><label>دولار</label><input type="text" id="sOU" inputmode="decimal" value="'+(S.open.USD||"")+'"></div>'+
@@ -582,6 +644,8 @@ function settingsView(){
     var e=document.getElementById("sErr"),a=document.getElementById("sOI").value.trim(),b=document.getElementById("sOU").value.trim();
     var ai=a?parseAmt(a):0,bu=b?parseAmt(b):0;
     if(isNaN(ai)||isNaN(bu)){e.textContent="الرقم غلط.";return}
+    var bs=[];normDigits(document.getElementById("sB").value).split(/[,،\n]+/).forEach(function(x){x=x.trim().replace(/\s+/g," ");if(x&&x!==GEN&&bs.indexOf(x)<0)bs.push(x)});
+    S.blds=bs.sort(byName);
     S.project=document.getElementById("sP").value.trim();S.open={IQD:Math.round(ai),USD:r2(bu)};save();history.back()};
   document.getElementById("sBk").onclick=backup;
   document.getElementById("sIn").onchange=function(e){var f=e.target.files[0];if(f)restore(f);e.target.value=""};
