@@ -386,9 +386,10 @@ function renderWorkers(app){
       '<div class="row"><label>العملة</label><select id="wgC"><option value="usd"'+(wg.length&&wg[wg.length-1].cur==="iqd"?'':' selected')+'>دولار $</option><option value="iqd"'+(wg.length&&wg[wg.length-1].cur==="iqd"?' selected':'')+'>دينار عراقي</option></select></div>'+
       (wg.length?'<div class="row"><label>من تاريخ</label><input type="date" id="wgF" value="'+isoDate(new Date())+'"></div><p class="hint" style="margin:0">الأيام اللي قبل هالتاريخ بتضل على الأجر القديم.</p>':'<p class="hint" style="margin:0">أول أجر بيمشي على كل أيامه من الأول.</p>')+'</div>'+
       '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:8px"><b>💵 السلف</b>'+
-      (adv.length?adv.map(function(x){return'<div class="wk" style="padding:6px 0"><div class="nm"><b>'+money(x.amount,x.cur)+'</b><span>'+fmtDate(x.date)+'</span></div><button class="small dan" data-advdel="'+x.id+'">🗑</button></div>'}).join(''):'<p class="muted" style="margin:4px 0">ما في سلف</p>')+
+      (adv.length?adv.map(function(x){return'<div class="wk" style="padding:6px 0"><div class="nm"><b>'+money(x.amount,x.cur)+'</b><span>'+fmtDate(x.date)+(x.by?' · من: '+esc(x.by):'')+'</span></div><button class="small dan" data-advdel="'+x.id+'">🗑</button></div>'}).join(''):'<p class="muted" style="margin:4px 0">ما في سلف</p>')+
       '<div class="row"><label>مبلغ السلفة ('+(curOf(w)==="iqd"?'دينار':'دولار')+')</label><input type="number" inputmode="decimal" id="avA"></div>'+
       '<div class="row"><label>التاريخ</label><input type="date" id="avD" value="'+isoDate(new Date())+'"></div>'+
+      '<div class="row"><label>السلفة من مين</label><input type="text" id="avB" list="avBL" value="'+esc(S.settings.lastAdvBy||"")+'"><datalist id="avBL">'+advGivers().map(function(n){return'<option value="'+esc(n)+'">'}).join('')+'</datalist></div>'+
       '<button class="big" id="avAdd">+ إضافة سلفة</button></div>'+
       '<div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
     MI.querySelectorAll("[data-wgdel]").forEach(function(b){b.onclick=function(){var x=wg[+b.getAttribute("data-wgdel")];
@@ -398,7 +399,8 @@ function renderWorkers(app){
       w.adv=(w.adv||[]).filter(function(y){return y.id!==id});save();closeModal();b0.onclick()}});
     document.getElementById("avAdd").onclick=function(){var a=parseFloat(document.getElementById("avA").value),d=document.getElementById("avD").value;
       if(!(a>0)||!d){document.getElementById("avA").style.borderColor="#d64545";return}
-      (w.adv||(w.adv=[])).push({id:newId(),date:d,amount:a,cur:(wageOn(w,d)||{}).cur||curOf(w)});save();closeModal();b0.onclick()};
+      var by=document.getElementById("avB").value.trim();
+      (w.adv||(w.adv=[])).push({id:newId(),date:d,amount:a,cur:(wageOn(w,d)||{}).cur||curOf(w),by:by});if(by)S.settings.lastAdvBy=by;save();closeModal();b0.onclick()};
     document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();
       var r=parseFloat(document.getElementById("wgR").value);
       if(r>0){var f=wg.length?(document.getElementById("wgF").value||isoDate(new Date())):"0000-00-00";
@@ -635,6 +637,7 @@ function wageOn(w,d){var g=w&&w.wages;if(!g||!g.length)return null;var s=g.slice
 function money(v,cur){return cur==="iqd"?lit(Math.round(v))+" د.ع":"$"+lit(Math.round(v*100)/100)}
 function payTxt(p){var a=[];if(p.usd)a.push(money(p.usd,"usd"));if(p.iqd)a.push(money(p.iqd,"iqd"));return a.join(" + ")||"—"}
 function payOn(){return!!unl().pay}
+function advGivers(){var o=[];S.workers.forEach(function(w){(w.adv||[]).forEach(function(a){if(a.by&&o.indexOf(a.by)<0)o.push(a.by)})});return o}
 function curOf(w){var g=(w.wages||[]).slice().sort(function(a,b){return a.from<b.from?-1:1});return g.length?g[g.length-1].cur:"usd"}
 /* ---------- monthly summary ---------- */
 function rangeStats(from,to){
@@ -779,7 +782,7 @@ function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
     var wk=worked(r),x=rows[d]={d:d,min:null,amt:null,cur:null,adv:0};if(wk==null)return;wk=Math.round(wk);x.min=wk;
     var wr=wageOn(w,d);if(wr){x.amt=wk/60*wr.rate;x.cur=wr.cur}});
   (w.adv||[]).forEach(function(a){if(a.date<from||a.date>to)return;var x=rows[a.date]||(rows[a.date]={d:a.date,min:null,amt:null,cur:null,adv:0});
-    x.adv+=a.amount;x.acur=a.cur;adv[a.cur]=(adv[a.cur]||0)+a.amount});
+    x.adv+=a.amount;x.acur=a.cur;if(a.by&&(x.by||[]).indexOf(a.by)<0)(x.by||(x.by=[])).push(a.by);adv[a.cur]=(adv[a.cur]||0)+a.amount});
   var list=Object.keys(rows).sort().map(function(k){return rows[k]}),RPC=16,per=RPC*2,n=Math.max(1,Math.ceil(list.length/per)),pages=[];
   var net={},c;for(c in st.pay)net[c]=st.pay[c];for(c in adv)net[c]=(net[c]||0)-adv[c];
   function netTxt(){var a=[];["usd","iqd"].forEach(function(k){if(net[k]!=null&&(net[k]||st.pay[k]||adv[k]))a.push((net[k]<0?"−":"")+money(Math.abs(net[k]),k))});return a.join(" + ")||"—"}
@@ -788,7 +791,7 @@ function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
     '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue" style="width:14%">الاسم</td><td style="font-size:17px"><b>'+esc(w.name)+'</b></td><td class="blue" style="width:14%">المهنة</td><td style="width:22%">'+esc(w.job||"")+'</td></tr></table>';
   function col(part){var h='<table class="grid" dir="rtl"><tr><th style="width:21%">التاريخ</th><th style="width:17%">اليوم</th><th style="width:16%">الساعات</th><th>المبلغ</th><th>السلفة</th></tr>';
     for(var i=0;i<RPC;i++){var x=part[i];
-      h+='<tr style="height:26px">'+(x?'<td>'+fmtDate(x.d).slice(0,5)+'</td><td style="font-size:13px">'+dayName(x.d)+'</td><td>'+(x.min!=null?dur(x.min):'')+'</td><td>'+(x.amt!=null?money(x.amt,x.cur):'')+'</td><td>'+(x.adv?money(x.adv,x.acur):'')+'</td>':'<td></td><td></td><td></td><td></td><td></td>')+'</tr>'}
+      h+='<tr style="height:26px">'+(x?'<td>'+fmtDate(x.d).slice(0,5)+'</td><td style="font-size:13px">'+dayName(x.d)+'</td><td>'+(x.min!=null?dur(x.min):'')+'</td><td>'+(x.amt!=null?money(x.amt,x.cur):'')+'</td><td style="line-height:1.05">'+(x.adv?money(x.adv,x.acur)+(x.by?'<br><span style="font-size:10px">'+esc(x.by.join("، "))+'</span>':''):'')+'</td>':'<td></td><td></td><td></td><td></td><td></td>')+'</tr>'}
     return h+'</table>'}
   for(var p=0;p<n;p++){var chunk=list.slice(p*per,(p+1)*per);
     var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head+
