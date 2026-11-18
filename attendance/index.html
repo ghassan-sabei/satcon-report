@@ -572,7 +572,7 @@ function renderSettings(app){
   app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
    '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.settings.project)+'"></div>'+
    '</div>'+
-   syncBox()+
+   syncBox()+lockModeBox()+
    '<div class="box"><h2>🔒 كلمة سر الإدارة</h2><p class="muted" style="margin-top:0">'+(S.settings.adminPw?'محطوطة. مسح السجلات القديمة بيطلبها.':'مش محطوطة لهلق.')+'</p><button class="big" id="pwBtn">'+(S.settings.adminPw?'تغيير كلمة السر':'تعيين كلمة السر')+'</button></div>'+
    '<div class="box"><h2>مسح السجل القديم 🔒</h2><p class="muted" style="margin-top:0">بيمسح دوام كل الأيام قبل التاريخ اللي بتختاره. أسماء العمال ما بتنمسح.</p>'+
    '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="cDate"></div>'+
@@ -582,6 +582,9 @@ function renderSettings(app){
   document.getElementById("sP").oninput=function(e){S.settings.project=e.target.value;save()};
   document.getElementById("pwBtn").onclick=pwEditor;
   bindSyncBox();
+  document.querySelectorAll("[data-lmode]").forEach(function(b){b.onclick=function(){var m=b.getAttribute("data-lmode");
+    if((m==="auto")===autoLock())return;
+    requireAdmin(function(){if(m==="auto")S.settings.lockMode="auto";else delete S.settings.lockMode;save();render()})}});
   document.getElementById("cBtn").onclick=function(){if(!document.getElementById("cDate").value){document.getElementById("cDate").style.borderColor="#d64545";return}requireAdmin(clearAtt)};
   function clearAtt(){
     var inp=document.getElementById("cDate"),d=inp.value;
@@ -902,12 +905,16 @@ var DAY_SEL="#dBlock,#allIn,[data-in],[data-out],[data-abs],[data-note],[data-mi
 var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd,#wN,#wJ,#wAdd,[data-ed],[data-act],[data-del],[data-eqed],[data-eqact],[data-eqdel],#eqNew,#eqAdd,#fOpen";
 function unl(){var u={};try{u=JSON.parse(localStorage.getItem(UKEY))||{}}catch(e){}var n=Date.now(),k;for(k in u)if(u[k]<=n)delete u[k];return u}
 function setUnl(k,v){var u=unl();if(v)u[k]=v;else delete u[k];try{localStorage.setItem(UKEY,JSON.stringify(u))}catch(e){}}
-function dayLocked(d){return!!S.settings["lk_"+d]}
+/* "now" can't go back: take the newest of the phone clock and the last server time seen */
+function nowSafe(){return Math.max(Date.now(),(typeof SY!=="undefined"&&SY.last)||0)}
+function todaySafe(){return isoDate(new Date(nowSafe()))}
+function autoLock(){return S.settings.lockMode==="auto"}
+function dayLocked(d){return!!S.settings["lk_"+d]||(autoLock()&&d<todaySafe())}
 function zoneOf(el){if(el.closest(MACH_SEL))return"mach";if(view!=="workers"&&el.closest(DAY_SEL))return"d:"+curDate;return null}
 function zoneClosed(z){if(!z)return false;if(z.indexOf("d:")===0&&!dayLocked(z.slice(2)))return false;return!unl()[z]}
 function left(z){var t=unl()[z];if(!t)return"";var s=Math.max(0,Math.round((t-Date.now())/1000));return Math.floor(s/60)+":"+pad(s%60)}
 function lockBar(){var z="d:"+curDate;
-  if(!dayLocked(curDate))return'<button class="big" id="lkBtn" style="margin-bottom:12px">🔒 إقفال اليوم</button>';
+  if(!dayLocked(curDate))return'<button class="big" id="lkBtn" style="margin-bottom:'+(autoLock()?'4px':'12px')+'">🔒 إقفال اليوم</button>'+(autoLock()?'<p class="hint" style="margin:0 0 12px;text-align:center">بيتقفل لحاله بعد 12 بالليل</p>':'');
   if(unl()[z])return'<div class="box" style="background:#fff7e0;border:2px solid #f0b429;display:flex;align-items:center;justify-content:space-between;gap:8px"><span>🔓 مفتوح على هالجهاز <b data-lkt="'+z+'" dir="ltr">'+left(z)+'</b></span><button id="lkNow" class="dan">🔒 قفل الآن</button></div>';
   return'<div class="box" style="background:#eef1f8;border:2px solid #2b3a67"><b>🔒 هاليوم مقفل</b><br><span class="muted">فيك تشوف وتطبع. للتعديل اكبس على أي شي، بيطلب كلمة سر الإدارة.</span></div>'}
 function machBar(){if(unl().mach)return'<div style="background:#fff7e0;border:2px solid #f0b429;border-radius:10px;padding:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span>🔓 التعديل مفتوح <b data-lkt="mach" dir="ltr">'+left("mach")+'</b></span><button class="small dan lkMach">🔒 قفل الآن</button></div>';
@@ -927,6 +934,13 @@ function lockUI(){var app=document.getElementById("app");
     var z=zoneOf(el);if(!zoneClosed(z))return;
     e.preventDefault();e.stopImmediatePropagation();
     if((t==="click"||t==="focusin")&&!modalOpen()){if(el.blur)el.blur();askUnlock(z)}},true)});
+function lockModeBox(){var a=autoLock();
+  return'<div class="box"><h2>🔒 طريقة قفل الأيام</h2><div class="two">'+
+    '<button data-lmode="manual" class="'+(a?'':'pri')+'">'+(a?'':'✓ ')+'يدوي</button>'+
+    '<button data-lmode="auto" class="'+(a?'pri':'')+'">'+(a?'✓ ':'')+'أوتوماتيك</button></div>'+
+    '<p class="hint">'+(a?'كل يوم بيتقفل لحاله بعد 12 بالليل. وزر الإقفال بيضل موجود إذا بدك تقفل قبل.':'اليوم ما بيتقفل إلا بزر "إقفال اليوم".')+'<br>التغيير بس للإدارة.</p></div>'}
+var lastToday=todaySafe();
+setInterval(function(){if(todaySafe()!==lastToday){lastToday=todaySafe();if(!modalOpen())render()}},30000);
 setInterval(function(){var els=document.querySelectorAll("[data-lkt]"),gone=false;
   els.forEach(function(e){var z=e.getAttribute("data-lkt"),v=left(z);if(!v)gone=true;else e.textContent=v});
   if(gone&&!modalOpen())render()},1000);
