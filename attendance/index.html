@@ -635,7 +635,8 @@ function rangeStats(from,to){
       if(!rows[id]){rows[id]={w:workerById(id),pres:0,abs:0,min:0,pay:{},open:0,rates:[]};order.push(id)}
       var x=rows[id];
       if(r.absent){x.abs++;return}
-      x.pres++;var wk=worked(r);if(wk==null){x.open++;return}x.min+=wk;
+      /* whole minutes per day, the same as printed on the daily sheet, so money matches the hours shown */
+      x.pres++;var wk=worked(r);if(wk==null){x.open++;return}wk=Math.round(wk);x.min+=wk;
       var wr=wageOn(x.w,d);if(wr){x.pay[wr.cur]=(x.pay[wr.cur]||0)+wk/60*wr.rate;if(x.rates.indexOf(wr.rate+wr.cur)<0)x.rates.push(wr.rate+wr.cur);x.lastRate=wr}else if(wk)x.nopay=true;
     });
   });
