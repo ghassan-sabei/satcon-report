@@ -246,7 +246,8 @@ function renderDay(app){
     h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
   }else{
     h+='<div class="box"><div class="stat"><div><b>'+pres+'</b><span>حاضر</span></div><div><b>'+abs+'</b><span>غائب</span></div><div><b>'+dur(ot)+'</b><span>مجموع الساعات</span></div></div>'+
-       '<button class="big ok" id="allIn" style="margin-top:10px">دخول الكل</button></div>';
+       '<button class="big ok" id="allIn" style="margin-top:10px">دخول الكل</button>'+
+       '<button class="big" id="advDay" style="margin-top:8px">💵 سلف هاليوم'+(dayAdv(curDate).length?' ('+dayAdv(curDate).length+')':'')+'</button></div>';
     h+='<div class="box"><h2>العمال</h2>';
     ws.forEach(function(w){
       var r=rec(curDate,w.id,false)||{},wk=worked(r);
@@ -290,6 +291,7 @@ function renderDay(app){
   document.getElementById("goF").onclick=function(){view="fuel";render();scrollTo(0,0)};
   document.getElementById("goM").onclick=function(){view="month";render();scrollTo(0,0)};
   document.getElementById("goS").onclick=function(){view="settings";render();scrollTo(0,0)};
+  var adB=document.getElementById("advDay");if(adB)adB.onclick=function(){advDayModal(curDate)};
   var aiB=document.getElementById("allIn");if(aiB)aiB.onclick=function(){
     var now=Date.now(),n=0;
     ws.forEach(function(w){var r=rec(curDate,w.id,false);if(!r||(!r.in&&!r.absent)){r=rec(curDate,w.id,true);r.in=stamp(now);n++}});
@@ -647,6 +649,26 @@ function advGivers(){var o=[];S.workers.forEach(function(w){(w.adv||[]).forEach(
 /* money typed any way: Arabic digits, 25,000 or 25.000 thousands, ٫ decimal */
 function numIn(v){v=String(v||"").trim().replace(/[٠-٩]/g,function(c){return"٠١٢٣٤٥٦٧٨٩".indexOf(c)}).replace(/[۰-۹]/g,function(c){return"۰۱۲۳۴۵۶۷۸۹".indexOf(c)}).replace(/٫/g,".").replace(/[٬,\s]/g,"");
   if(/^\d{1,3}(\.\d{3})+$/.test(v))v=v.replace(/\./g,"");var x=parseFloat(v);return isNaN(x)?NaN:x}
+/* advances given on one day: the supervisor records them on the day page, they lock with the day */
+function dayAdv(d){var o=[];S.workers.forEach(function(w){(w.adv||[]).forEach(function(a){if(a.date===d)o.push({w:w,a:a})})});return o}
+function advDayModal(d){var list=dayAdv(d),act=S.workers.filter(function(w){return w.active!==false});
+  var h='<h3>💵 سلف '+dayName(d)+' '+fmtDate(d)+'</h3>'+
+    (list.length?list.map(function(x){return'<div class="wk" style="padding:6px 0"><div class="nm"><b>'+esc(x.w.name)+' · '+money(x.a.amount,x.a.cur)+'</b><span>'+esc(x.a.by||'')+'</span></div><button class="small dan" data-dadel="'+x.a.id+'">🗑</button></div>'}).join(''):'<p class="muted">ما في سلف هاليوم</p>')+
+    '<div style="border-top:1px solid #eee;margin-top:8px;padding-top:8px">'+
+    '<div class="row"><label>العامل</label><select id="daW"><option value="">اختار العامل</option>'+act.map(function(w){return'<option value="'+w.id+'">'+esc(w.name)+'</option>'}).join('')+'</select></div>'+
+    '<div class="row"><label id="daL">المبلغ</label><input type="text" inputmode="decimal" id="daA" placeholder="مثلاً 25000"></div>'+
+    '<div class="row"><label>شرح</label><input type="text" id="daB" list="daBL" value="'+esc(S.settings.lastAdvBy||"")+'"><datalist id="daBL">'+advGivers().map(function(n){return'<option value="'+esc(n)+'">'}).join('')+'</datalist></div>'+
+    '<button class="big pri" id="daAdd">+ إضافة سلفة</button></div>'+
+    '<div class="acts"><button id="mN">إغلاق</button></div>';
+  openModal(h);
+  document.getElementById("mN").onclick=closeModal;
+  var sel=document.getElementById("daW");sel.onchange=function(){var w=workerById(+sel.value);document.getElementById("daL").textContent=w?"المبلغ ("+(((wageOn(w,d)||{}).cur||curOf(w))==="iqd"?"دينار":"دولار")+")":"المبلغ"};
+  MI.querySelectorAll("[data-dadel]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-dadel");
+    S.workers.forEach(function(w){if(w.adv)w.adv=w.adv.filter(function(a){return a.id!==id})});save();closeModal();render();advDayModal(d)}});
+  document.getElementById("daAdd").onclick=function(){var w=workerById(+sel.value),a=numIn(document.getElementById("daA").value),by=document.getElementById("daB").value.trim();
+    if(!w){sel.style.borderColor="#d64545";return}
+    if(!(a>0)){var e=document.getElementById("daA");e.style.borderColor="#d64545";e.value="";e.placeholder="المبلغ مش مفهوم، اكتبه أرقام بس";return}
+    (w.adv||(w.adv=[])).push({id:newId(),date:d,amount:a,cur:(wageOn(w,d)||{}).cur||curOf(w),by:by});if(by)S.settings.lastAdvBy=by;save();closeModal();render();advDayModal(d)}}
 function curOf(w){var g=(w.wages||[]).slice().sort(function(a,b){return a.from<b.from?-1:1});return g.length?g[g.length-1].cur:"usd"}
 /* ---------- monthly summary ---------- */
 function rangeStats(from,to){
@@ -995,7 +1017,7 @@ startSync();
    Unlocking with the admin password opens it on THIS device only, for 10 minutes.
    The machines list is always closed unless unlocked the same way. */
 var UKEY="satcon_attend_unlk"+SLOT,UNLOCK_MS=10*60000;
-var DAY_SEL="#dBlock,#allIn,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-eq],[data-eqsig]";
+var DAY_SEL="#dBlock,#allIn,#advDay,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-eq],[data-eqsig]";
 /* lists (workers, machines, fuel equipment, opening balance): always closed for supervisors */
 var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd,#wN,#wJ,#wAdd,[data-ed],[data-act],[data-del],[data-eqed],[data-eqact],[data-eqdel],#eqNew,#eqAdd,#fOpen";
 function unl(){var u={};try{u=JSON.parse(localStorage.getItem(UKEY))||{}}catch(e){}var n=Date.now(),k;for(k in u)if(u[k]<=n)delete u[k];return u}
