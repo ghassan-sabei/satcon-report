@@ -378,17 +378,27 @@ function renderWorkers(app){
   }});
   app.querySelectorAll("[data-act]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-act"));w.active=w.active===false;save();render()}});
   app.querySelectorAll("[data-ed]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-ed"));
-    var wg=(w.wages||[]).slice().sort(function(a,b){return a.from<b.from?-1:1});
+    var wg=(w.wages||[]).slice().sort(function(a,b){return a.from<b.from?-1:1}),adv=(w.adv||[]).slice().sort(function(a,b){return a.date<b.date?1:-1});
     openModal('<h3>تعديل العامل</h3><div class="row"><label>الاسم</label><input type="text" id="mA" value="'+esc(w.name)+'"></div><div class="row"><label>المهنة</label><input type="text" id="mB" value="'+esc(w.job||"")+'"></div>'+
       '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:8px"><b>💰 الأجر بالساعة</b>'+
       (wg.length?wg.map(function(x,i){return'<div class="wk" style="padding:6px 0"><div class="nm"><b>'+money(x.rate,x.cur)+'</b><span>'+(i===0?'من الأول':'من '+fmtDate(x.from))+'</span></div><button class="small dan" data-wgdel="'+i+'">🗑</button></div>'}).join(''):'<p class="muted" style="margin:4px 0">ما في أجر لهلق</p>')+
       '<div class="row"><label>'+(wg.length?'أجر جديد':'الأجر')+'</label><input type="number" inputmode="decimal" id="wgR" placeholder="فاضي = ما في تغيير"></div>'+
       '<div class="row"><label>العملة</label><select id="wgC"><option value="usd"'+(wg.length&&wg[wg.length-1].cur==="iqd"?'':' selected')+'>دولار $</option><option value="iqd"'+(wg.length&&wg[wg.length-1].cur==="iqd"?' selected':'')+'>دينار عراقي</option></select></div>'+
       (wg.length?'<div class="row"><label>من تاريخ</label><input type="date" id="wgF" value="'+isoDate(new Date())+'"></div><p class="hint" style="margin:0">الأيام اللي قبل هالتاريخ بتضل على الأجر القديم.</p>':'<p class="hint" style="margin:0">أول أجر بيمشي على كل أيامه من الأول.</p>')+'</div>'+
+      '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:8px"><b>💵 السلف</b>'+
+      (adv.length?adv.map(function(x){return'<div class="wk" style="padding:6px 0"><div class="nm"><b>'+money(x.amount,x.cur)+'</b><span>'+fmtDate(x.date)+'</span></div><button class="small dan" data-advdel="'+x.id+'">🗑</button></div>'}).join(''):'<p class="muted" style="margin:4px 0">ما في سلف</p>')+
+      '<div class="row"><label>مبلغ السلفة ('+(curOf(w)==="iqd"?'دينار':'دولار')+')</label><input type="number" inputmode="decimal" id="avA"></div>'+
+      '<div class="row"><label>التاريخ</label><input type="date" id="avD" value="'+isoDate(new Date())+'"></div>'+
+      '<button class="big" id="avAdd">+ إضافة سلفة</button></div>'+
       '<div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
     MI.querySelectorAll("[data-wgdel]").forEach(function(b){b.onclick=function(){var x=wg[+b.getAttribute("data-wgdel")];
       w.wages=(w.wages||[]).filter(function(y){return!(y.from===x.from&&y.rate===x.rate&&y.cur===x.cur)});save();closeModal();b0.onclick()}});
     var b0=b;
+    MI.querySelectorAll("[data-advdel]").forEach(function(x){x.onclick=function(){var id=+x.getAttribute("data-advdel");
+      w.adv=(w.adv||[]).filter(function(y){return y.id!==id});save();closeModal();b0.onclick()}});
+    document.getElementById("avAdd").onclick=function(){var a=parseFloat(document.getElementById("avA").value),d=document.getElementById("avD").value;
+      if(!(a>0)||!d){document.getElementById("avA").style.borderColor="#d64545";return}
+      (w.adv||(w.adv=[])).push({id:newId(),date:d,amount:a,cur:(wageOn(w,d)||{}).cur||curOf(w)});save();closeModal();b0.onclick()};
     document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();
       var r=parseFloat(document.getElementById("wgR").value);
       if(r>0){var f=wg.length?(document.getElementById("wgF").value||isoDate(new Date())):"0000-00-00";
@@ -625,6 +635,7 @@ function wageOn(w,d){var g=w&&w.wages;if(!g||!g.length)return null;var s=g.slice
 function money(v,cur){return cur==="iqd"?lit(Math.round(v))+" د.ع":"$"+lit(Math.round(v*100)/100)}
 function payTxt(p){var a=[];if(p.usd)a.push(money(p.usd,"usd"));if(p.iqd)a.push(money(p.iqd,"iqd"));return a.join(" + ")||"—"}
 function payOn(){return!!unl().pay}
+function curOf(w){var g=(w.wages||[]).slice().sort(function(a,b){return a.from<b.from?-1:1});return g.length?g[g.length-1].cur:"usd"}
 /* ---------- monthly summary ---------- */
 function rangeStats(from,to){
   var rows={},order=[];if(from>to){var t=from;from=to;to=t}
@@ -661,7 +672,8 @@ function renderMonth(app){
   h+='<div class="box"><div class="done-list">';
   if(!list.length)h+='<p class="muted">ما في دوام مسجّل بهالفترة</p>';
   list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · ساعات '+dur(x.min)+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span>'+
-    (payOn()?'<br><b style="color:#16a34a">💰 '+payTxt(x.pay)+'</b>'+(x.nopay?' <span style="color:#d64545">(في ساعات بدون أجر)</span>':''):'')+'</span></div>'});
+    (payOn()?'<br><b style="color:#16a34a">💰 '+payTxt(x.pay)+'</b>'+(x.nopay?' <span style="color:#d64545">(في ساعات بدون أجر)</span>':''):'')+'</span>'+
+    (payOn()?'<span style="display:flex;gap:6px"><button class="small ok" data-stpr="'+x.w.id+'">🖨 كشف</button><button class="small pri" data-stpdf="'+x.w.id+'">📄 PDF</button></span>':'')+'</div>'});
   h+='</div></div>';
   S.machines.forEach(function(m){var st=machineRange(m.id,mFrom,mTo);if(!st.days&&m.active===false)return;
     h+='<div class="box"><h2>'+esc(m.name)+'</h2><div class="stat"><div><b>'+st.days+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div></div>'+
@@ -674,6 +686,8 @@ function renderMonth(app){
   document.getElementById("rTo").onchange=function(e){if(e.target.value){mTo=e.target.value;render()}};
   var po=document.getElementById("payOn");if(po)po.onclick=function(){requireAdmin(function(){setUnl("pay",Date.now()+UNLOCK_MS);render()})};
   var pf=document.getElementById("payOff");if(pf)pf.onclick=function(){setUnl("pay",0);render()};
+  app.querySelectorAll("[data-stpr]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-stpr");printPages(stmtPages(id,mFrom,mTo),"statement_"+mFrom+"_"+mTo,function(){stmtPdf(id,mFrom,mTo)})}});
+  app.querySelectorAll("[data-stpdf]").forEach(function(b){b.onclick=function(){stmtPdf(+b.getAttribute("data-stpdf"),mFrom,mTo)}});
   if(list.length){
     document.getElementById("mPrint").onclick=function(){printPages(rangePages(mFrom,mTo),"attendance_"+mFrom+"_"+mTo,function(){rangePdf(mFrom,mTo)})};
     document.getElementById("mPdf").onclick=function(){rangePdf(mFrom,mTo)};
@@ -756,6 +770,35 @@ function machinePdf(mid,from,to){var m=machineById(mid);pdfPages(function(){retu
 function dayPdf(date){pdfPages(function(){return dayPages(date)},"attendance_"+date+".pdf","دوام "+fmtDate(date))}
 function rangePdf(from,to){pdfPages(function(){return rangePages(from,to)},"attendance_"+from+"_"+to+".pdf","ملخص دوام")}
 
+
+/* ---------- worker statement: worked days + advances, totals and net (landscape, two columns) ---------- */
+function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
+  var w=workerById(wid),st=rangeStats(from,to).filter(function(x){return x.w.id===wid})[0]||{pres:0,abs:0,min:0,pay:{}};
+  var rows={},adv={};
+  Object.keys(S.days).filter(function(d){return d>=from&&d<=to}).forEach(function(d){var r=S.days[d].recs[wid];if(!r||r.absent||!r.in)return;
+    var wk=worked(r),x=rows[d]={d:d,min:null,amt:null,cur:null,adv:0};if(wk==null)return;wk=Math.round(wk);x.min=wk;
+    var wr=wageOn(w,d);if(wr){x.amt=wk/60*wr.rate;x.cur=wr.cur}});
+  (w.adv||[]).forEach(function(a){if(a.date<from||a.date>to)return;var x=rows[a.date]||(rows[a.date]={d:a.date,min:null,amt:null,cur:null,adv:0});
+    x.adv+=a.amount;x.acur=a.cur;adv[a.cur]=(adv[a.cur]||0)+a.amount});
+  var list=Object.keys(rows).sort().map(function(k){return rows[k]}),RPC=16,per=RPC*2,n=Math.max(1,Math.ceil(list.length/per)),pages=[];
+  var net={},c;for(c in st.pay)net[c]=st.pay[c];for(c in adv)net[c]=(net[c]||0)-adv[c];
+  function netTxt(){var a=[];["usd","iqd"].forEach(function(k){if(net[k]!=null&&(net[k]||st.pay[k]||adv[k]))a.push((net[k]<0?"−":"")+money(Math.abs(net[k]),k))});return a.join(" + ")||"—"}
+  function advTxt(){var p={};for(var k in adv)p[k]=adv[k];return payTxt(p)}
+  var head=headTable("كشف حساب عامل","Worker Statement",'من '+fmtDate(from)+' &nbsp; إلى '+fmtDate(to),["Period","الفترة"])+
+    '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue" style="width:14%">الاسم</td><td style="font-size:17px"><b>'+esc(w.name)+'</b></td><td class="blue" style="width:14%">المهنة</td><td style="width:22%">'+esc(w.job||"")+'</td></tr></table>';
+  function col(part){var h='<table class="grid" dir="rtl"><tr><th style="width:21%">التاريخ</th><th style="width:17%">اليوم</th><th style="width:16%">الساعات</th><th>المبلغ</th><th>السلفة</th></tr>';
+    for(var i=0;i<RPC;i++){var x=part[i];
+      h+='<tr style="height:26px">'+(x?'<td>'+fmtDate(x.d).slice(0,5)+'</td><td style="font-size:13px">'+dayName(x.d)+'</td><td>'+(x.min!=null?dur(x.min):'')+'</td><td>'+(x.amt!=null?money(x.amt,x.cur):'')+'</td><td>'+(x.adv?money(x.adv,x.acur):'')+'</td>':'<td></td><td></td><td></td><td></td><td></td>')+'</tr>'}
+    return h+'</table>'}
+  for(var p=0;p<n;p++){var chunk=list.slice(p*per,(p+1)*per);
+    var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head+
+      '<div style="display:flex;gap:10px;margin-top:8px"><div style="flex:1">'+col(chunk.slice(0,RPC))+'</div><div style="flex:1">'+col(chunk.slice(RPC))+'</div></div>';
+    if(p===n-1)h+='<table dir="rtl" style="margin-top:8px"><tr><td class="blue">أيام الحضور</td><td class="blue">أيام الغياب</td><td class="blue">مجموع الساعات</td><td class="blue">المجموع</td><td class="blue">السلف</td><td class="blue">الصافي</td></tr>'+
+      '<tr style="font-size:16px;font-weight:700"><td>'+st.pres+'</td><td>'+st.abs+'</td><td>'+dur(st.min)+'</td><td>'+payTxt(st.pay)+'</td><td>'+advTxt()+'</td><td style="font-size:18px">'+netTxt()+'</td></tr></table>'+
+      '<div dir="rtl" style="margin-top:22px;text-align:right;font-size:15px"><b>توقيع العامل:</b> <span style="display:inline-block;width:260px;border-bottom:1px solid #000;height:30px;vertical-align:bottom"></span></div>';
+    h+=(n>1?'<div class="pgno">'+(p+1)+' / '+n+'</div>':'')+'</div>';pages.push(h)}
+  return pages}
+function stmtPdf(wid,from,to){var w=workerById(wid);pdfPages(function(){return stmtPages(wid,from,to)},"statement_"+from+"_"+to+".pdf","كشف "+w.name)}
 /* ---------- print / pdf (same as report app) ---------- */
 var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
 if(NATIVE){var st=document.createElement("style");st.textContent="@page{size:A4 landscape;margin:8mm}";document.head.appendChild(st)}
