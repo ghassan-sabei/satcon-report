@@ -1031,7 +1031,7 @@ startSync();
    a locked day is stored as settings "lk_<date>" so it reaches every phone.
    Unlocking with the admin password opens it on THIS device only, for 10 minutes.
    The machines list is always closed unless unlocked the same way. */
-var UKEY="satcon_attend_unlk"+SLOT,UNLOCK_MS=10*60000;
+var UKEY="satcon_attend_unlk"+SLOT,UNLOCK_MS=60*60000;
 var DAY_SEL="#dBlock,#allIn,#advDay,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-eq],[data-eqsig]";
 /* lists (workers, machines, fuel equipment, opening balance): always closed for supervisors */
 var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd,#wN,#wJ,#wAdd,[data-ed],[data-act],[data-del],[data-eqed],[data-eqact],[data-eqdel],#eqNew,#eqAdd,#fOpen";
