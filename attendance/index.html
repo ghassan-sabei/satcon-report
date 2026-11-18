@@ -378,9 +378,22 @@ function renderWorkers(app){
   }});
   app.querySelectorAll("[data-act]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-act"));w.active=w.active===false;save();render()}});
   app.querySelectorAll("[data-ed]").forEach(function(b){b.onclick=function(){var w=workerById(+b.getAttribute("data-ed"));
+    var wg=(w.wages||[]).slice().sort(function(a,b){return a.from<b.from?-1:1});
     openModal('<h3>تعديل العامل</h3><div class="row"><label>الاسم</label><input type="text" id="mA" value="'+esc(w.name)+'"></div><div class="row"><label>المهنة</label><input type="text" id="mB" value="'+esc(w.job||"")+'"></div>'+
+      '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:8px"><b>💰 الأجر بالساعة</b>'+
+      (wg.length?wg.map(function(x,i){return'<div class="wk" style="padding:6px 0"><div class="nm"><b>'+money(x.rate,x.cur)+'</b><span>'+(i===0?'من الأول':'من '+fmtDate(x.from))+'</span></div><button class="small dan" data-wgdel="'+i+'">🗑</button></div>'}).join(''):'<p class="muted" style="margin:4px 0">ما في أجر لهلق</p>')+
+      '<div class="row"><label>'+(wg.length?'أجر جديد':'الأجر')+'</label><input type="number" inputmode="decimal" id="wgR" placeholder="فاضي = ما في تغيير"></div>'+
+      '<div class="row"><label>العملة</label><select id="wgC"><option value="usd"'+(wg.length&&wg[wg.length-1].cur==="iqd"?'':' selected')+'>دولار $</option><option value="iqd"'+(wg.length&&wg[wg.length-1].cur==="iqd"?' selected':'')+'>دينار عراقي</option></select></div>'+
+      (wg.length?'<div class="row"><label>من تاريخ</label><input type="date" id="wgF" value="'+isoDate(new Date())+'"></div><p class="hint" style="margin:0">الأيام اللي قبل هالتاريخ بتضل على الأجر القديم.</p>':'<p class="hint" style="margin:0">أول أجر بيمشي على كل أيامه من الأول.</p>')+'</div>'+
       '<div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
-    document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();closeModal();save();render()};
+    MI.querySelectorAll("[data-wgdel]").forEach(function(b){b.onclick=function(){var x=wg[+b.getAttribute("data-wgdel")];
+      w.wages=(w.wages||[]).filter(function(y){return!(y.from===x.from&&y.rate===x.rate&&y.cur===x.cur)});save();closeModal();b0.onclick()}});
+    var b0=b;
+    document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();
+      var r=parseFloat(document.getElementById("wgR").value);
+      if(r>0){var f=wg.length?(document.getElementById("wgF").value||isoDate(new Date())):"0000-00-00";
+        w.wages=(w.wages||[]).filter(function(y){return y.from!==f});w.wages.push({from:f,rate:r,cur:document.getElementById("wgC").value})}
+      closeModal();save();render()};
     document.getElementById("mN").onclick=closeModal}});
 }
 
@@ -606,6 +619,12 @@ function renderSettings(app){
   }
 }
 
+/* ---------- wages (hourly, with history; amounts are computed, never stored) ---------- */
+function wageOn(w,d){var g=w&&w.wages;if(!g||!g.length)return null;var s=g.slice().sort(function(a,b){return a.from<b.from?-1:1}),r=s[0];
+  for(var i=0;i<s.length;i++)if(s[i].from<=d)r=s[i];return r}
+function money(v,cur){return cur==="iqd"?lit(Math.round(v))+" د.ع":"$"+lit(Math.round(v*100)/100)}
+function payTxt(p){var a=[];if(p.usd)a.push(money(p.usd,"usd"));if(p.iqd)a.push(money(p.iqd,"iqd"));return a.join(" + ")||"—"}
+function payOn(){return!!unl().pay}
 /* ---------- monthly summary ---------- */
 function rangeStats(from,to){
   var rows={},order=[];if(from>to){var t=from;from=to;to=t}
@@ -613,10 +632,11 @@ function rangeStats(from,to){
     var recs=S.days[d].recs;
     Object.keys(recs).forEach(function(k){var r=recs[k],id=+k;
       if(!r.absent&&!r.in)return;
-      if(!rows[id]){rows[id]={w:workerById(id),pres:0,abs:0,min:0,pay:{},open:0};order.push(id)}
+      if(!rows[id]){rows[id]={w:workerById(id),pres:0,abs:0,min:0,pay:{},open:0,rates:[]};order.push(id)}
       var x=rows[id];
       if(r.absent){x.abs++;return}
       x.pres++;var wk=worked(r);if(wk==null){x.open++;return}x.min+=wk;
+      var wr=wageOn(x.w,d);if(wr){x.pay[wr.cur]=(x.pay[wr.cur]||0)+wk/60*wr.rate;if(x.rates.indexOf(wr.rate+wr.cur)<0)x.rates.push(wr.rate+wr.cur);x.lastRate=wr}else if(wk)x.nopay=true;
     });
   });
   var list=order.map(function(id){return rows[id]}).filter(function(x){return x.w});
@@ -633,10 +653,14 @@ function renderMonth(app){
     '<div class="row"><label>إلى تاريخ</label><input type="date" id="rTo" value="'+mTo+'"></div></div>'+
     '<div class="box"><h2>العمال</h2>'+
     '<div class="stat"><div><b>'+list.length+'</b><span>عمال</span></div><div><b>'+dur(tm)+'</b><span>مجموع الساعات</span></div><div><b>'+list.reduce(function(a,x){return a+x.pres},0)+'</b><span>أيام حضور</span></div></div>'+
-    (list.length?'<div class="two" style="margin-top:10px"><button class="big ok" id="mPrint">🖨 طباعة</button><button class="big pri" id="mPdf">📄 إرسال PDF</button></div>':'')+'</div>';
+    (list.length?'<div class="two" style="margin-top:10px"><button class="big ok" id="mPrint">🖨 طباعة</button><button class="big pri" id="mPdf">📄 إرسال PDF</button></div>':'')+
+    (list.length?(payOn()?'<div style="background:#fff7e0;border:2px solid #f0b429;border-radius:10px;padding:8px;margin-top:10px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>💰 المعاشات ظاهرة <b data-lkt="pay" dir="ltr">'+left("pay")+'</b></span><button class="small dan" id="payOff">إخفاء</button></div>'+
+      '<div style="margin-top:6px;font-size:17px"><b>المجموع: '+payTxt(list.reduce(function(a,x){for(var c in x.pay)a[c]=(a[c]||0)+x.pay[c];return a},{}))+'</b></div><p class="hint" style="margin:4px 0 0">الطباعة والـ PDF هلق مع المعاشات.</p></div>'
+      :'<button class="big" id="payOn" style="margin-top:10px">💰 إظهار المعاشات 🔒</button>'):'')+'</div>';
   h+='<div class="box"><div class="done-list">';
   if(!list.length)h+='<p class="muted">ما في دوام مسجّل بهالفترة</p>';
-  list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · ساعات '+dur(x.min)+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span></span></div>'});
+  list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · ساعات '+dur(x.min)+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span>'+
+    (payOn()?'<br><b style="color:#16a34a">💰 '+payTxt(x.pay)+'</b>'+(x.nopay?' <span style="color:#d64545">(في ساعات بدون أجر)</span>':''):'')+'</span></div>'});
   h+='</div></div>';
   S.machines.forEach(function(m){var st=machineRange(m.id,mFrom,mTo);if(!st.days&&m.active===false)return;
     h+='<div class="box"><h2>'+esc(m.name)+'</h2><div class="stat"><div><b>'+st.days+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div></div>'+
@@ -647,6 +671,8 @@ function renderMonth(app){
   app.querySelectorAll("[data-mpdf]").forEach(function(b){b.onclick=function(){machinePdf(+b.getAttribute("data-mpdf"),mFrom,mTo)}});
   document.getElementById("rFrom").onchange=function(e){if(e.target.value){mFrom=e.target.value;render()}};
   document.getElementById("rTo").onchange=function(e){if(e.target.value){mTo=e.target.value;render()}};
+  var po=document.getElementById("payOn");if(po)po.onclick=function(){requireAdmin(function(){setUnl("pay",Date.now()+UNLOCK_MS);render()})};
+  var pf=document.getElementById("payOff");if(pf)pf.onclick=function(){setUnl("pay",0);render()};
   if(list.length){
     document.getElementById("mPrint").onclick=function(){printPages(rangePages(mFrom,mTo),"attendance_"+mFrom+"_"+mTo,function(){rangePdf(mFrom,mTo)})};
     document.getElementById("mPdf").onclick=function(){rangePdf(mFrom,mTo)};
@@ -695,12 +721,13 @@ function dayPages(date){
 }
 function rangePages(from,to){
   if(from>to){var t=from;from=to;to=t}
-  var list=rangeStats(from,to),tp=0,ta=0,tm=0;
-  var rows=list.map(function(x){tp+=x.pres;ta+=x.abs;tm+=x.min;
-    return function(n){return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(x.w.name)+'</td><td>'+esc(x.w.job||"")+'</td><td>'+x.pres+'</td><td>'+x.abs+'</td><td><b>'+dur(x.min)+'</b></td>'}});
+  var list=rangeStats(from,to),tp=0,ta=0,tm=0,PY=payOn(),tpay={};
+  var rows=list.map(function(x){tp+=x.pres;ta+=x.abs;tm+=x.min;for(var c in x.pay)tpay[c]=(tpay[c]||0)+x.pay[c];
+    return function(n){return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(x.w.name)+'</td><td>'+esc(x.w.job||"")+'</td><td>'+x.pres+'</td><td>'+x.abs+'</td><td><b>'+dur(x.min)+'</b></td>'+
+      (PY?'<td>'+(x.rates.length>1?'متغيّر':x.lastRate?money(x.lastRate.rate,x.lastRate.cur):'—')+'</td><td><b>'+payTxt(x.pay)+'</b></td>':'')}});
   var head=headTable("ملخص دوام","Attendance Summary",'من '+fmtDate(from)+' &nbsp; إلى '+fmtDate(to),["Period","الفترة"]);
-  var cols='<th style="width:5%">العدد</th><th style="width:24%">الاسم</th><th style="width:13%">المهنة</th><th>أيام الحضور</th><th>أيام الغياب</th><th>مجموع الساعات</th>';
-  var total='<tr style="height:'+ROW_H+'px;font-weight:700;background:#dde8f6"><td colspan="3">المجموع</td><td>'+tp+'</td><td>'+ta+'</td><td>'+dur(tm)+'</td></tr>';
+  var cols='<th style="width:5%">العدد</th><th style="width:'+(PY?20:24)+'%">الاسم</th><th style="width:'+(PY?10:13)+'%">المهنة</th><th>أيام الحضور</th><th>أيام الغياب</th><th>مجموع الساعات</th>'+(PY?'<th>أجر الساعة</th><th style="width:17%">المبلغ</th>':'');
+  var total='<tr style="height:'+ROW_H+'px;font-weight:700;background:#dde8f6"><td colspan="3">المجموع</td><td>'+tp+'</td><td>'+ta+'</td><td>'+dur(tm)+'</td>'+(PY?'<td></td><td>'+payTxt(tpay)+'</td>':'')+'</tr>';
   return paginate(rows,head,cols,total);
 }
 function machineRange(mid,from,to){var days=0,min=0,dsl=0,blocks=[],drivers=[];
