@@ -111,7 +111,7 @@ button:active{transform:scale(.97)}
 </style>
 </head>
 <body>
-<header class="top"><h1 id="hdP">الصندوق</h1><div class="d" id="hdDate"></div></header>
+<header class="top"><h1 id="hdP" style="cursor:pointer">الصندوق</h1><div class="d" id="hdDate"></div></header>
 <main id="app"></main>
 <div id="printArea"></div>
 <div class="modal" id="modal"><div class="in" id="modalIn"></div></div>
@@ -120,10 +120,53 @@ button:active{transform:scale(.97)}
 "use strict";
 /* All storage keys start with satcon_sandoq_ so this app never touches the
    daily report or attendance data (they share the same site in the browser). */
-var KEY="satcon_sandoq_v1";
+/* ---------- sites: several separate boxes in one app ----------
+   site 1 keeps the original storage key, so the data already on the phone is site 1;
+   every other site lives under its own key and shares nothing with the others */
+var BASEKEY="satcon_sandoq_v1",IDX_KEY="satcon_sandoq_sites";
 var COPY=1;try{var _id=window.AndroidBridge&&window.AndroidBridge.appId&&window.AndroidBridge.appId(),_m=/sandoq(\d+)$/.exec(_id||"");if(_m)COPY=+_m[1]}catch(e){}
 var APPNAME=COPY>1?"الصندوق "+COPY:"الصندوق";
-if(COPY>1){var _c=["#2b3a67","#0f6b5c","#7a2e5a","#6b4a12"][(COPY-1)%4];document.write('<style>header.top{background:'+_c+'}</style>');var _tc=document.querySelector('meta[name=theme-color]');if(_tc)_tc.content=_c}
+var SITE_COLORS=["#2b3a67","#0f6b5c","#7a2e5a","#6b4a12","#1f5f8b","#5b3a8a"];
+function siteKey(id){return id==="1"?BASEKEY:BASEKEY+"_s"+id}
+function loadSites(){var x=null;try{x=JSON.parse(localStorage.getItem(IDX_KEY))}catch(e){}
+  if(!x||!Array.isArray(x.ids)||!x.ids.length)x={cur:"1",ids:["1"],next:2};
+  if(x.ids.indexOf(x.cur)<0)x.cur=x.ids[0];if(!x.next)x.next=2;return x}
+function saveSites(){try{localStorage.setItem(IDX_KEY,JSON.stringify(SITES))}catch(e){}}
+var SITES=loadSites(),KEY=siteKey(SITES.cur);
+function siteState(id){if(id===SITES.cur)return S;var s=null;try{s=JSON.parse(localStorage.getItem(siteKey(id)))}catch(e){}return s||{project:"",open:{IQD:0,USD:0},tx:[]}}
+function siteName(id,st){st=st||siteState(id);return st.project||("الموقع "+(SITES.ids.indexOf(id)+1))}
+function siteColor(id){return SITE_COLORS[SITES.ids.indexOf(id)%SITE_COLORS.length]}
+function balOf(st){var b={IQD:(st.open&&st.open.IQD)||0,USD:(st.open&&st.open.USD)||0};(st.tx||[]).forEach(function(t){b[t.cur]=r2(b[t.cur]+(t.type==="in"?t.amount:-t.amount))});return b}
+function resetViews(){TAB="out";LF={from:"",to:"",cur:"",q:"",bld:""};PF={from:"",to:"",kind:"out",daily:false,worker:"",bld:""};BF={from:"",to:""};WK="";DAY=""}
+function switchSite(id){SITES.cur=id;saveSites();KEY=siteKey(id);S=load();resetViews();closeModal();if(location.hash&&location.hash!=="#")go("");else render();scrollTo(0,0)}
+function sitePicker(){
+  var h='<h3>المواقع</h3>'+SITES.ids.map(function(id){var st=siteState(id),b=balOf(st),on=id===SITES.cur;
+    return'<div class="wk" data-site="'+id+'" style="border-right:6px solid '+siteColor(id)+';padding-right:10px'+(on?';background:#f3f6fb':'')+'"><div><b>'+(on?'✓ ':'')+esc(siteName(id,st))+'</b><br><span>'+(st.tx||[]).length+' حركة</span></div>'+
+      '<div class="t" style="color:#2b3a67"><span class="'+(b.IQD<0?'neg':'')+'" style="color:'+(b.IQD<0?'#c62828':'inherit')+'">'+fmtAmt(b.IQD,"IQD")+' د.ع</span><br><span style="color:'+(b.USD<0?'#c62828':'inherit')+'">'+fmtAmt(b.USD,"USD")+' $</span></div></div>'}).join("")+
+    '<div class="row" style="margin-top:12px"><input type="text" id="nsName" placeholder="اسم الموقع الجديد"><button class="ok small" id="nsAdd">+ موقع</button></div><p class="err" id="nsErr"></p>'+
+    '<div class="acts"><button id="mN">إغلاق</button></div>';
+  openModal(h);
+  Array.prototype.forEach.call(modalIn.querySelectorAll("[data-site]"),function(el){el.onclick=function(){var id=el.getAttribute("data-site");if(id===SITES.cur)closeModal();else switchSite(id)}});
+  document.getElementById("mN").onclick=closeModal;
+  document.getElementById("nsAdd").onclick=function(){
+    var nm=document.getElementById("nsName").value.trim().replace(/\s+/g," ");
+    if(!nm){document.getElementById("nsErr").textContent="اكتب اسم الموقع.";return}
+    if(SITES.ids.some(function(id){return siteName(id)===nm})){document.getElementById("nsErr").textContent="في موقع بهالاسم.";return}
+    var id=String(SITES.next++),st=blank();st.project=nm;
+    try{localStorage.setItem(siteKey(id),JSON.stringify(st))}catch(e){document.getElementById("nsErr").textContent="ما قدر يحفظ.";return}
+    SITES.ids.push(id);saveSites();switchSite(id);go("settings")};
+}
+function deleteSite(){
+  var id=SITES.cur,nm=siteName(id),n=S.tx.length,b=balances();
+  openModal('<h3>🗑 حذف الموقع "'+esc(nm)+'"؟</h3><p>رح تنمسح كل حركاته ('+n+' حركة) ورصيده (دينار '+fmtAmt(b.IQD,"IQD")+'، دولار '+fmtAmt(b.USD,"USD")+')، وما بترجع إلا من نسخة احتياطية.</p>'+
+    '<p class="hint">اكتب اسم الموقع حتى تأكد:</p><input type="text" id="dsN" style="width:100%"><p class="err" id="dsE"></p>'+
+    '<div class="acts"><button id="mY" class="dan">حذف</button><button id="mN">إلغاء</button></div>');
+  document.getElementById("mN").onclick=closeModal;
+  document.getElementById("mY").onclick=function(){
+    if(document.getElementById("dsN").value.trim().replace(/\s+/g," ")!==nm){document.getElementById("dsE").textContent="الاسم مش مطابق.";return}
+    try{localStorage.removeItem(siteKey(id))}catch(e){}
+    SITES.ids=SITES.ids.filter(function(x){return x!==id});saveSites();switchSite(SITES.ids[0])};
+}
 var CUR={IQD:{n:"دينار",s:"د.ع"},USD:{n:"دولار",s:"$"}};
 var S=load();
 if(S.__fixB){delete S.__fixB;S.blds=splitBlds(S.blds.join(","));save()}
@@ -196,7 +239,8 @@ function go(h){location.hash=h}
 window.addEventListener("hashchange",function(){closeModal();render();scrollTo(0,0)});
 var app=document.getElementById("app");
 function render(){
-  document.getElementById("hdP").textContent=S.project?APPNAME+" - "+S.project:APPNAME;
+  var hp=document.getElementById("hdP");hp.textContent=APPNAME+" - "+siteName(SITES.cur)+" ▾";hp.onclick=sitePicker;
+  var col=siteColor(SITES.cur);document.querySelector("header.top").style.background=col;var tc=document.querySelector('meta[name=theme-color]');if(tc)tc.content=col;
   document.getElementById("hdDate").textContent=fmtDate(today());
   var h=location.hash.replace(/^#/,"");
   if(h==="new-in")return formView(null,"in");
@@ -611,7 +655,7 @@ function saveText(text,name,mime){
   if(!NATIVE){var blob=new Blob([text],{type:mime}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();return true}
   return false}
 function backup(){
-  var text=JSON.stringify({app:"satcon-sandoq",v:1,copy:COPY,at:Date.now(),state:S}),name="sandoq"+(COPY>1?COPY:"")+"_backup_"+today()+".json";
+  var text=JSON.stringify({app:"satcon-sandoq",v:1,copy:COPY,at:Date.now(),state:S}),name="sandoq"+(COPY>1?COPY:"")+"_"+siteName(SITES.cur).replace(/[\\\/:*?"<>|\s]+/g,"_")+"_"+today()+".json";
   var canSave=!NATIVE||!!(window.AndroidBridge&&window.AndroidBridge.saveDownload);
   openModal('<h3>💾 نسخة احتياطية</h3><p class="muted" style="margin-top:0">'+S.tx.length+' حركة · الملف: '+esc(name)+'</p>'+
     '<div class="acts" style="flex-direction:column"><button id="bS" class="pri">📤 إرسال (واتساب...)</button>'+(canSave?'<button id="bD">💾 حفظ بمجلد التنزيلات</button>':'')+'<button id="mN">إغلاق</button></div><p class="hint" id="bMsg"></p>');
@@ -638,7 +682,7 @@ function restore(file){
 }
 function settingsView(){
   app.innerHTML='<div class="box"><h2>الإعدادات</h2>'+
-    '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.project)+'"></div>'+
+    '<div class="row"><label>اسم الموقع</label><input type="text" id="sP" value="'+esc(S.project)+'"></div>'+
     '<p class="hint" style="margin:-4px 0 10px">يطلع بأعلى الشاشة وبورقة الطباعة.</p>'+
     '<div class="row"><label>البنايات</label><input type="text" id="sB" placeholder="مثلاً: 1، 2، 3، 4، 5" value="'+esc((S.blds||[]).join("، "))+'"></div>'+
     '<p class="hint" style="margin:-4px 0 10px">افصل بينهن بفاصلة أو نقطة، مثلاً D1، D2، D3. بتطلع أزرار لما تسجل صادر.</p>'+
@@ -649,6 +693,7 @@ function settingsView(){
     '<div class="box"><h2>النسخة الاحتياطية</h2><p class="muted" style="margin-top:0">'+(S.lastBackup?'آخر نسخة: '+fmtDate(isoDate(new Date(S.lastBackup))):'ما في نسخة لهلأ')+'</p>'+
     '<button class="big ok" id="sBk">💾 عمل نسخة احتياطية</button>'+
     '<label class="big" style="display:block;text-align:center;border-radius:10px;padding:16px;background:#dfe5f0;cursor:pointer;font-weight:600;margin-top:8px">📥 استرجاع من ملف<input type="file" id="sIn" accept=".json,application/json,*/*" style="display:none"></label></div>'+
+    (SITES.ids.length>1?'<button class="big" id="sDel" style="background:#fff;color:#d64545;border:2px solid #d64545;margin-bottom:8px">🗑 حذف هالموقع</button>':'')+
     '<button class="big" id="sBack">رجوع</button>';
   document.getElementById("sSave").onclick=function(){
     var e=document.getElementById("sErr"),a=document.getElementById("sOI").value.trim(),b=document.getElementById("sOU").value.trim();
@@ -659,6 +704,7 @@ function settingsView(){
   document.getElementById("sBk").onclick=backup;
   document.getElementById("sIn").onchange=function(e){var f=e.target.files[0];if(f)restore(f);e.target.value=""};
   document.getElementById("sBack").onclick=function(){history.back()};
+  var del=document.getElementById("sDel");if(del)del.onclick=deleteSite;
 }
 
 window.__updateReady=function(){

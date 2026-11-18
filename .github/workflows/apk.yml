@@ -40,7 +40,6 @@ jobs:
           build com.satcon.report "التقرير اليومي" https://ghassan-sabei.github.io/satcon-report/ satcon_daily_v1 . report satcon-report.apk
           build com.satcon.attendance "دوام العمال" https://ghassan-sabei.github.io/satcon-report/attendance/ satcon_attend_v1 attendance attendance satcon-attendance.apk
           build com.satcon.sandoq "الصندوق" https://ghassan-sabei.github.io/satcon-report/sandoq/ satcon_sandoq_v1 sandoq sandoq satcon-sandoq.apk
-          build com.satcon.sandoq2 "الصندوق 2" https://ghassan-sabei.github.io/satcon-report/sandoq/ satcon_sandoq_v1 sandoq sandoq2 satcon-sandoq2.apk
       - name: Publish APK release
         if: success()
         uses: softprops/action-gh-release@v2
@@ -52,7 +51,6 @@ jobs:
             satcon-report.apk
             satcon-attendance.apk
             satcon-sandoq.apk
-            satcon-sandoq2.apk
       - name: Save log to branch
         if: always()
         run: |
