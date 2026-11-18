@@ -785,9 +785,10 @@ function rangePdf(from,to){pdfPages(function(){return rangePages(from,to)},"atte
 /* ---------- worker statement: worked days + advances, totals and net (landscape, two columns) ---------- */
 function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
   var w=workerById(wid),st=rangeStats(from,to).filter(function(x){return x.w.id===wid})[0]||{pres:0,abs:0,min:0,pay:{}};
-  var rows={},adv={};
+  var rows={},adv={},openDays=[];
   Object.keys(S.days).filter(function(d){return d>=from&&d<=to}).forEach(function(d){var r=S.days[d].recs[wid];if(!r||r.absent||!r.in)return;
-    var wk=worked(r),x=rows[d]={d:d,min:null,amt:null,cur:null,adv:0};if(wk==null)return;wk=Math.round(wk);x.min=wk;
+    /* entered but no exit: no row, listed under the table instead */
+    var wk=worked(r);if(wk==null){openDays.push(d);return}var x=rows[d]={d:d,min:null,amt:null,cur:null,adv:0};wk=Math.round(wk);x.min=wk;
     var wr=wageOn(w,d);if(wr){x.amt=wk/60*wr.rate;x.cur=wr.cur}});
   (w.adv||[]).forEach(function(a){if(a.date<from||a.date>to)return;var x=rows[a.date]||(rows[a.date]={d:a.date,min:null,amt:null,cur:null,adv:0});
     x.adv+=a.amount;x.acur=a.cur;if(a.by&&(x.by||[]).indexOf(a.by)<0)(x.by||(x.by=[])).push(a.by);adv[a.cur]=(adv[a.cur]||0)+a.amount});
@@ -806,6 +807,7 @@ function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
     var h='<div class="sheet page" style="width:'+PAGE_H+'px;height:'+PAGE_W+'px;position:relative">'+head+'<div style="margin-top:8px">'+col(chunk)+'</div>';
     if(p===n-1)h+='<table dir="rtl" style="margin-top:8px"><tr><td class="blue">أيام الحضور</td><td class="blue">أيام الغياب</td><td class="blue">مجموع الساعات</td><td class="blue">المجموع</td><td class="blue">السلف</td><td class="blue">الصافي</td></tr>'+
       '<tr style="font-size:14px;font-weight:700"><td>'+st.pres+'</td><td>'+st.abs+'</td><td>'+dur(st.min)+'</td><td>'+payTxt(st.pay)+'</td><td>'+advTxt()+'</td><td style="font-size:16px">'+netTxt()+'</td></tr></table>'+
+      (openDays.length?'<p dir="rtl" style="text-align:right;font-size:12px;margin:6px 0 0">⚠️ دخول بدون خروج (ما انحسب): '+openDays.sort().map(function(d){return fmtDate(d).slice(0,5)}).join("، ")+'</p>':'')+
       '<div dir="rtl" style="position:absolute;bottom:26px;right:0;text-align:right;font-size:15px"><b>توقيع العامل:</b> <span style="display:inline-block;width:260px;border-bottom:1px solid #000;height:30px;vertical-align:bottom"></span></div>';
     h+=(n>1?'<div class="pgno">'+(p+1)+' / '+n+'</div>':'')+'</div>';pages.push(h)}
   return pages}
