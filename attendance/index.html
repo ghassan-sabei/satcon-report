@@ -679,7 +679,8 @@ function renderMonth(app){
     '<div class="stat"><div><b>'+list.length+'</b><span>عمال</span></div><div><b>'+dur(tm)+'</b><span>مجموع الساعات</span></div><div><b>'+list.reduce(function(a,x){return a+x.pres},0)+'</b><span>أيام حضور</span></div></div>'+
     (list.length?'<div class="two" style="margin-top:10px"><button class="big ok" id="mPrint">🖨 طباعة</button><button class="big pri" id="mPdf">📄 إرسال PDF</button></div>':'')+
     (list.length?(payOn()?'<div style="background:#fff7e0;border:2px solid #f0b429;border-radius:10px;padding:8px;margin-top:10px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>💰 المعاشات ظاهرة <b data-lkt="pay" dir="ltr">'+left("pay")+'</b></span><button class="small dan" id="payOff">إخفاء</button></div>'+
-      '<div style="margin-top:6px;font-size:17px"><b>المجموع: '+payTxt(list.reduce(function(a,x){for(var c in x.pay)a[c]=(a[c]||0)+x.pay[c];return a},{}))+'</b></div><p class="hint" style="margin:4px 0 0">الطباعة والـ PDF هلق مع المعاشات.</p></div>'
+      '<div style="margin-top:6px;font-size:17px"><b>المجموع: '+payTxt(list.reduce(function(a,x){for(var c in x.pay)a[c]=(a[c]||0)+x.pay[c];return a},{}))+'</b></div><p class="hint" style="margin:4px 0 0">الطباعة والـ PDF هلق مع المعاشات.</p>'+
+      '<div class="two" style="margin-top:8px"><button class="ok" id="stAll">🖨 كشوفات كل العمال</button><button class="pri" id="stAllPdf">📄 PDF كل العمال</button></div></div>'
       :'<button class="big" id="payOn" style="margin-top:10px">💰 إظهار المعاشات 🔒</button>'):'')+'</div>';
   h+='<div class="box"><div class="done-list">';
   if(!list.length)h+='<p class="muted">ما في دوام مسجّل بهالفترة</p>';
@@ -698,6 +699,9 @@ function renderMonth(app){
   document.getElementById("rTo").onchange=function(e){if(e.target.value){mTo=e.target.value;render()}};
   var po=document.getElementById("payOn");if(po)po.onclick=function(){requireAdmin(function(){setUnl("pay",Date.now()+UNLOCK_MS);render()})};
   var pf=document.getElementById("payOff");if(pf)pf.onclick=function(){setUnl("pay",0);render()};
+  function allSt(){var pg=[];rangeStats(mFrom,mTo).forEach(function(x){pg=pg.concat(stmtPages(x.w.id,mFrom,mTo))});return pg}
+  var sa=document.getElementById("stAll");if(sa)sa.onclick=function(){printPages(allSt(),"statements_"+mFrom+"_"+mTo,function(){pdfPages(allSt,"statements_"+mFrom+"_"+mTo+".pdf","كشوفات العمال",true)},true)};
+  var sp=document.getElementById("stAllPdf");if(sp)sp.onclick=function(){pdfPages(allSt,"statements_"+mFrom+"_"+mTo+".pdf","كشوفات العمال",true)};
   app.querySelectorAll("[data-stpr]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-stpr");printPages(stmtPages(id,mFrom,mTo),"statement_"+mFrom+"_"+mTo,function(){stmtPdf(id,mFrom,mTo)},true)}});
   app.querySelectorAll("[data-stpdf]").forEach(function(b){b.onclick=function(){stmtPdf(+b.getAttribute("data-stpdf"),mFrom,mTo)}});
   if(list.length){
@@ -800,7 +804,7 @@ function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
   var head=headTable("كشف حساب عامل","Worker Statement",'من '+fmtDate(from)+' &nbsp; إلى '+fmtDate(to),["Period","الفترة"])+
     '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue" style="width:14%">الاسم</td><td style="font-size:17px"><b>'+esc(w.name)+'</b></td><td class="blue" style="width:14%">المهنة</td><td style="width:22%">'+esc(w.job||"")+'</td></tr></table>';
   /* only rows with something in them: no empty filler rows */
-  function col(part){var h='<table class="grid" dir="rtl"><tr><th style="width:15%">التاريخ</th><th style="width:14%">اليوم</th><th style="width:13%">الساعات</th><th style="width:18%">المبلغ</th><th style="width:17%">السلفة</th><th>السلفة من مين</th></tr>';
+  function col(part){var h='<table class="grid" dir="rtl"><tr><th style="width:15%">التاريخ</th><th style="width:14%">اليوم</th><th style="width:13%">الساعات</th><th style="width:18%">المبلغ</th><th style="width:17%">السلفة</th><th>شرح</th></tr>';
     part.forEach(function(x){
       h+='<tr style="height:24px"><td>'+fmtDate(x.d).slice(0,5)+'</td><td style="font-size:13px">'+dayName(x.d)+'</td><td>'+(x.min!=null?dur(x.min):'')+'</td><td>'+(x.amt!=null?money(x.amt,x.cur):'')+'</td><td>'+(x.adv?money(x.adv,x.acur):'')+'</td><td style="font-size:13px">'+(x.by?esc(x.by.join("، ")):'')+'</td></tr>'});
     return h+'</table>'}
