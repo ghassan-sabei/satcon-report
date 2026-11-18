@@ -123,11 +123,13 @@ button:active{transform:scale(.97)}
 var KEY="satcon_sandoq_v1";
 var CUR={IQD:{n:"دينار",s:"د.ع"},USD:{n:"دولار",s:"$"}};
 var S=load();
+if(S.__fixB){delete S.__fixB;S.blds=splitBlds(S.blds.join(","));save()}
 function blank(){return{v:1,project:"",open:{IQD:0,USD:0},tx:[],seq:1,lastBackup:0,lastCur:"IQD",blds:[]}}
 function load(){var s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
   if(!s||!s.tx)s=blank();
   var b=blank(),k;for(k in b)if(s[k]===undefined)s[k]=b[k];
   if(!s.open)s.open={IQD:0,USD:0};
+  if(s.blds&&s.blds.length)s.__fixB=1;
   return s}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("ما قدر يحفظ! الذاكرة ممتلئة؟")}}
 
@@ -154,6 +156,8 @@ function sign(t){return t.type==="in"?t.amount:-t.amount}
 var TL={in:"وارد",out:"صادر",adv:"سلفة"};
 /* each expense (صادر) belongs to a building, or to "عام" when it is for the whole site */
 var GEN="عام";
+/* building list typed in settings: commas, Arabic commas, dots, semicolons or new lines all separate names */
+function splitBlds(txt){var bs=[];normDigits(txt).split(/[,،.؛;\n]+/).forEach(function(x){x=x.trim().replace(/\s+/g," ");if(x&&x!==GEN&&bs.indexOf(x)<0)bs.push(x)});return bs.sort(byName)}
 function byName(a,b){return a.localeCompare(b,"ar",{numeric:true})}
 function bldLabel(b){return!b||b===GEN?"عام":(/^[0-9٠-٩]/.test(b)?"بناية "+b:b)}
 function bldList(){var m={};(S.blds||[]).forEach(function(b){m[b]=1});S.tx.forEach(function(t){if(t.type==="out"&&t.bld&&t.bld!==GEN)m[t.bld]=1});return Object.keys(m).sort(byName)}
@@ -631,7 +635,7 @@ function settingsView(){
     '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(S.project)+'"></div>'+
     '<p class="hint" style="margin:-4px 0 10px">يطلع بأعلى الشاشة وبورقة الطباعة.</p>'+
     '<div class="row"><label>البنايات</label><input type="text" id="sB" placeholder="مثلاً: 1، 2، 3، 4، 5" value="'+esc((S.blds||[]).join("، "))+'"></div>'+
-    '<p class="hint" style="margin:-4px 0 10px">افصل بينهن بفاصلة. بتطلع أزرار لما تسجل صادر.</p>'+
+    '<p class="hint" style="margin:-4px 0 10px">افصل بينهن بفاصلة أو نقطة، مثلاً D1، D2، D3. بتطلع أزرار لما تسجل صادر.</p>'+
     '<h2 style="margin-top:14px">الرصيد الافتتاحي</h2><p class="hint" style="margin:-6px 0 10px">الفلوس اللي كانت بالصندوق قبل أول حركة سجلتها.</p>'+
     '<div class="row"><label>دينار</label><input type="text" id="sOI" inputmode="decimal" value="'+(S.open.IQD||"")+'"></div>'+
     '<div class="row"><label>دولار</label><input type="text" id="sOU" inputmode="decimal" value="'+(S.open.USD||"")+'"></div>'+
@@ -644,8 +648,7 @@ function settingsView(){
     var e=document.getElementById("sErr"),a=document.getElementById("sOI").value.trim(),b=document.getElementById("sOU").value.trim();
     var ai=a?parseAmt(a):0,bu=b?parseAmt(b):0;
     if(isNaN(ai)||isNaN(bu)){e.textContent="الرقم غلط.";return}
-    var bs=[];normDigits(document.getElementById("sB").value).split(/[,،\n]+/).forEach(function(x){x=x.trim().replace(/\s+/g," ");if(x&&x!==GEN&&bs.indexOf(x)<0)bs.push(x)});
-    S.blds=bs.sort(byName);
+    S.blds=splitBlds(document.getElementById("sB").value);
     S.project=document.getElementById("sP").value.trim();S.open={IQD:Math.round(ai),USD:r2(bu)};save();history.back()};
   document.getElementById("sBk").onclick=backup;
   document.getElementById("sIn").onchange=function(e){var f=e.target.files[0];if(f)restore(f);e.target.value=""};
