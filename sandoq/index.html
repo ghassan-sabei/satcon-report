@@ -509,14 +509,14 @@ function kindPages(kind,from,to,daily){
       rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="'+nc+'">مجموع يوم '+fmtDate(t.date)+'</td>'+nCell(day.IQD||"","IQD")+nCell(day.USD||"","USD")+'</tr>'});
       day={IQD:0,USD:0}}
   });
-  function groupRows(title,keyOf,label){
+  function groupRows(title,keyOf,label,disp){
     var m={};list.forEach(function(t){var k=keyOf(t),w=m[k]||(m[k]={n:0,IQD:0,USD:0});w.n++;w[t.cur]=r2(w[t.cur]+t.amount)});
     rows.push({h:26,html:'<tr class="tot"><td colspan="'+(nc+2)+'">'+title+'</td></tr>'});
     Object.keys(m).sort(byName).forEach(function(k){
-      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="2">'+m[k].n+' '+label+'</td><td colspan="'+(nc-2)+'"><b>'+esc(k)+'</b></td>'+nCell(m[k].IQD||"","IQD")+nCell(m[k].USD||"","USD")+'</tr>'})});
+      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="2">'+m[k].n+' '+label+'</td><td colspan="'+(nc-2)+'"><b>'+esc(disp?disp(k):k)+'</b></td>'+nCell(m[k].IQD||"","IQD")+nCell(m[k].USD||"","USD")+'</tr>'})});
   }
   if(isAdv&&list.length&&!PF.worker)groupRows("المجموع حسب العامل",function(t){return t.worker},"سلفة");
-  if(showB&&list.length)groupRows("المجموع حسب البناية",function(t){return t.bld||GEN},"فاتورة");
+  if(showB&&list.length)groupRows("المجموع حسب البناية",function(t){return t.bld||GEN},"فاتورة",bldLabel);
   var last=[],who=isAdv&&PF.worker?' '+esc(PF.worker):kind==="out"&&PF.bld?' '+esc(bldLabel(PF.bld)):'';
   if(!list.length)last.push({h:30,html:'<tr><td colspan="'+(nc+2)+'" style="height:30px">ما في '+(isAdv?'سلف':TL[kind])+' بهالفترة</td></tr>'});
   last.push({h:28,html:'<tr class="tot"><td colspan="'+nc+'">مجموع '+name+who+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'});
