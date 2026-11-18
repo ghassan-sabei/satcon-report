@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>كلمة السر الاحتياطية</title>
+<style>body{font-family:Tahoma,Arial,sans-serif;max-width:560px;margin:30px auto;padding:0 16px}input{font-size:20px;width:100%;padding:8px;box-sizing:border-box}
+code{display:block;direction:ltr;background:#eef1f8;padding:10px;border-radius:8px;word-break:break-all;margin-top:12px;font-size:14px}button{font-size:18px;padding:10px 16px;margin-top:10px}</style></head>
+<body><h2>🔑 كلمة السر الاحتياطية (دوام العمال)</h2>
+<p>اكتب كلمة السر الجديدة، بيطلعلك سطر. انسخه وحطه مكان سطر <b dir="ltr">var MASTER=</b> بملف <b dir="ltr">attendance/index.html</b>. هالصفحة ما بتحفظ شي ولا بتبعت شي.</p>
+<input type="text" id="p" autocomplete="off" placeholder="كلمة السر الجديدة"><button id="b">طلّع السطر</button><code id="o"></code>
+<script>
+document.getElementById("b").onclick=async function(){var v=document.getElementById("p").value;if(!v)return;
+  var d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("satcon-master|"+v));
+  var h=Array.from(new Uint8Array(d)).map(function(x){return x.toString(16).padStart(2,"0")}).join("");
+  document.getElementById("o").textContent='var MASTER="'+h+'";'};
+</script></body></html>
