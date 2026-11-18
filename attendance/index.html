@@ -383,12 +383,12 @@ function renderWorkers(app){
     openModal('<h3>تعديل العامل</h3><div class="row"><label>الاسم</label><input type="text" id="mA" value="'+esc(w.name)+'"></div><div class="row"><label>المهنة</label><input type="text" id="mB" value="'+esc(w.job||"")+'"></div>'+
       '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:8px"><b>💰 الأجر بالساعة</b>'+
       (wg.length?wg.map(function(x,i){return'<div class="wk" style="padding:6px 0"><div class="nm"><b>'+money(x.rate,x.cur)+'</b><span>'+(i===0?'من الأول':'من '+fmtDate(x.from))+'</span></div><button class="small dan" data-wgdel="'+i+'">🗑</button></div>'}).join(''):'<p class="muted" style="margin:4px 0">ما في أجر لهلق</p>')+
-      '<div class="row"><label>'+(wg.length?'أجر جديد':'الأجر')+'</label><input type="number" inputmode="decimal" id="wgR" placeholder="فاضي = ما في تغيير"></div>'+
+      '<div class="row"><label>'+(wg.length?'أجر جديد':'الأجر')+'</label><input type="text" inputmode="decimal" id="wgR" placeholder="فاضي = ما في تغيير"></div>'+
       '<div class="row"><label>العملة</label><select id="wgC"><option value="usd"'+(wg.length&&wg[wg.length-1].cur==="iqd"?'':' selected')+'>دولار $</option><option value="iqd"'+(wg.length&&wg[wg.length-1].cur==="iqd"?' selected':'')+'>دينار عراقي</option></select></div>'+
       (wg.length?'<div class="row"><label>من تاريخ</label><input type="date" id="wgF" value="'+isoDate(new Date())+'"></div><p class="hint" style="margin:0">الأيام اللي قبل هالتاريخ بتضل على الأجر القديم.</p>':'<p class="hint" style="margin:0">أول أجر بيمشي على كل أيامه من الأول.</p>')+'</div>'+
       '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:8px"><b>💵 السلف</b>'+
       (adv.length?adv.map(function(x){return'<div class="wk" style="padding:6px 0"><div class="nm"><b>'+money(x.amount,x.cur)+'</b><span>'+fmtDate(x.date)+(x.by?' · من: '+esc(x.by):'')+'</span></div><button class="small dan" data-advdel="'+x.id+'">🗑</button></div>'}).join(''):'<p class="muted" style="margin:4px 0">ما في سلف</p>')+
-      '<div class="row"><label>مبلغ السلفة ('+(curOf(w)==="iqd"?'دينار':'دولار')+')</label><input type="number" inputmode="decimal" id="avA"></div>'+
+      '<div class="row"><label>مبلغ السلفة ('+(curOf(w)==="iqd"?'دينار':'دولار')+')</label><input type="text" inputmode="decimal" id="avA" placeholder="مثلاً 25000"></div>'+
       '<div class="row"><label>التاريخ</label><input type="date" id="avD" value="'+isoDate(new Date())+'"></div>'+
       '<div class="row"><label>السلفة من مين</label><input type="text" id="avB" list="avBL" value="'+esc(S.settings.lastAdvBy||"")+'"><datalist id="avBL">'+advGivers().map(function(n){return'<option value="'+esc(n)+'">'}).join('')+'</datalist></div>'+
       '<button class="big" id="avAdd">+ إضافة سلفة</button></div>'+
@@ -398,12 +398,16 @@ function renderWorkers(app){
     var b0=b;
     MI.querySelectorAll("[data-advdel]").forEach(function(x){x.onclick=function(){var id=+x.getAttribute("data-advdel");
       w.adv=(w.adv||[]).filter(function(y){return y.id!==id});save();closeModal();b0.onclick()}});
-    document.getElementById("avAdd").onclick=function(){var a=parseFloat(document.getElementById("avA").value),d=document.getElementById("avD").value;
-      if(!(a>0)||!d){document.getElementById("avA").style.borderColor="#d64545";return}
+    /* returns false if something was typed but is not a valid amount */
+    function takeAdv(){var t=document.getElementById("avA").value.trim();if(!t)return true;var a=numIn(t),d=document.getElementById("avD").value;
+      if(!(a>0)||!d){document.getElementById("avA").style.borderColor="#d64545";document.getElementById("avA").value="";document.getElementById("avA").placeholder="المبلغ مش مفهوم، اكتبه أرقام بس";return false}
       var by=document.getElementById("avB").value.trim();
-      (w.adv||(w.adv=[])).push({id:newId(),date:d,amount:a,cur:(wageOn(w,d)||{}).cur||curOf(w),by:by});if(by)S.settings.lastAdvBy=by;save();closeModal();b0.onclick()};
+      (w.adv||(w.adv=[])).push({id:newId(),date:d,amount:a,cur:(wageOn(w,d)||{}).cur||curOf(w),by:by});if(by)S.settings.lastAdvBy=by;return true}
+    document.getElementById("avAdd").onclick=function(){if(!document.getElementById("avA").value.trim()){document.getElementById("avA").style.borderColor="#d64545";return}
+      if(!takeAdv())return;save();closeModal();b0.onclick()};
     document.getElementById("mS").onclick=function(){var n=document.getElementById("mA").value.trim();if(!n)return;w.name=n;w.job=document.getElementById("mB").value.trim();
-      var r=parseFloat(document.getElementById("wgR").value);
+      var r=numIn(document.getElementById("wgR").value);if(document.getElementById("wgR").value.trim()&&!(r>0)){document.getElementById("wgR").style.borderColor="#d64545";return}
+      if(!takeAdv())return;
       if(r>0){var f=wg.length?(document.getElementById("wgF").value||isoDate(new Date())):"0000-00-00";
         w.wages=(w.wages||[]).filter(function(y){return y.from!==f});w.wages.push({from:f,rate:r,cur:document.getElementById("wgC").value})}
       closeModal();save();render()};
@@ -639,6 +643,9 @@ function money(v,cur){return cur==="iqd"?lit(Math.round(v))+" د.ع":"$"+lit(Mat
 function payTxt(p){var a=[];if(p.usd)a.push(money(p.usd,"usd"));if(p.iqd)a.push(money(p.iqd,"iqd"));return a.join(" + ")||"—"}
 function payOn(){return!!unl().pay}
 function advGivers(){var o=[];S.workers.forEach(function(w){(w.adv||[]).forEach(function(a){if(a.by&&o.indexOf(a.by)<0)o.push(a.by)})});return o}
+/* money typed any way: Arabic digits, 25,000 or 25.000 thousands, ٫ decimal */
+function numIn(v){v=String(v||"").trim().replace(/[٠-٩]/g,function(c){return"٠١٢٣٤٥٦٧٨٩".indexOf(c)}).replace(/[۰-۹]/g,function(c){return"۰۱۲۳۴۵۶۷۸۹".indexOf(c)}).replace(/٫/g,".").replace(/[٬,\s]/g,"");
+  if(/^\d{1,3}(\.\d{3})+$/.test(v))v=v.replace(/\./g,"");var x=parseFloat(v);return isNaN(x)?NaN:x}
 function curOf(w){var g=(w.wages||[]).slice().sort(function(a,b){return a.from<b.from?-1:1});return g.length?g[g.length-1].cur:"usd"}
 /* ---------- monthly summary ---------- */
 function rangeStats(from,to){
