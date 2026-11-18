@@ -76,6 +76,7 @@ button:active{transform:scale(.97)}
   .pp{width:733px;height:1062px;position:relative;overflow:hidden;page-break-after:always;break-after:page}
   .pp:last-child{page-break-after:auto;break-after:auto}
   .pp .sheet.page{position:absolute;top:0;left:0;height:733px;transform-origin:top left;transform:translateX(733px) rotate(90deg)}
+  .pp.pt .sheet.page{height:1062px;transform:none}
 }
 .sheet .foot{margin-top:6px;text-align:right;font-size:11px}
 .wk{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eee}
@@ -689,7 +690,7 @@ function renderMonth(app){
   document.getElementById("rTo").onchange=function(e){if(e.target.value){mTo=e.target.value;render()}};
   var po=document.getElementById("payOn");if(po)po.onclick=function(){requireAdmin(function(){setUnl("pay",Date.now()+UNLOCK_MS);render()})};
   var pf=document.getElementById("payOff");if(pf)pf.onclick=function(){setUnl("pay",0);render()};
-  app.querySelectorAll("[data-stpr]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-stpr");printPages(stmtPages(id,mFrom,mTo),"statement_"+mFrom+"_"+mTo,function(){stmtPdf(id,mFrom,mTo)})}});
+  app.querySelectorAll("[data-stpr]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-stpr");printPages(stmtPages(id,mFrom,mTo),"statement_"+mFrom+"_"+mTo,function(){stmtPdf(id,mFrom,mTo)},true)}});
   app.querySelectorAll("[data-stpdf]").forEach(function(b){b.onclick=function(){stmtPdf(+b.getAttribute("data-stpdf"),mFrom,mTo)}});
   if(list.length){
     document.getElementById("mPrint").onclick=function(){printPages(rangePages(mFrom,mTo),"attendance_"+mFrom+"_"+mTo,function(){rangePdf(mFrom,mTo)})};
@@ -783,7 +784,7 @@ function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
     var wr=wageOn(w,d);if(wr){x.amt=wk/60*wr.rate;x.cur=wr.cur}});
   (w.adv||[]).forEach(function(a){if(a.date<from||a.date>to)return;var x=rows[a.date]||(rows[a.date]={d:a.date,min:null,amt:null,cur:null,adv:0});
     x.adv+=a.amount;x.acur=a.cur;if(a.by&&(x.by||[]).indexOf(a.by)<0)(x.by||(x.by=[])).push(a.by);adv[a.cur]=(adv[a.cur]||0)+a.amount});
-  var list=Object.keys(rows).sort().map(function(k){return rows[k]}),RPC=16,per=RPC*2,n=Math.max(1,Math.ceil(list.length/per)),pages=[];
+  var list=Object.keys(rows).sort().map(function(k){return rows[k]}),RPC=30,per=RPC,n=Math.max(1,Math.ceil(list.length/per)),pages=[];
   var net={},c;for(c in st.pay)net[c]=st.pay[c];for(c in adv)net[c]=(net[c]||0)-adv[c];
   function netTxt(){var a=[];["usd","iqd"].forEach(function(k){if(net[k]!=null&&(net[k]||st.pay[k]||adv[k]))a.push((net[k]<0?"−":"")+money(Math.abs(net[k]),k))});return a.join(" + ")||"—"}
   function advTxt(){var p={};for(var k in adv)p[k]=adv[k];return payTxt(p)}
@@ -791,23 +792,23 @@ function stmtPages(wid,from,to){if(from>to){var t0=from;from=to;to=t0}
     '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue" style="width:14%">الاسم</td><td style="font-size:17px"><b>'+esc(w.name)+'</b></td><td class="blue" style="width:14%">المهنة</td><td style="width:22%">'+esc(w.job||"")+'</td></tr></table>';
   function col(part){var h='<table class="grid" dir="rtl"><tr><th style="width:21%">التاريخ</th><th style="width:17%">اليوم</th><th style="width:16%">الساعات</th><th>المبلغ</th><th>السلفة</th></tr>';
     for(var i=0;i<RPC;i++){var x=part[i];
-      h+='<tr style="height:26px">'+(x?'<td>'+fmtDate(x.d).slice(0,5)+'</td><td style="font-size:13px">'+dayName(x.d)+'</td><td>'+(x.min!=null?dur(x.min):'')+'</td><td>'+(x.amt!=null?money(x.amt,x.cur):'')+'</td><td style="line-height:1.05">'+(x.adv?money(x.adv,x.acur)+(x.by?'<br><span style="font-size:10px">'+esc(x.by.join("، "))+'</span>':''):'')+'</td>':'<td></td><td></td><td></td><td></td><td></td>')+'</tr>'}
+      h+='<tr style="height:24px">'+(x?'<td>'+fmtDate(x.d).slice(0,5)+'</td><td style="font-size:13px">'+dayName(x.d)+'</td><td>'+(x.min!=null?dur(x.min):'')+'</td><td>'+(x.amt!=null?money(x.amt,x.cur):'')+'</td><td style="line-height:1.05">'+(x.adv?money(x.adv,x.acur)+(x.by?'<br><span style="font-size:10px">'+esc(x.by.join("، "))+'</span>':''):'')+'</td>':'<td></td><td></td><td></td><td></td><td></td>')+'</tr>'}
     return h+'</table>'}
   for(var p=0;p<n;p++){var chunk=list.slice(p*per,(p+1)*per);
-    var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+head+
-      '<div style="display:flex;gap:10px;margin-top:8px"><div style="flex:1">'+col(chunk.slice(0,RPC))+'</div><div style="flex:1">'+col(chunk.slice(RPC))+'</div></div>';
+    var h='<div class="sheet page" style="width:'+PAGE_H+'px;height:'+PAGE_W+'px;position:relative">'+head+'<div style="margin-top:8px">'+col(chunk)+'</div>';
     if(p===n-1)h+='<table dir="rtl" style="margin-top:8px"><tr><td class="blue">أيام الحضور</td><td class="blue">أيام الغياب</td><td class="blue">مجموع الساعات</td><td class="blue">المجموع</td><td class="blue">السلف</td><td class="blue">الصافي</td></tr>'+
-      '<tr style="font-size:16px;font-weight:700"><td>'+st.pres+'</td><td>'+st.abs+'</td><td>'+dur(st.min)+'</td><td>'+payTxt(st.pay)+'</td><td>'+advTxt()+'</td><td style="font-size:18px">'+netTxt()+'</td></tr></table>'+
-      '<div dir="rtl" style="margin-top:22px;text-align:right;font-size:15px"><b>توقيع العامل:</b> <span style="display:inline-block;width:260px;border-bottom:1px solid #000;height:30px;vertical-align:bottom"></span></div>';
+      '<tr style="font-size:14px;font-weight:700"><td>'+st.pres+'</td><td>'+st.abs+'</td><td>'+dur(st.min)+'</td><td>'+payTxt(st.pay)+'</td><td>'+advTxt()+'</td><td style="font-size:16px">'+netTxt()+'</td></tr></table>'+
+      '<div dir="rtl" style="position:absolute;bottom:26px;right:0;text-align:right;font-size:15px"><b>توقيع العامل:</b> <span style="display:inline-block;width:260px;border-bottom:1px solid #000;height:30px;vertical-align:bottom"></span></div>';
     h+=(n>1?'<div class="pgno">'+(p+1)+' / '+n+'</div>':'')+'</div>';pages.push(h)}
   return pages}
-function stmtPdf(wid,from,to){var w=workerById(wid);pdfPages(function(){return stmtPages(wid,from,to)},"statement_"+from+"_"+to+".pdf","كشف "+w.name)}
+function stmtPdf(wid,from,to){var w=workerById(wid);pdfPages(function(){return stmtPages(wid,from,to)},"statement_"+from+"_"+to+".pdf","كشف "+w.name,true)}
 /* ---------- print / pdf (same as report app) ---------- */
 var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
-if(NATIVE){var st=document.createElement("style");st.textContent="@page{size:A4 landscape;margin:8mm}";document.head.appendChild(st)}
-function printPages(pages,title,fallback){
-  if(NATIVE){document.getElementById("printArea").innerHTML=pages.join("");setTimeout(function(){window.AndroidBridge.print(title)},150);return}
-  document.getElementById("printArea").innerHTML=pages.map(function(x){return'<div class="pp">'+x+'</div>'}).join("");
+var pageStyle=document.createElement("style");pageStyle.textContent=NATIVE?"@page{size:A4 landscape;margin:8mm}":"";document.head.appendChild(pageStyle);
+function printPages(pages,title,fallback,portrait){
+  if(NATIVE){pageStyle.textContent="@page{size:A4 "+(portrait?"portrait":"landscape")+";margin:8mm}";document.getElementById("printArea").innerHTML=pages.join("");
+    setTimeout(function(){if(portrait&&window.AndroidBridge.printSized)window.AndroidBridge.printSized(title,"A4P");else window.AndroidBridge.print(title)},150);return}
+  document.getElementById("printArea").innerHTML=pages.map(function(x){return'<div class="pp'+(portrait?' pt':'')+'">'+x+'</div>'}).join("");
   var opened=false;function mark(){opened=true}
   window.addEventListener("beforeprint",mark,{once:true});
   try{window.print()}catch(e){}
@@ -817,18 +818,19 @@ function printPages(pages,title,fallback){
 }
 var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js","https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
 function loadScript(u){return new Promise(function(res,rej){var s=document.createElement("script");s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
-function pdfPages(makePages,name,title){
+function pdfPages(makePages,name,title,portrait){
+  var PW=portrait?PAGE_H:PAGE_W,PH=portrait?PAGE_W:PAGE_H,OR=portrait?"portrait":"landscape",MW=portrait?194:281;
   openModal('<h3 style="text-align:center">جاري تجهيز PDF...</h3>');
   var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
   p.then(function(){
-    var pages=makePages(),pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"}),chain=Promise.resolve();
+    var pages=makePages(),pdf=new window.jspdf.jsPDF({orientation:OR,unit:"mm",format:"a4"}),chain=Promise.resolve();
     pages.forEach(function(html,idx){chain=chain.then(function(){
       var box=document.createElement("div");
-      box.style.cssText="position:fixed;left:-20000px;top:0;width:"+PAGE_W+"px;height:"+PAGE_H+"px;background:#fff;overflow:hidden";
+      box.style.cssText="position:fixed;left:-20000px;top:0;width:"+PW+"px;height:"+PH+"px;background:#fff;overflow:hidden";
       box.innerHTML=html;document.body.appendChild(box);
-      return window.html2canvas(box,{scale:2,backgroundColor:"#fff",width:PAGE_W,height:PAGE_H}).then(function(cv){
-        document.body.removeChild(box);if(idx>0)pdf.addPage("a4","landscape");
-        pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",8,8,281,281*PAGE_H/PAGE_W)})})});
+      return window.html2canvas(box,{scale:2,backgroundColor:"#fff",width:PW,height:PH}).then(function(cv){
+        document.body.removeChild(box);if(idx>0)pdf.addPage("a4",OR);
+        pdf.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",8,8,MW,MW*PH/PW)})})});
     return chain.then(function(){
       if(NATIVE){closeModal();window.AndroidBridge.sharePdf(pdf.output("datauristring").split(",")[1],name);return}
       var blob=pdf.output("blob"),file=new File([blob],name,{type:"application/pdf"});closeModal();
