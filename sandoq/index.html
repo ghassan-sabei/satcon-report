@@ -156,7 +156,7 @@ function ledger(from,to){
     run[t.cur]=r2(run[t.cur]+sign(t));tot[t.cur][t.type]=r2(tot[t.cur][t.type]+t.amount);
     rows.push({t:t,bal:run[t.cur]})});
   return{cf:cf,rows:rows,tot:tot,end:{IQD:run.IQD,USD:run.USD}}}
-function rcptUsed(r,exceptId){r=normRcpt(r);for(var i=0;i<S.tx.length;i++){var t=S.tx[i];if(t.id!==exceptId&&normRcpt(t.rcpt)===r)return t}return null}
+function rcptUsed(r,exceptId){r=normRcpt(r);if(!r)return null;for(var i=0;i<S.tx.length;i++){var t=S.tx[i];if(t.id!==exceptId&&normRcpt(t.rcpt)===r)return t}return null}
 
 /* ---------- modal ---------- */
 var modal=document.getElementById("modal"),modalIn=document.getElementById("modalIn");
@@ -186,7 +186,7 @@ function balBox(b){
     return'<div class="'+(b[c]<0?"neg":"")+'"><span>رصيد ال'+CUR[c].n+'</span><b>'+fmtAmt(b[c],c)+' '+CUR[c].s+'</b></div>'}).join("")+'</div>'}
 function txRow(t){
   return'<div class="tx" data-id="'+t.id+'"><div class="ic '+t.type+'">'+(t.type==="in"?"+":"−")+'</div>'+
-    '<div class="mid"><b>'+esc(t.desc||(t.type==="in"?"وارد":"صادر"))+'</b><span>'+fmtDate(t.date)+' · وصل '+esc(t.rcpt)+(t.inv?' · فاتورة '+esc(t.inv):'')+'</span></div>'+
+    '<div class="mid"><b>'+esc(t.desc||(t.type==="in"?"وارد":"صادر"))+'</b><span>'+fmtDate(t.date)+(t.rcpt?' · وصل '+esc(t.rcpt):'')+(t.inv?' · فاتورة '+esc(t.inv):'')+'</span></div>'+
     '<div class="am '+t.type+'">'+(t.type==="in"?"+":"-")+fmtAmt(t.amount,t.cur)+' '+CUR[t.cur].s+'</div></div>'}
 function bindRows(){Array.prototype.forEach.call(app.querySelectorAll(".tx"),function(el){el.onclick=function(){go("edit-"+el.getAttribute("data-id"))}})}
 
@@ -258,7 +258,7 @@ function formView(t,newType){
     '<div class="row"><label>التاريخ</label><input type="date" id="fDate" value="'+esc(f.date)+'"></div>'+
     '<div class="row"><label>الشرح</label><input type="text" id="fDesc" list="dl" value="'+esc(f.desc)+'"></div>'+
     '<datalist id="dl">'+Object.keys(descs).map(function(d){return'<option value="'+esc(d)+'">'}).join("")+'</datalist>'+
-    '<div class="row"><label>رقم الوصل</label><input type="text" id="fRc" inputmode="numeric" autocomplete="off" value="'+esc(f.rcpt)+'"></div>'+
+    '<div class="row"><label>رقم الوصل</label><input type="text" id="fRc" inputmode="numeric" autocomplete="off" placeholder="اختياري" value="'+esc(f.rcpt)+'"></div>'+
     '<div class="row"><label>رقم الفاتورة</label><input type="text" id="fInv" autocomplete="off" placeholder="اختياري" value="'+esc(f.inv)+'"></div>'+
     '<p class="err" id="fErr"></p>'+
     '<button class="big pri" id="fSave">حفظ</button>'+
@@ -290,8 +290,7 @@ function formView(t,newType){
     if(isNaN(amt)||amt<=0)return bad("fAmt","اكتب المبلغ.");
     if(f.cur==="IQD"&&amt!==Math.round(amt))return bad("fAmt","مبلغ الدينار بدون فواصل عشرية.");
     if(!date)return bad("fDate","اختار التاريخ.");
-    if(!rc)return bad("fRc","رقم الوصل لازم.");
-    var u=rcptUsed(rc,ed?t.id:-1);
+    var u=rc?rcptUsed(rc,ed?t.id:-1):null;
     if(u)return bad("fRc","رقم الوصل "+rc+" مستعمل قبل ("+fmtDate(u.date)+" · "+(u.desc||"")+" · "+fmtAmt(u.amount,u.cur)+" "+CUR[u.cur].s+").");
     var o=ed?t:{id:S.seq++,at:Date.now()};
     o.type=f.type;o.cur=f.cur;o.amount=f.cur==="USD"?r2(amt):Math.round(amt);o.date=date;o.desc=desc;o.inv=inv;o.rcpt=rc;
