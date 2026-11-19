@@ -99,7 +99,7 @@ button:active{transform:scale(.97)}
 (function(){
 "use strict";
 var KEY="satcon_daily_v1";
-var APP_VER="2026.11.19-b";
+var APP_VER="2026.11.19-c";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -901,13 +901,20 @@ function renderBlocks(app){
   var gs=blockGroups();
   var h='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>ملخص البلوكات</h2>';
   if(!gs.length)h+='<p class="muted">لا يوجد بيانات بعد</p>';
+  else h+='<div class="two"><button class="big ok" id="bAllPr">🖨 طباعة كل البلوكات</button><button class="big pri" id="bAllPdf">📄 PDF كل البلوكات</button></div>';
   h+='</div>';
   gs.forEach(function(b,i){
-    h+='<div class="box" data-blk="'+i+'" style="cursor:pointer"><h2>بلوك '+esc(b.label)+' <span class="muted">('+fmtDate(b.first)+' ← '+fmtDate(b.last)+')</span></h2>'+statGrid(b)+'</div>';
+    h+='<div class="box"><div data-blk="'+i+'" style="cursor:pointer"><h2>بلوك '+esc(b.label)+' <span class="muted">('+fmtDate(b.first)+' ← '+fmtDate(b.last)+')</span></h2>'+statGrid(b)+'</div>'+
+      '<div class="two" style="margin-top:10px"><button class="ok" data-bpr="'+i+'">🖨 طباعة</button><button class="pri" data-bpdf="'+i+'">📄 PDF</button></div></div>';
   });
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="main";render()};
   app.querySelectorAll("[data-blk]").forEach(function(el){el.onclick=function(){blockSel=gs[+el.getAttribute("data-blk")].key;view="block";render();scrollTo(0,0)}});
+  app.querySelectorAll("[data-bpr]").forEach(function(x){x.onclick=function(){var b=gs[+x.getAttribute("data-bpr")];printPages(blockPages(b),"block_"+b.label,function(){blockPdf(b)})}});
+  app.querySelectorAll("[data-bpdf]").forEach(function(x){x.onclick=function(){blockPdf(gs[+x.getAttribute("data-bpdf")])}});
+  function allPg(){var o=[];gs.forEach(function(b){o=o.concat(blockPages(b))});return o}
+  var ap=document.getElementById("bAllPr");if(ap)ap.onclick=function(){printPages(allPg(),"blocks_all",function(){pdfPages(allPg,"blocks_all.pdf","ملخص كل البلوكات")})};
+  var aq=document.getElementById("bAllPdf");if(aq)aq.onclick=function(){pdfPages(allPg,"blocks_all.pdf","ملخص كل البلوكات")};
 }
 var blockSel=null;
 function renderBlock(app){
