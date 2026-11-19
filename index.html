@@ -99,7 +99,7 @@ button:active{transform:scale(.97)}
 (function(){
 "use strict";
 var KEY="satcon_daily_v1";
-var APP_VER="2026.11.19-c";
+var APP_VER="2026.11.19-d";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -115,18 +115,22 @@ var S=load();
 function blankDay(){
   var d=new Date();
   return {date:isoDate(d),block:S&&S.cur?S.cur.block:"",workStart:null,workEnd:null,mortar:"",
-          pauses:[],piles:[],nextId:1,depth:S&&S.settings?S.settings.depth:"",steel:S&&S.settings?S.settings.steel:""};
+          pauses:[],piles:[],nextId:1,depth:S&&S.settings?S.settings.depth:"",steel:S&&S.settings?S.settings.steel:"",uid:uidNew()};
 }
+/* every day has a stable id so the same day is the same record on every phone */
+function uidNew(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function ensureUids(){if(!S)return;[S.cur].concat(S.editing&&S.editing.held?[S.editing.held]:[],S.archive||[]).forEach(function(d){if(d&&!d.uid)d.uid=uidNew()});S.plans=S.plans||{}}
 function load(){
   var s=null;
   try{s=JSON.parse(localStorage.getItem(KEY));}catch(e){}
   if(!s)s={settings:{project:"OCR PROJECT ",depth:"20.0",steel:"12.0"},cur:null,archive:[]};
   return s;
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function save(){ensureUids();try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}if(window.__syncPush)window.__syncPush()}
 if(!S.cur){S.cur=blankDay();save();}
 /* a current day that has nothing recorded yet always takes today's date */
 (function(){var c=S.cur,t=isoDate(new Date());if(c.date!==t&&!c.workStart&&!c.piles.length&&!(c.pauses&&c.pauses.length)&&!c.mortar){c.date=t;save()}})();
+ensureUids();
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 
 function parseTyped(str){var p=String(str).trim().replace(/[٠-٩]/g,function(c){return"٠١٢٣٤٥٦٧٨٩".indexOf(c)}).split(/[\/\-\.\s]+/).filter(function(x){return x});
@@ -158,7 +162,7 @@ function totals(day){
 /* ---------- modal helpers ---------- */
 var M=document.getElementById("modal"),MI=document.getElementById("modalIn");
 function openModal(html){MI.innerHTML=html;M.classList.add("show")}
-function closeModal(){M.classList.remove("show");MI.innerHTML=""}
+function closeModal(){M.classList.remove("show");MI.innerHTML="";if(window.__syncKick)setTimeout(window.__syncKick,0)}
 M.addEventListener("click",function(e){if(e.target===M)closeModal()});
 function confirmBox(msg,yes,cb){
   openModal('<h3>'+esc(msg)+'</h3><div class="acts"><button id="mY" class="dan">'+esc(yes)+'</button><button id="mN">إلغاء</button></div>');
@@ -194,7 +198,7 @@ function bindPress(el,tap,long){
 var view="main";
 function render(){
   var day=S.cur;
-  document.getElementById("hdDate").textContent=dayName(day.date)+" "+fmtDate(day.date);
+  document.getElementById("hdDate").innerHTML=esc(dayName(day.date)+" "+fmtDate(day.date))+(typeof syncBadge==="function"?syncBadge():"");
   var app=document.getElementById("app");
   if(view==="archive"){renderArchive(app);return}
   if(view==="blocks"){renderBlocks(app);return}
@@ -525,7 +529,7 @@ function renderPlan(app){
   document.getElementById("plPaper").onchange=function(e){S.settings.planPaper=e.target.value;save()};
   document.getElementById("plPrint").onclick=function(){printPages(planPages(planSel,a3()),"plan_"+planSel,function(){planPdf(planSel,a3())},a3(),true)};
   document.getElementById("plPdf").onclick=function(){planPdf(planSel,a3())};
-  document.getElementById("plDel").onclick=function(){confirmBox("حذف مخطط "+pl.label+"؟ تقاريرك ما بتتأثر.","حذف",function(){delete S.plans[planSel];planSel=null;save();render()})};
+  document.getElementById("plDel").onclick=function(){requireAdmin(function(){confirmBox("حذف مخطط "+pl.label+"؟ تقاريرك ما بتتأثر.","حذف",function(){delete S.plans[planSel];planSel=null;save();render()})})};
   function pileTap(n){var st=planStats(planSel),dn=st.dn;
     if(dn[n]){openModal('<h3>حفرة '+esc(n)+' ✓</h3><p>منفّذة بتاريخ '+fmtDate(dn[n])+'</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
     var cb=normBlock(S.cur.block);
@@ -568,6 +572,7 @@ function renderArchive(app){
     (S.archive.length?'<div class="row"><input type="text" id="aFind" placeholder="🔍 اكتب التاريخ (13-11) أو رقم البلوك"></div><p class="muted" id="aNone" style="display:none">ما في يوم بهالبحث</p>':'');
   if(!S.archive.length)h+='<p class="muted">لا يوجد أيام محفوظة بعد</p>';
   S.archive.forEach(function(d,i){
+    if(!hasContent(d))return; /* another phone's day that has nothing yet */
     var t=totals(d);
     h+='<div class="done-list" data-row="'+i+'"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' بايل · '+t.v+' m3</span></span>'+
        '<span><button class="small" data-ed="'+i+'">✏️ تعديل</button> <button class="small" data-dt="'+i+'">📅 التاريخ</button> <button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
@@ -602,6 +607,7 @@ function renderSettings(app){
    '<div class="row"><label>طول الحديد (m)</label><input type="number" inputmode="decimal" id="sS" value="'+esc(s.steel)+'"></div>'+
    '<div class="row"><label>تاريخ اليوم الحالي</label><input type="date" id="sT" value="'+esc(S.cur.date)+'"></div>'+
    '</div>'+
+   syncBox()+'<div class="box"><h2>🔒 كلمة سر الإدارة</h2><p class="muted" style="margin-top:0">لحذف مخطط وفصل الهاتف عن المشاركة.</p><button class="big" id="pwBtn">'+(S.settings.adminPw?'تغيير':'تعيين')+' كلمة السر</button></div>'+
    '<div class="box"><h2>التحديثات</h2><p class="muted" style="margin-top:0">نسخة الصفحة: <b dir="ltr">'+APP_VER+'</b>. التطبيق بينزّل التحديث لحاله كل ما ينفتح وفي نت.</p><button class="big" id="updBtn">🔄 فحص التحديثات</button></div>'+
    '<div class="box"><h2>تسليم واستلام بين المشرفين</h2><p class="muted" style="margin-top:0">التسليم بيطلّع ملف فيه كل شي: اليوم الحالي، الأيام السابقة، المخططات، والإعدادات. المشرف الجديد بيستلمه وبيكمّل من مكانك.</p>'+
    '<button class="big pri" id="hoOut" style="margin-bottom:8px">📤 تسليم البيانات</button>'+
@@ -613,6 +619,7 @@ function renderSettings(app){
   document.getElementById("sS").oninput=function(e){s.steel=e.target.value;S.cur.steel=e.target.value;save()};
   document.getElementById("sT").onchange=function(e){if(e.target.value){S.cur.date=e.target.value;save();render()}};
   document.getElementById("hoOut").onclick=handOver;
+  document.getElementById("pwBtn").onclick=pwEditor;bindSyncBox();
   document.getElementById("updBtn").onclick=function(){
     if(!navigator.onLine){openModal('<h3>ما في إنترنت</h3><p>شغّل النت وجرّب مرة تانية.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
     openModal('<h3 style="text-align:center">جاري فحص التحديثات...</h3>');
@@ -952,6 +959,202 @@ function blockPages(b){
    '</table></div>';
   return [h];
 }
+
+function pwHash(str){var h1=0xdeadbeef^7,h2=0x41c6ce57^7;str="satcon|"+str;
+  for(var i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return(h2>>>0).toString(16)+(h1>>>0).toString(16)}
+/* master password: only its SHA-256 is here (the code is public). To change it, open master.html
+   in this repo, type the new password and paste the line it gives over the MASTER line below. */
+var MASTER="735c8380c4c1fb3973aae8df3cfa84b84f9ed342cf934364a459cb4be547f9a9";
+function sha256(m){function R(n,x){return(x>>>n)|(x<<(32-n))}var K=[],H=[],i,j,pr=[],c=2;
+  while(pr.length<64){for(j=2;j*j<=c;j++)if(c%j===0)break;if(j*j>c)pr.push(c);c++}
+  for(i=0;i<64;i++){K[i]=(Math.pow(pr[i],1/3)%1)*4294967296|0;if(i<8)H[i]=(Math.pow(pr[i],1/2)%1)*4294967296|0}
+  m=unescape(encodeURIComponent(m));var l=m.length*8,w=[];for(i=0;i<m.length;i++)w[i>>2]|=m.charCodeAt(i)<<(24-(i%4)*8);
+  w[l>>5]|=0x80<<(24-l%32);w[((l+64>>9)<<4)+15]=l;
+  for(i=0;i<w.length;i+=16){var a=H.slice(0),W=[];for(j=0;j<64;j++){if(j<16)W[j]=w[i+j]|0;else{var x=W[j-15],y=W[j-2];
+      W[j]=(W[j-16]+(R(7,x)^R(18,x)^(x>>>3))+W[j-7]+(R(17,y)^R(19,y)^(y>>>10)))|0}
+    var t1=(a[7]+(R(6,a[4])^R(11,a[4])^R(25,a[4]))+((a[4]&a[5])^(~a[4]&a[6]))+K[j]+W[j])|0,t2=((R(2,a[0])^R(13,a[0])^R(22,a[0]))+((a[0]&a[1])^(a[0]&a[2])^(a[1]&a[2])))|0;
+    a=[(t1+t2)|0].concat(a);a[4]=(a[4]+t1)|0;a.pop()}
+    for(j=0;j<8;j++)H[j]=(H[j]+a[j])|0}
+  return H.map(function(v){return("00000000"+(v>>>0).toString(16)).slice(-8)}).join("")}
+function isAdminPw(v){return(!!S.settings.adminPw&&pwHash(v)===S.settings.adminPw)||sha256("satcon-master|"+v)===MASTER}
+function requireAdmin(then){
+  if(!S.settings.adminPw){openModal('<h3>لازم تحط كلمة سر الإدارة أول</h3><p>من <b>الإعدادات ← كلمة سر الإدارة</b>.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+  openModal('<h3>🔒 كلمة سر الإدارة</h3><input type="password" id="pw1" style="font-size:20px;width:100%"><p class="hint" id="pwE" style="color:#d64545;display:none">كلمة السر غلط</p>'+
+    '<div class="acts"><button id="mS" class="pri">متابعة</button><button id="mN">إلغاء</button></div>');
+  var i=document.getElementById("pw1");setTimeout(function(){i.focus()},50);
+  function ok(){if(!isAdminPw(i.value)){document.getElementById("pwE").style.display="";i.value="";return}closeModal();then()}
+  document.getElementById("mS").onclick=ok;i.onkeydown=function(e){if(e.key==="Enter")ok()};
+  document.getElementById("mN").onclick=closeModal;
+}
+function pwEditor(){
+  var has=!!S.settings.adminPw;
+  openModal('<h3>'+(has?'تغيير':'تعيين')+' كلمة سر الإدارة</h3>'+
+    (has?'<div class="row"><label>كلمة السر الحالية</label><input type="password" id="pwO"></div>':'')+
+    '<div class="row"><label>كلمة السر الجديدة</label><input type="password" id="pwN"></div><div class="row"><label>أعد كتابتها</label><input type="password" id="pwN2"></div>'+
+    '<p class="hint" id="pwE" style="color:#d64545;display:none"></p><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+  function err(t){var e=document.getElementById("pwE");e.textContent=t;e.style.display=""}
+  document.getElementById("mS").onclick=function(){
+    if(has&&!isAdminPw(document.getElementById("pwO").value))return err("كلمة السر الحالية غلط");
+    var a=document.getElementById("pwN").value,b=document.getElementById("pwN2").value;
+    if(a.length<4)return err("لازم تكون 4 أحرف أو أرقام على الأقل");if(a!==b)return err("الكلمتين مش متطابقين");
+    S.settings.adminPw=pwHash(a);save();closeModal();render();
+    openModal('<h3>انحفظت كلمة سر الإدارة ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal};
+  document.getElementById("mN").onclick=closeModal;
+}
+
+/* ================= sharing between phones (Firebase, project satcon-report) =================
+   documents: c~<setting>, d~<day uid> (whole day with its piles), pl~<block> (site plan; very big
+   plans are split into pc~<block>~<n> parts). Every phone works offline; changes are queued and
+   pushed; the newest write of a document wins. */
+var FB_CFG={apiKey:"AIzaSyAvNtxvPz5277FBgz31P1p3kpcDUvjr_vg",authDomain:"satcon-report.firebaseapp.com",projectId:"satcon-report",storageBucket:"satcon-report.firebasestorage.app",messagingSenderId:"579779180757",appId:"1:579779180757:web:34f994c3ab8bad1c204a5c"};
+var FB_JS="https://ghassan-sabei.github.io/satcon-report/attendance/fb.js",CHUNK=700000;
+var SKEY="satcon_report_sync",PKEY="satcon_report_pending";
+var SY={};try{SY=JSON.parse(localStorage.getItem(SKEY))||{}}catch(e){}
+if(!SY.dev)SY.dev=Math.random().toString(36).slice(2,10);
+function saveSY(){try{localStorage.setItem(SKEY,JSON.stringify(SY))}catch(e){}}
+saveSY();
+var PEND={};try{PEND=JSON.parse(localStorage.getItem(PKEY))||{}}catch(e){}
+function savePend(){try{localStorage.setItem(PKEY,JSON.stringify(PEND))}catch(e){}}
+var fb=null,db=null,col=null,auth=null,ready=false,unsub=null,base=null,inbox={},inboxLast=0,inflight={},needRender=false,fbP=null;
+var st={cache:true,err:"",lastOk:0};
+function hasContent(d){return!!(d&&(d.piles.length||d.workStart||d.mortar||(d.pauses&&d.pauses.length)))}
+function dayList(s){var o=[],seen={};[s.cur].concat(s.editing&&s.editing.held?[s.editing.held]:[],s.archive||[]).forEach(function(d){if(d&&d.uid&&!seen[d.uid]){seen[d.uid]=1;o.push(d)}});return o}
+function flat(s){var o={},k;
+  for(k in s.settings)if(s.settings[k]!=null)o["c~"+k]=JSON.stringify(s.settings[k]);
+  dayList(s).forEach(function(d){o["d~"+d.uid]=JSON.stringify(d)});
+  for(k in(s.plans||{})){var j=JSON.stringify(s.plans[k]);
+    if(j.length<=CHUNK)o["pl~"+k]=j;else{var n=Math.ceil(j.length/CHUNK);o["pl~"+k]="#"+n;for(var i=0;i<n;i++)o["pc~"+k+"~"+i]=j.slice(i*CHUNK,(i+1)*CHUNK)}}
+  return o}
+function unflat(o){var r={settings:{},days:[],plans:{}},k,p,v;
+  for(k in o){p=k.split("~");v=o[k];
+    try{if(p[0]==="c")r.settings[p[1]]=JSON.parse(v);
+      else if(p[0]==="d")r.days.push(JSON.parse(v));
+      else if(p[0]==="pl"){if(v.charAt(0)==="#"){var n=+v.slice(1),s="",ok=true;for(var i=0;i<n;i++){var c=o["pc~"+p[1]+"~"+i];if(c==null){ok=false;break}s+=c}if(ok)r.plans[p[1]]=JSON.parse(s)}else r.plans[p[1]]=JSON.parse(v)}}catch(e){}}
+  return r}
+function sortArch(a){return a.sort(function(x,y){return x.date<y.date?1:x.date>y.date?-1:0})}
+/* put the shared data back into S, keeping this phone's own current day (and the day put aside while editing) */
+function rebuild(map){var r=unflat(map),by={},cu=S.cur&&S.cur.uid,hu=S.editing&&S.editing.held&&S.editing.held.uid;
+  r.days.forEach(function(d){if(d&&d.uid)by[d.uid]=d});
+  if(Object.keys(r.settings).length)S.settings=r.settings;
+  S.plans=r.plans;
+  if(by[cu]){S.cur=by[cu];delete by[cu]}else{var b=blankDay();b.uid=cu||b.uid;S.cur=b}
+  if(S.editing){if(by[hu]){S.editing.held=by[hu];delete by[hu]}else{S.editing.held=blankDay()}}
+  S.archive=sortArch(Object.keys(by).map(function(k){return by[k]}))}
+function pendN(){return Object.keys(PEND).length}
+window.__syncPush=function(){if(!SY.code||!base)return;var now=flat(S),k,ch=0;
+  for(k in now)if(base[k]!==now[k]){PEND[k]=1;delete inbox[k];ch++}
+  for(k in base)if(!(k in now)){PEND[k]=1;delete inbox[k];ch++}
+  if(!ch)return;base=now;savePend();updBadge();clearTimeout(flushT);flushT=setTimeout(flush,500)};
+var flushT=null;
+function did(k){return encodeURIComponent(k)}
+function flush(){if(!ready)return;var keys=Object.keys(PEND).filter(function(k){var v=k in base?base[k]:null;return!(k in inflight)||inflight[k]!==v});
+  var parts=[],cur=[],size=0;keys.forEach(function(k){var l=(base[k]||"").length;if(cur.length&&(cur.length>=400||size+l>3000000)){parts.push(cur);cur=[];size=0}cur.push(k);size+=l});if(cur.length)parts.push(cur);
+  parts.forEach(function(part){var b=fb.writeBatch(db),sent={};
+    part.forEach(function(k){var v=k in base?base[k]:null;sent[k]=v;inflight[k]=v;b.set(fb.doc(col,did(k)),{v:v,t:fb.serverTimestamp(),by:SY.dev})});
+    b.commit().then(function(){part.forEach(function(k){var v=k in base?base[k]:null;if(inflight[k]===sent[k])delete inflight[k];if(v===sent[k])delete PEND[k]});savePend();updBadge()})
+     .catch(function(e){part.forEach(function(k){if(inflight[k]===sent[k])delete inflight[k]});st.err=String(e&&e.code||e);updBadge()})});
+  updBadge()}
+function listen(){if(unsub){unsub();unsub=null}
+  var since=Math.max(0,(SY.last||0)-15*60000);
+  unsub=fb.onSnapshot(fb.query(col,fb.where("t",">",fb.Timestamp.fromMillis(since))),{includeMetadataChanges:true},function(snap){
+    st.cache=snap.metadata.fromCache;st.err="";if(!st.cache)st.lastOk=Date.now();
+    snap.docChanges().forEach(function(c){if(c.type==="removed")return;var d=c.doc;if(d.metadata.hasPendingWrites)return;
+      var x=d.data(),t=x.t&&x.t.toMillis?x.t.toMillis():0,k=decodeURIComponent(d.id);if(t>inboxLast)inboxLast=t;
+      if(PEND[k])return;inbox[k]=x.v==null?null:x.v});
+    applyInbox();updBadge()},
+   function(e){st.err=String(e&&e.code||e);updBadge();unsub=null;setTimeout(function(){if(ready&&!unsub)listen()},20000)})}
+function modalOpen(){return M.classList.contains("show")}
+function typing(){var a=document.activeElement;return a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)}
+function applyInbox(){var ks=Object.keys(inbox);
+  if(!ks.length){if(inboxLast>(SY.last||0)){SY.last=inboxLast;saveSY()}return}
+  if(modalOpen())return;
+  var ch=0;ks.forEach(function(k){var v=inbox[k];if(PEND[k])return;
+    if(v==null){if(k in base){delete base[k];ch++}}else if(base[k]!==v){base[k]=v;ch++}});
+  inbox={};if(inboxLast>(SY.last||0)){SY.last=inboxLast;saveSY()}
+  if(!ch)return;
+  rebuild(base);base=flat(S);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(typing())needRender=true;else render()}
+window.__syncKick=function(){if(SY.code&&base)applyInbox()};
+setInterval(function(){if(!SY.code)return;
+  if(Object.keys(inbox).length)applyInbox();
+  if(needRender&&!typing()&&!modalOpen()){needRender=false;render()}},1500);
+setInterval(function(){if(ready&&pendN())flush()},30000);
+function ensureFb(){if(fbP)return fbP;
+  /* local copy (newer APKs carry it) first, else from the internet */
+  fbP=(window.FB?Promise.resolve():(NATIVE?loadScript("fb.js").catch(function(){return loadScript(FB_JS)}):loadScript(FB_JS))).then(function(){fb=window.FB;
+    var app=fb.initializeApp(FB_CFG);
+    try{auth=fb.initializeAuth(app,{persistence:[fb.indexedDBLocalPersistence,fb.browserLocalPersistence]})}catch(e){auth=fb.initializeAuth(app,{persistence:fb.inMemoryPersistence})}
+    try{db=fb.initializeFirestore(app,{localCache:fb.persistentLocalCache({tabManager:fb.persistentMultipleTabManager()})})}catch(e){db=fb.initializeFirestore(app,{localCache:fb.memoryLocalCache()})}
+    return new Promise(function(res){var first=true;
+      fb.onAuthStateChanged(auth,function(u){if(u){res(u);return}if(!first)return;first=false;
+        (function tryIn(){fb.signInAnonymously(auth).catch(function(e){st.err="auth:"+(e&&e.code||e);updBadge();setTimeout(tryIn,20000)})})()})})});
+  fbP.catch(function(){fbP=null;st.err="nofb";updBadge();setTimeout(function(){if(SY.code&&!ready)startSync()},60000)});
+  return fbP}
+function go(){col=fb.collection(db,"p",SY.code,"r");ready=true;listen();flush();updBadge()}
+function startSync(){if(!SY.code)return;if(!base)base=flat(S);ensureFb().then(go)}
+function withNet(p){return Promise.race([p,new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},40000)})])}
+function fetchAll(code){return fb.getDocsFromServer(fb.collection(db,"p",code,"r")).then(function(q){var m={},t=0;
+  q.docs.forEach(function(d){var x=d.data();if(x.v!=null)m[decodeURIComponent(d.id)]=x.v;var tt=x.t&&x.t.toMillis?x.t.toMillis():0;if(tt>t)t=tt});return{map:m,t:t}})}
+function syncBadge(){if(!SY.code)return"";return' <span id="syncB">'+badgeTxt()+'</span>'}
+function badgeTxt(){var n=pendN();if(st.err==="nofb")return"🟠"+(n?" "+n:"");if(st.err&&!ready)return"🔴";
+  if(!ready||st.cache)return"🟠"+(n?" "+n:"");return n?"🟠 "+n:"🟢"}
+function updBadge(){var b=document.getElementById("syncB");if(b)b.textContent=badgeTxt();var x=document.getElementById("syS");if(x)x.innerHTML=syncStatus()}
+function syncStatus(){var n=pendN();
+  if(st.err==="nofb")return"🟠 ما في إنترنت لهلق. البرنامج شغّال عادي، وبيزامن لحاله لما يرجع النت."+(n?"<br>بانتظار الرفع: <b>"+n+"</b>":"");
+  if(!ready)return"🟠 عم يتصل..."+(st.err?" ("+esc(st.err)+")":"");
+  return(st.cache?"🟠 بدون إنترنت، رح يزامن لحاله لما يرجع النت":"🟢 متصل")+
+    (n?"<br>بانتظار الرفع: <b>"+n+"</b>":"<br>كل شي مرفوع ✓")+
+    (st.lastOk?"<br><span class='muted'>آخر اتصال: "+new Date(st.lastOk).toLocaleTimeString()+"</span>":"")}
+function syncBox(){
+  if(!SY.code)return'<div class="box"><h2>🔗 المشاركة بين الهواتف</h2><p class="muted" style="margin-top:0">كل الهواتف (والكمبيوتر) اللي عندها نفس <b>رمز المشروع</b> بتشوف كل التقارير والمخططات.</p>'+
+    '<div class="row"><label>رمز المشروع</label><input type="text" id="syC" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="مثلاً satcon-ocr-2026"></div>'+
+    '<p class="hint" id="syE" style="color:#d64545;display:none"></p>'+
+    '<button class="big pri" id="syJ">📥 انضمام (بيدمج تقارير هالهاتف مع المشروع)</button>'+
+    '<button class="big" id="syU" style="margin-top:8px">📤 أول هاتف: ارفع تقارير هالهاتف</button>'+
+    '<p class="hint">بدو إنترنت وقت الانضمام بس. ما بينمسح شي من هالهاتف: الأيام اللي عليه بتنضاف للمشروع.</p></div>';
+  return'<div class="box"><h2>🔗 المشاركة بين الهواتف</h2><p style="margin-top:0">رمز المشروع: <b dir="ltr">'+esc(SY.code)+'</b></p><p id="syS">'+syncStatus()+'</p>'+
+    '<div class="two"><button id="syR">🔄 تنزيل الكل من جديد</button><button class="dan" id="syD">فصل هالهاتف 🔒</button></div></div>'}
+function bindSyncBox(){
+  function msg(h){openModal(h+'<div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal}
+  var c=document.getElementById("syC");
+  if(c){function code(){var v=c.value.trim().toLowerCase(),e=document.getElementById("syE");
+      if(!/^[a-z0-9_-]{6,40}$/.test(v)){e.textContent="الرمز لازم يكون 6 أحرف إنكليزي أو أرقام على الأقل، بدون فراغات";e.style.display="";return null}return v}
+    document.getElementById("syJ").onclick=function(){var v=code();if(!v)return;
+      if(S.editing)return msg('<h3>خلّص التعديل أول</h3><p>عم تعدّل يوم '+fmtDate(S.cur.date)+'.</p>');
+      openModal('<h3 style="text-align:center">عم ينزّل تقارير المشروع...</h3>');
+      withNet(ensureFb().then(function(){return fetchAll(v)})).then(function(r){
+        if(!Object.keys(r.map).length)return msg('<h3>ما في بيانات بهالرمز</h3><p>تأكد من الرمز. إذا هيدا أول هاتف، استعمل <b>ارفع تقارير هالهاتف</b>.</p>');
+        joinMerge(r.map);SY.code=v;SY.last=r.t;saveSY();PEND={};savePend();base=r.map;go();
+        try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}window.__syncPush();closeModal();view="main";render();
+        msg('<h3>انضمّيت ✓</h3><p>تقارير المشروع نزلت، وتقارير هالهاتف عم تنرفع وتنضم معها.</p>')})
+      .catch(function(){msg('<h3>ما قدر يتصل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})};
+    document.getElementById("syU").onclick=function(){var v=code();if(!v)return;
+      if(S.editing)return msg('<h3>خلّص التعديل أول</h3><p>عم تعدّل يوم '+fmtDate(S.cur.date)+'.</p>');
+      openModal('<h3 style="text-align:center">عم يتصل...</h3>');
+      withNet(ensureFb().then(function(){return fb.getDocsFromServer(fb.query(fb.collection(db,"p",v,"r"),fb.limit(1)))})).then(function(q){
+        if(!q.empty)return msg('<h3>في بيانات بهالرمز</h3><p>هيدا الرمز مستعمل. استعمل <b>انضمام</b> حتى تنضم تقاريرك معهم، أو اختار رمز جديد.</p>');
+        SY.code=v;SY.last=0;saveSY();base=flat(S);PEND={};for(var k in base)PEND[k]=1;savePend();go();closeModal();render();
+        msg('<h3>عم ترتفع التقارير ✓</h3><p>هلق على باقي الهواتف: الإعدادات ← اكتب نفس الرمز <b dir="ltr">'+esc(v)+'</b> ← انضمام.</p>')})
+      .catch(function(){msg('<h3>ما قدر يتصل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})}}
+  var r=document.getElementById("syR");
+  if(r){r.onclick=function(){if(!ready)return;SY.last=0;saveSY();listen();msg('<h3>عم ينزّل كل البيانات من جديد</h3>')};
+    document.getElementById("syD").onclick=function(){requireAdmin(function(){
+      confirmBox("فصل هالهاتف عن المشاركة؟ التقارير بتضل عليه بس ما بتعود تتزامن.","فصل",function(){
+        SY.code=null;SY.last=0;saveSY();PEND={};savePend();location.reload()})})}}
+}
+/* joining: same date + block on both sides = same day, merged pile by pile (like handover "merge") */
+function joinMerge(map){var r=unflat(map),key=function(d){return d.date+"|"+normBlock(d.block)},srv={},bySrvUid={};
+  r.days.forEach(function(d){bySrvUid[d.uid]=d;if(hasContent(d)&&!srv[key(d)])srv[key(d)]=d});
+  function fix(d){if(!d)return d;if(bySrvUid[d.uid])return mergeDay(bySrvUid[d.uid],d);var s=hasContent(d)&&srv[key(d)];if(s&&s.uid!==d.uid){var m=mergeDay(s,d);m.uid=s.uid;return m}return d}
+  S.cur=fix(S.cur);if(S.editing)S.editing.held=fix(S.editing.held);S.archive=S.archive.map(fix);
+  var have={};dayList(S).forEach(function(d){have[d.uid]=1});
+  r.days.forEach(function(d){if(!have[d.uid]){have[d.uid]=1;S.archive.push(d)}});
+  var seen={},arch=[];S.archive.forEach(function(d){if(!seen[d.uid]&&d.uid!==S.cur.uid&&!(S.editing&&d.uid===S.editing.held.uid)){seen[d.uid]=1;arch.push(d)}});S.archive=sortArch(arch);
+  Object.keys(r.plans).forEach(function(k){S.plans[k]=r.plans[k]});
+  Object.keys(r.settings).forEach(function(k){if(k!=="planPaper"||S.settings[k]==null)S.settings[k]=r.settings[k]})}
+startSync();
 
 /* native app: a newer version was downloaded */
 window.__updateReady=function(){
