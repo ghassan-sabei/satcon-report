@@ -99,7 +99,7 @@ button:active{transform:scale(.97)}
 (function(){
 "use strict";
 var KEY="satcon_daily_v1";
-var APP_VER="2026.11.19-a";
+var APP_VER="2026.11.19-b";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -383,7 +383,7 @@ function wire(app){
 /* ================= edit an archived day =================
    the day being worked on is put aside in S.editing.held, the archived day becomes S.cur
    (so the normal report screen edits it), then it goes back to the archive. */
-function allDays(){return[S.cur].concat(S.editing?[S.editing.held]:[],S.archive)}
+function everyDay(){return[S.cur].concat(S.editing?[S.editing.held]:[],S.archive)}
 function sortArchive(){S.archive.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0})}
 function editStart(i){
   if(S.editing){openModal('<h3>في يوم عم تعدّله</h3><p>خلّص تعديل يوم '+fmtDate(S.cur.date)+' أول.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
@@ -399,7 +399,7 @@ function toast(msg){var t=document.getElementById("toast");if(t)t.remove();t=doc
   t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f9d55;color:#fff;padding:12px 18px;border-radius:24px;z-index:70;font-size:15px;box-shadow:0 2px 10px rgba(0,0,0,.25)";
   document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove()},2200)}
 if(!S.plans)S.plans={};
-function donePiles(key){var m={};allDays().forEach(function(d){if(normBlock(d.block)!==key)return;
+function donePiles(key){var m={};everyDay().forEach(function(d){if(normBlock(d.block)!==key)return;
   d.piles.forEach(function(p){if(p.pourEnd)m[String(p.no).trim()]=d.date})});return m}
 function pileWarning(v){var key=normBlock(S.cur.block),pl=S.plans[key];if(!pl)return"";v=String(v).trim();
   var ok=false;pl.piles.forEach(function(p){if(p.n===v)ok=true});
@@ -869,7 +869,7 @@ function dayStats(d){
 }
 function r2(x){return Math.round(x*100)/100}
 function blockGroups(){
-  var all=allDays(),g={},order=[];
+  var all=everyDay(),g={},order=[];
   all.forEach(function(d){
     var k=normBlock(d.block);
     var st=dayStats(d);
