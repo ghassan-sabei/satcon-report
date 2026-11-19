@@ -99,7 +99,7 @@ button:active{transform:scale(.97)}
 (function(){
 "use strict";
 var KEY="satcon_daily_v1";
-var APP_VER="2026.11.15-a";
+var APP_VER="2026.11.19-a";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -205,11 +205,13 @@ function render(){
   var open=day.piles.filter(function(p){return!isDone(p)});
   var done=day.piles.filter(isDone);
   var h="";
+  if(S.editing)h+='<div class="box" style="background:#fff4e0;border:2px solid #e08a00"><b>✏️ عم تعدّل يوم '+dayName(day.date)+' '+fmtDate(day.date)+'</b><br><span class="muted">اليوم الحالي محفوظ على جنب. لما تخلص اكبس "خلّصت التعديل".</span>'+
+    '<div class="two" style="margin-top:8px"><button class="ok" id="edDone">✓ خلّصت التعديل</button><button id="edCancel">↩ إلغاء التعديل</button></div></div>';
 
   if(S.handedOver)h+='<div class="box" style="background:#fff4e0;border:2px solid #e08a00"><b>⚠️ سلّمت البيانات لمشرف تاني بتاريخ '+fmtDate(isoDate(new Date(S.handedOver)))+'</b><p style="margin:6px 0">أي شي بتسجّله هون بعد التسليم ما بيوصله.</p><button class="small" id="hoX">فهمت، خفّي التنبيه</button></div>';
   h+='<div class="box"><h2>معلومات اليوم</h2>'+
-     '<div class="row"><label>تاريخ التقرير</label><input type="date" id="dayDate" value="'+esc(day.date)+'"'+(day.date!==isoDate(new Date())?' style="border-color:#e08a00;background:#fff4e0"':'')+'></div>'+
-     (day.date!==isoDate(new Date())?'<p class="hint" style="color:#a15c00;margin:-4px 0 8px">⚠️ تاريخ التقرير مش تاريخ اليوم. إذا غلط صلّحه من هون.</p>':'')+
+     '<div class="row"><label>تاريخ التقرير</label><input type="date" id="dayDate" value="'+esc(day.date)+'"'+(day.date!==isoDate(new Date())&&!S.editing?' style="border-color:#e08a00;background:#fff4e0"':'')+'></div>'+
+     (day.date!==isoDate(new Date())&&!S.editing?'<p class="hint" style="color:#a15c00;margin:-4px 0 8px">⚠️ تاريخ التقرير مش تاريخ اليوم. إذا غلط صلّحه من هون.</p>':'')+
      '<div class="row"><label>رقم البلوك</label><input type="text" id="block" value="'+esc(day.block)+'"></div>'+
      '<div class="two">'+
        '<div><button class="big '+(day.workStart?'':'ok')+'" data-id="ws">'+(day.workStart?'بدء العمل ✓':'بدء العمل')+'</button><div class="tm">'+(day.workStart?hm(day.workStart):'—')+'</div></div>'+
@@ -266,7 +268,7 @@ function render(){
   h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>'+
      '<div class="two" style="margin-bottom:8px"><button class="big" id="goBlk">📊 ملخص البلوكات</button><button class="big" id="goPlan">🗺️ المخطط</button></div>'+
      '<div class="two" style="margin-bottom:24px"><button id="goArch">الأيام السابقة</button><button id="goSet">الإعدادات</button></div>'+
-     '<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>';
+     (S.editing?'<button class="big ok" id="edDone2" style="margin-bottom:30px">✓ خلّصت التعديل</button>':'<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>');
 
   app.innerHTML=h;
   var hx=document.getElementById("hoX");if(hx)hx.onclick=function(){delete S.handedOver;save();render()};
@@ -366,7 +368,9 @@ function wire(app){
   document.getElementById("goBlk").onclick=function(){view="blocks";render();scrollTo(0,0)};
   document.getElementById("goArch").onclick=function(){view="archive";render();scrollTo(0,0)};
   document.getElementById("goSet").onclick=function(){view="settings";render();scrollTo(0,0)};
-  document.getElementById("newDay").onclick=function(){
+  ["edDone","edDone2"].forEach(function(id){var b=document.getElementById(id);if(b)b.onclick=editDone});
+  var ec=document.getElementById("edCancel");if(ec)ec.onclick=function(){confirmBox("إلغاء كل التعديلات على هاليوم ورجّعه متل ما كان؟","إلغاء التعديل",editCancel)};
+  var nd=document.getElementById("newDay");if(nd)nd.onclick=function(){
     var openN=day.piles.filter(function(p){return!isDone(p)}).length;
     confirmBox((openN?"في "+openN+" حفرة غير مكتملة. ":"")+"حفظ هذا اليوم بالأرشيف وبدء يوم جديد؟","يوم جديد",function(){
       var ap=activePause(day);if(ap)ap.end=Date.now();
@@ -376,6 +380,18 @@ function wire(app){
   };
 }
 
+/* ================= edit an archived day =================
+   the day being worked on is put aside in S.editing.held, the archived day becomes S.cur
+   (so the normal report screen edits it), then it goes back to the archive. */
+function allDays(){return[S.cur].concat(S.editing?[S.editing.held]:[],S.archive)}
+function sortArchive(){S.archive.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0})}
+function editStart(i){
+  if(S.editing){openModal('<h3>في يوم عم تعدّله</h3><p>خلّص تعديل يوم '+fmtDate(S.cur.date)+' أول.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+  var d=S.archive.splice(i,1)[0];S.editing={held:S.cur,orig:JSON.stringify(d)};S.cur=d;save();view="main";render();scrollTo(0,0)}
+function editDone(){var ap=activePause(S.cur);if(ap)ap.end=ap.end||Date.now();
+  S.archive.push(S.cur);sortArchive();S.cur=S.editing.held;delete S.editing;save();view="archive";render();scrollTo(0,0)}
+function editCancel(){S.archive.push(JSON.parse(S.editing.orig));sortArchive();S.cur=S.editing.held;delete S.editing;save();view="archive";render();scrollTo(0,0)}
+
 /* ================= site plan (DWG) ================= */
 var planSel=null,planVB=null;
 function openToday(key){var m={};if(normBlock(S.cur.block)!==key)return m;S.cur.piles.forEach(function(p){if(!p.pourEnd)m[String(p.no).trim()]=1});return m}
@@ -383,7 +399,7 @@ function toast(msg){var t=document.getElementById("toast");if(t)t.remove();t=doc
   t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f9d55;color:#fff;padding:12px 18px;border-radius:24px;z-index:70;font-size:15px;box-shadow:0 2px 10px rgba(0,0,0,.25)";
   document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove()},2200)}
 if(!S.plans)S.plans={};
-function donePiles(key){var m={};[S.cur].concat(S.archive).forEach(function(d){if(normBlock(d.block)!==key)return;
+function donePiles(key){var m={};allDays().forEach(function(d){if(normBlock(d.block)!==key)return;
   d.piles.forEach(function(p){if(p.pourEnd)m[String(p.no).trim()]=d.date})});return m}
 function pileWarning(v){var key=normBlock(S.cur.block),pl=S.plans[key];if(!pl)return"";v=String(v).trim();
   var ok=false;pl.piles.forEach(function(p){if(p.n===v)ok=true});
@@ -554,7 +570,7 @@ function renderArchive(app){
   S.archive.forEach(function(d,i){
     var t=totals(d);
     h+='<div class="done-list" data-row="'+i+'"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' بايل · '+t.v+' m3</span></span>'+
-       '<span><button class="small" data-dt="'+i+'">📅 التاريخ</button> <button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
+       '<span><button class="small" data-ed="'+i+'">✏️ تعديل</button> <button class="small" data-dt="'+i+'">📅 التاريخ</button> <button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
   });
   h+='</div>';
   app.innerHTML=h;
@@ -565,6 +581,7 @@ function renderArchive(app){
       var ok=!q||(dt?d.date===dt:(normBlock(d.block).indexOf(nb)>=0||fmtDate(d.date).indexOf(q)>=0));el.style.display=ok?"":"none";if(ok)n++});
     document.getElementById("aNone").style.display=n?"none":""};
   app.querySelectorAll("[data-pdf]").forEach(function(b){b.onclick=function(){sharePdf(S.archive[+b.getAttribute("data-pdf")])}});
+  app.querySelectorAll("[data-ed]").forEach(function(b){b.onclick=function(){editStart(+b.getAttribute("data-ed"))}});
   app.querySelectorAll("[data-dt]").forEach(function(b){b.onclick=function(){var d=S.archive[+b.getAttribute("data-dt")];
     openModal('<h3>تعديل تاريخ اليوم</h3><p class="muted" style="margin-top:0">بلوك '+esc(d.block||"-")+' · '+totals(d).n+' بايل</p><input type="date" id="mDt" value="'+esc(d.date)+'" style="width:100%;font-size:20px">'+
       '<div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
@@ -632,6 +649,7 @@ function summary(st){var ds=allDays(st),dates=ds.map(function(d){return d.date})
   var piles=0;ds.forEach(function(d){d.piles.forEach(function(p){if(p.pourEnd)piles++})});
   return{days:ds.filter(function(d){return d.piles.length||d.workStart||d.mortar}).length,first:dates[0],last:dates[dates.length-1],blocks:Object.keys(bl),plans:Object.keys(st.plans||{}),open:open,piles:piles}}
 function handOver(){
+  if(S.editing){openModal('<h3>خلّص التعديل أول</h3><p>عم تعدّل يوم '+fmtDate(S.cur.date)+'. اكبس "خلّصت التعديل" وبعدين سلّم البيانات.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
   var text=JSON.stringify({app:"satcon-report",v:1,at:Date.now(),state:S}),name="satcon_handover_"+isoDate(new Date())+".json";
   var canSave=!NATIVE||!!(window.AndroidBridge&&window.AndroidBridge.saveDownload);
   openModal('<h3>📤 تسليم البيانات</h3><p class="muted" style="margin-top:0">الملف: '+esc(name)+'</p>'+
@@ -649,6 +667,7 @@ function handOver(){
   document.getElementById("mN").onclick=closeModal;
 }
 function receive(file){
+  if(S.editing){openModal('<h3>خلّص التعديل أول</h3><p>عم تعدّل يوم '+fmtDate(S.cur.date)+'. اكبس "خلّصت التعديل" وبعدين استلم البيانات.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
   file.text().then(function(t){var d=JSON.parse(t);if(!d||d.app!=="satcon-report"||!d.state||!d.state.cur)throw 0;return d}).then(function(d){
     var inc=d.state,sm=summary(inc),mine=summary(S),hasMine=mine.days>0||mine.plans.length>0;
     var info='<p style="margin:0 0 8px">ملف تسليم بتاريخ <b>'+fmtDate(isoDate(new Date(d.at)))+'</b></p><div class="done-list" style="font-size:14px">'+
@@ -850,7 +869,7 @@ function dayStats(d){
 }
 function r2(x){return Math.round(x*100)/100}
 function blockGroups(){
-  var all=[S.cur].concat(S.archive),g={},order=[];
+  var all=allDays(),g={},order=[];
   all.forEach(function(d){
     var k=normBlock(d.block);
     var st=dayStats(d);
