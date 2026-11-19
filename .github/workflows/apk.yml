@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['android/**', 'index.html', 'manifest.json', 'attendance/**', 'sandoq/**', 'dwg/**', '.github/workflows/apk.yml']
+    paths: ['android/**', 'index.html', 'manifest.json', 'attendance/**', 'sandoq/**', 'stock/**', 'dwg/**', '.github/workflows/apk.yml']
 permissions:
   contents: write
 jobs:
@@ -41,6 +41,7 @@ jobs:
           build com.satcon.report "التقرير اليومي" https://ghassan-sabei.github.io/satcon-report/ satcon_daily_v1 . report satcon-report.apk
           build com.satcon.attendance "دوام العمال" https://ghassan-sabei.github.io/satcon-report/attendance/ satcon_attend_v1 attendance attendance satcon-attendance.apk
           build com.satcon.sandoq "Cash Box" https://ghassan-sabei.github.io/satcon-report/sandoq/ satcon_sandoq_v1 sandoq sandoq satcon-sandoq.apk
+          build com.satcon.stock "Stock" https://ghassan-sabei.github.io/satcon-report/stock/ satcon_stock_v1 stock stock satcon-stock.apk
       - name: Publish APK release
         if: success()
         uses: softprops/action-gh-release@v2
@@ -52,6 +53,7 @@ jobs:
             satcon-report.apk
             satcon-attendance.apk
             satcon-sandoq.apk
+            satcon-stock.apk
       - name: Save log to branch
         if: always()
         run: |
