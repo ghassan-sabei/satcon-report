@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0f6b5c">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
-<title>Stock - SATCON</title>
+<title>المخزن - SATCON</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif;background:#eef1f6;color:#1d2433;font-size:16px}
+body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif;direction:rtl;background:#eef1f6;color:#1d2433;font-size:16px}
 header.top{background:#0f6b5c;color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
 header.top h1{font-size:18px;margin:0;cursor:pointer}
 header.top .d{font-size:14px;opacity:.9}
@@ -41,7 +41,7 @@ button:disabled{opacity:.5}
 .it .mid{flex:1;min-width:0}
 .it .mid b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .it .mid span{font-size:12px;color:#777}
-.it .q{font-weight:700;direction:ltr;white-space:nowrap;font-size:16px;color:#0f6b5c;text-align:right}
+.it .q{font-weight:700;white-space:nowrap;font-size:16px;color:#0f6b5c;text-align:left}
 .it .q small{font-weight:400;color:#777;font-size:12px}
 .it.neg{background:#fde2e2}
 .it.neg .q{color:#c62828}
@@ -52,7 +52,7 @@ button:disabled{opacity:.5}
 .tx .mid{flex:1;min-width:0}
 .tx .mid b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tx .mid span{font-size:12px;color:#777}
-.tx .am{font-weight:700;direction:ltr;white-space:nowrap;font-size:15px;text-align:right}
+.tx .am{font-weight:700;white-space:nowrap;font-size:15px;text-align:left}
 .am.in{color:#1f9d55}.am.out{color:#d64545}.am.ret{color:#7a4fd6}.am.adj{color:#b26a00}
 .tx .am small{display:block;font-weight:400;color:#888;font-size:11px}
 .seg{display:grid;gap:6px}
@@ -67,11 +67,11 @@ button:disabled{opacity:.5}
 .fl .n{font-weight:700;color:#0f6b5c;white-space:nowrap}
 .bal1{background:#f3f6fb;border-radius:10px;padding:12px;text-align:center}
 .bal1 span{display:block;font-size:13px;color:#666}
-.bal1 b{display:block;font-size:26px;color:#0f6b5c;direction:ltr;margin-top:4px}
+.bal1 b{display:block;font-size:26px;color:#0f6b5c;margin-top:4px}
 .bal1.neg{background:#fde2e2}.bal1.neg b{color:#c62828}
 .sum{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;margin-top:8px}
 .sum div{background:#f3f6fb;border-radius:8px;padding:6px 8px}
-.sum b{direction:ltr;display:inline-block}
+.sum b{display:inline-block}
 .warnbar{background:#fff4e0;border:1px solid #e08a00;color:#7a4b00;border-radius:10px;padding:10px;font-size:14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .negbar{background:#fde2e2;border:1px solid #d64545;color:#8a1c1c;border-radius:10px;padding:10px;font-size:14px;margin-bottom:12px}
 .balnow{font-size:14px;font-weight:700;color:#0f6b5c;margin:-4px 0 10px;min-height:1.2em}
@@ -83,11 +83,11 @@ button:disabled{opacity:.5}
 .modal .acts{display:flex;gap:8px;margin-top:12px}
 .modal .acts button{flex:1}
 .kv{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #eee;font-size:14px}
-.kv b{direction:ltr;white-space:nowrap}
+.kv b{white-space:nowrap}
 .kv.neg b{color:#c62828}
 .grp{font-weight:700;color:#0f6b5c;margin:14px 0 4px;font-size:14px;border-bottom:2px solid #d7efe9;padding-bottom:3px}
-.grp2{font-weight:600;color:#555;margin:8px 0 2px 8px;font-size:13px}
-.kv.ind{padding-left:16px}
+.grp2{font-weight:600;color:#555;margin:8px 8px 2px 0;font-size:13px}
+.kv.ind{padding-right:16px}
 #printArea{display:none}
 @page{size:A4 portrait;margin:8mm}
 @media print{
@@ -95,20 +95,20 @@ button:disabled{opacity:.5}
   header.top,main,.modal,#updBar{display:none!important}
   #printArea{display:block}
 }
-.sheet{font-family:Arial,Tahoma,sans-serif;color:#000;width:100%;font-size:12px;direction:ltr}
+.sheet{font-family:Arial,Tahoma,sans-serif;color:#000;width:100%;font-size:12px;direction:rtl}
 .sheet .hdr{display:flex;align-items:stretch;border:1px solid #1f2a5a;margin-bottom:6px}
 .sheet .logo{background:#0f6b5c;color:#fff;font-size:20px;letter-spacing:4px;font-weight:300;padding:0 18px;display:flex;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet .ttl{flex:1;text-align:center;padding:6px}
 .sheet .ttl b{font-size:18px;display:block}
 .sheet .ttl span{font-size:13px}
-.sheet .per{padding:6px 12px;font-size:13px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid #1f2a5a;min-width:210px;text-align:center}
+.sheet .per{padding:6px 12px;font-size:13px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid #1f2a5a;min-width:210px;text-align:center}
 .sheet table{border-collapse:collapse;width:100%;table-layout:fixed}
 .sheet td,.sheet th{border:1px solid #1f2a5a;padding:2px 4px;text-align:center;vertical-align:middle;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;height:22px}
 .sheet th{background:#8fd0c2;font-weight:700;font-size:11px;height:28px;white-space:normal;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet td.n{direction:ltr}
-.sheet td.l{text-align:left}
+.sheet td.l{text-align:right}
 .sheet .neg{color:#c00;font-weight:700}
-.sheet tr.g td{background:#e2f2ee;font-weight:700;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet tr.g td{background:#e2f2ee;font-weight:700;text-align:right;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet tr.tot td{background:#dde6f3;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet .ft{display:flex;justify-content:space-between;font-size:11px;margin-top:4px}
 @media print{
@@ -119,7 +119,7 @@ button:disabled{opacity:.5}
 </style>
 </head>
 <body>
-<header class="top"><h1 id="hdP">Stock</h1><div class="d"><span id="syncB" style="cursor:pointer"></span> <span id="hdDate"></span></div></header>
+<header class="top"><h1 id="hdP">المخزن</h1><div class="d"><span id="syncB" style="cursor:pointer"></span> <span id="hdDate"></span></div></header>
 <main id="app"></main>
 <div id="printArea"></div>
 <div class="modal" id="modal"><div class="in" id="modalIn"></div></div>
@@ -157,17 +157,18 @@ function r3(x){return Math.round(x*1000)/1000}
 /* Arabic-Indic digits and separators typed on an Arabic keyboard -> plain digits */
 function normDigits(s){return String(s||"").replace(/[٠-٩]/g,function(c){return c.charCodeAt(0)-1632}).replace(/[۰-۹]/g,function(c){return c.charCodeAt(0)-1776}).replace(/٫/g,".").replace(/[٬،]/g,",")}
 function parseQty(s){s=normDigits(s).replace(/[,\s]/g,"");if(!/^\d*\.?\d*$/.test(s)||s===""||s===".")return NaN;return parseFloat(s)}
-function fmtQ(n){var neg=n<0;n=Math.abs(n);return(neg?"-":"")+n.toLocaleString("en-US",{maximumFractionDigits:3})}
+/* numbers keep left-to-right order inside Arabic text (so -3 does not show as 3-) */
+function fmtQ(n){var neg=n<0;n=Math.abs(n);return"\u2066"+(neg?"-":"")+n.toLocaleString("en-US",{maximumFractionDigits:3})+"\u2069"}
 function clean(s){return normDigits(s).trim().replace(/\s+/g," ")}
 function newId(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function byName(a,b){return a.localeCompare(b,"ar",{numeric:true})}
 function $(id){return document.getElementById(id)}
 function each(sel,f){Array.prototype.forEach.call(document.querySelectorAll(sel),f)}
 
-var TL={in:"Incoming",out:"Outgoing",ret:"Return",adj:"Stock Count"};
+var TL={in:"داخل",out:"خارج",ret:"إرجاع",adj:"جرد"};
 var TS={in:"+",out:"−",ret:"↩",adj:"⚖"};
 function itemById(id){for(var i=0;i<S.items.length;i++)if(S.items[i].id===id)return S.items[i];return null}
-function itemName(id){var i=itemById(id);return i?i.name:"(deleted material)"}
+function itemName(id){var i=itemById(id);return i?i.name:"(مادة محذوفة)"}
 function itemUnit(id){var i=itemById(id);return i?i.unit:""}
 function itemsSorted(){return S.items.slice().sort(function(a,b){return byName(a.name,b.name)})}
 function bldById(id){for(var i=0;i<S.blds.length;i++)if(S.blds[i].id===id)return S.blds[i];return null}
@@ -176,12 +177,12 @@ function floorsOf(b){return(b&&b.floors||[]).slice().sort(function(x,y){return x
 function flById(b,id){if(!b)return null;for(var i=0;i<b.floors.length;i++)if(b.floors[i].id===id)return b.floors[i];return null}
 function flatById(f,id){if(!f)return null;for(var i=0;i<f.flats.length;i++)if(f.flats[i].id===id)return f.flats[i];return null}
 function flatsOf(f){return(f&&f.flats||[]).slice().sort(function(a,b){return byName(a.name,b.name)})}
-function bldLabel(b){return!b?"?":(/^[0-9]/.test(b.name)?"Building "+b.name:b.name)}
+function bldLabel(b){return!b?"?":(/^[0-9]/.test(b.name)?"بناية "+b.name:b.name)}
 /* where an outgoing or return went, as text */
-function place(t,short){var b=bldById(t.bld);if(!b)return t.bld?"(deleted building)":"";
-  var s=short?(/^[0-9]/.test(b.name)?"Bldg "+b.name:b.name):bldLabel(b);if(!t.fl)return s+" · Whole building";
-  var f=flById(b,t.fl);s+=" · "+(f?f.name:"?");if(!t.flat)return s+" · Whole floor";
-  var x=flatById(f,t.flat);return s+" · Flat "+(x?x.name:"?")}
+function place(t,short){var b=bldById(t.bld);if(!b)return t.bld?"(بناية محذوفة)":"";
+  var s=bldLabel(b);if(!t.fl)return s+" · عام للبناية";
+  var f=flById(b,t.fl);s+=" · "+(f?f.name:"?");if(!t.flat)return s+" · عام للطابق";
+  var x=flatById(f,t.flat);return s+" · شقة "+(x?x.name:"?")}
 function sgn(t){return t.type==="out"?-t.qty:t.qty}
 function byOrder(a,b){if(a.date!==b.date)return a.date<b.date?-1:1;return(a.at||0)-(b.at||0)}
 function sorted(){return S.tx.slice().sort(byOrder)}
@@ -196,8 +197,8 @@ function usesOf(f){return S.tx.filter(f).length}
 var modal=$("modal"),modalIn=$("modalIn");
 function openModal(h){modalIn.innerHTML=h;modal.classList.add("show")}
 function closeModal(){modal.classList.remove("show");modalIn.innerHTML=""}
-function info(title,body){openModal('<h3>'+title+'</h3>'+(body?'<p>'+body+'</p>':'')+'<div class="acts"><button id="mN">OK</button></div>');$("mN").onclick=closeModal}
-function confirmBox(title,body,yes,cls,cb){openModal('<h3>'+title+'</h3>'+(body?'<p>'+body+'</p>':'')+'<div class="acts"><button id="mY" class="'+(cls||"pri")+'">'+yes+'</button><button id="mN">Cancel</button></div>');
+function info(title,body){openModal('<h3>'+title+'</h3>'+(body?'<p>'+body+'</p>':'')+'<div class="acts"><button id="mN">تمام</button></div>');$("mN").onclick=closeModal}
+function confirmBox(title,body,yes,cls,cb){openModal('<h3>'+title+'</h3>'+(body?'<p>'+body+'</p>':'')+'<div class="acts"><button id="mY" class="'+(cls||"pri")+'">'+yes+'</button><button id="mN">إلغاء</button></div>');
   $("mN").onclick=closeModal;$("mY").onclick=function(){closeModal();cb()}}
 
 /* ---------- navigation: each screen is a #hash so the phone's back button works ---------- */
@@ -206,7 +207,7 @@ window.addEventListener("hashchange",function(){closeModal();render();scrollTo(0
 var app=$("app");
 function render(){
   updBadge();$("syncB").onclick=function(){go("settings")};
-  $("hdP").textContent="Stock"+(S.project?" - "+S.project:"");$("hdP").onclick=function(){go("")};
+  $("hdP").textContent="المخزن"+(S.project?" - "+S.project:"");$("hdP").onclick=function(){go("")};
   $("hdDate").textContent=fmtDate(today());
   var h=location.hash.replace(/^#/,""),m;
   if(m=/^new-(in|out|ret|adj)$/.exec(h))return formView(null,m[1]);
@@ -225,14 +226,14 @@ function render(){
 /* ---------- rows ---------- */
 function txTitle(t){return itemName(t.item)}
 function txSub(t){var a=[fmtDate(t.date)];
-  if(t.type==="in"){if(t.sup)a.push(esc(t.sup));if(t.rcpt)a.push("Rcpt "+esc(t.rcpt))}
+  if(t.type==="in"){if(t.sup)a.push(esc(t.sup));if(t.rcpt)a.push("وصل "+esc(t.rcpt))}
   else if(t.type==="out"||t.type==="ret"){a.push(esc(place(t,true)));if(t.who)a.push(esc(t.who))}
-  else a.push("Count: "+fmtQ(t.cnt)+(t.note?" · "+esc(t.note):""));
+  else a.push("الجرد: "+fmtQ(t.cnt)+(t.note?" · "+esc(t.note):""));
   return a.join(" · ")}
 function txRow(t,run){
   return'<div class="tx" data-id="'+t.id+'"><div class="ic '+t.type+'">'+TS[t.type]+'</div>'+
     '<div class="mid"><b dir="auto">'+esc(txTitle(t))+'</b><span dir="auto">'+txSub(t)+'</span></div>'+
-    '<div class="am '+t.type+'">'+(sgn(t)>=0?"+":"−")+fmtQ(Math.abs(t.qty))+' <span style="font-weight:400;font-size:12px">'+esc(itemUnit(t.item))+'</span>'+(run!=null?'<small'+(run<0?' style="color:#c62828"':'')+'>Bal. '+fmtQ(run)+'</small>':'')+'</div></div>'}
+    '<div class="am '+t.type+'"><bdi dir="ltr">'+(sgn(t)>=0?"+":"−")+fmtQ(Math.abs(t.qty))+'</bdi> <span style="font-weight:400;font-size:12px">'+esc(itemUnit(t.item))+'</span>'+(run!=null?'<small'+(run<0?' style="color:#c62828"':'')+'>الرصيد '+fmtQ(run)+'</small>':'')+'</div></div>'}
 function bindRows(){each("#app .tx",function(el){el.onclick=function(){go("edit-"+el.getAttribute("data-id"))}})}
 function itemRow(i,b){return'<div class="it'+(b<0?' neg':'')+'" data-item="'+i.id+'" data-name="'+esc(i.name.toLowerCase())+'"><div class="mid"><b dir="auto">'+esc(i.name)+'</b></div><div class="q">'+fmtQ(b)+' <small>'+esc(i.unit)+'</small></div></div>'}
 function bindItems(){each("#app .it",function(el){el.onclick=function(){go("item-"+el.getAttribute("data-item"))}})}
@@ -242,18 +243,18 @@ function mainView(){
   var bal=balances(),its=itemsSorted(),negs=its.filter(function(i){return bal[i.id]<0}),h="";
   var days=S.lastBackup?Math.floor((Date.now()-S.lastBackup)/864e5):null;
   if(S.tx.length&&(days===null||days>=7))
-    h+='<div class="warnbar"><span>'+(days===null?'No backup has been made yet.':'Last backup was '+days+' days ago.')+'</span><button class="small" id="bkNow">Back up now</button></div>';
-  if(negs.length)h+='<div class="negbar">⚠ '+negs.length+' material'+(negs.length>1?'s have':' has')+' a negative balance. An incoming delivery may not have been recorded.</div>';
-  h+='<div class="four" style="margin-bottom:12px"><button class="big ok" style="font-size:15px;padding:16px 2px" id="bIn">+ In</button><button class="big dan" style="font-size:15px;padding:16px 2px" id="bOut">− Out</button>'+
-    '<button class="big bret" style="font-size:15px;padding:16px 2px" id="bRet">↩ Return</button><button class="big bcnt" style="font-size:15px;padding:16px 2px" id="bAdj">⚖ Count</button></div>';
-  h+='<div class="box"><h2>Stock Balances</h2>';
-  if(!its.length)h+='<p class="muted">No materials yet. Add your materials first (cement, steel, blocks, ...).</p><button class="pri" id="bAddM">+ Add Materials</button>';
-  else h+=(its.length>8?'<input type="text" id="iQ" dir="auto" placeholder="🔍 Search material" style="width:100%;margin-bottom:4px">':'')+its.map(function(i){return itemRow(i,bal[i.id])}).join("");
+    h+='<div class="warnbar"><span>'+(days===null?'لم تُعمل نسخة احتياطية بعد.':'آخر نسخة احتياطية قبل '+days+' يوم.')+'</span><button class="small" id="bkNow">نسخ الآن</button></div>';
+  if(negs.length)h+='<div class="negbar">⚠ '+(negs.length>1?negs.length+' مواد رصيدها':'مادة واحدة رصيدها')+' بالسالب. ربما يوجد داخل لم يُسجَّل.</div>';
+  h+='<div class="four" style="margin-bottom:12px"><button class="big ok" style="font-size:15px;padding:16px 2px" id="bIn">+ داخل</button><button class="big dan" style="font-size:15px;padding:16px 2px" id="bOut">− خارج</button>'+
+    '<button class="big bret" style="font-size:15px;padding:16px 2px" id="bRet">↩ إرجاع</button><button class="big bcnt" style="font-size:15px;padding:16px 2px" id="bAdj">⚖ جرد</button></div>';
+  h+='<div class="box"><h2>أرصدة المخزن</h2>';
+  if(!its.length)h+='<p class="muted">لا توجد مواد بعد. أضف موادك أولاً (سمنت، حديد، طابوق...).</p><button class="pri" id="bAddM">+ إضافة مواد</button>';
+  else h+=(its.length>8?'<input type="text" id="iQ" dir="auto" placeholder="🔍 بحث عن مادة" style="width:100%;margin-bottom:4px">':'')+its.map(function(i){return itemRow(i,bal[i.id])}).join("");
   h+='</div>';
   var last=sorted().reverse().slice(0,12);
-  h+='<div class="box"><h2>Recent Movements</h2>'+(last.length?last.map(function(t){return txRow(t)}).join(""):'<p class="muted">No movements recorded yet.</p>')+'</div>';
-  h+='<div class="three" style="margin-bottom:8px"><button id="bIt">📦 Materials</button><button id="bBl">🏢 Buildings</button><button id="bRep">📊 Reports</button></div>'+
-    '<div class="three"><button id="bLog">📋 Records</button><button id="bPr">🖨 Print</button><button id="bSet">⚙ Settings</button></div>';
+  h+='<div class="box"><h2>آخر الحركات</h2>'+(last.length?last.map(function(t){return txRow(t)}).join(""):'<p class="muted">لا توجد حركات بعد.</p>')+'</div>';
+  h+='<div class="three" style="margin-bottom:8px"><button id="bIt">📦 المواد</button><button id="bBl">🏢 البنايات</button><button id="bRep">📊 التقارير</button></div>'+
+    '<div class="three"><button id="bLog">📋 السجل</button><button id="bPr">🖨 طباعة</button><button id="bSet">⚙ الإعدادات</button></div>';
   app.innerHTML=h;bindRows();bindItems();
   var q=$("iQ");if(q)q.oninput=function(){var v=q.value.trim().toLowerCase();each("#app .it",function(el){el.style.display=!v||el.getAttribute("data-name").indexOf(v)>=0?"":"none"})};
   $("bIn").onclick=function(){go("new-in")};$("bOut").onclick=function(){go("new-out")};
@@ -266,28 +267,28 @@ function mainView(){
 
 /* ---------- materials ---------- */
 function itemModal(it,done){
-  openModal('<h3>'+(it?'Edit Material':'New Material')+'</h3>'+
-    '<div class="row"><label>Name</label><input type="text" id="mNm" dir="auto" value="'+esc(it?it.name:"")+'" placeholder="e.g. Cement"></div>'+
-    '<div class="row"><label>Unit</label><input type="text" id="mUn" dir="auto" value="'+esc(it?it.unit:"")+'" placeholder="e.g. bag, ton, m³, piece"></div>'+
-    '<div class="chips" id="mUs" style="margin-bottom:8px">'+["bag","ton","kg","m³","m²","m","piece","roll","box","litre"].map(function(u){return'<button class="small" data-u="'+u+'">'+u+'</button>'}).join("")+'</div>'+
-    '<p class="err" id="mErr"></p><div class="acts"><button id="mY" class="ok">Save</button>'+(it?'<button id="mD" class="dan">Delete</button>':'')+'<button id="mN">Cancel</button></div>');
+  openModal('<h3>'+(it?'تعديل مادة':'مادة جديدة')+'</h3>'+
+    '<div class="row"><label>الاسم</label><input type="text" id="mNm" dir="auto" value="'+esc(it?it.name:"")+'" placeholder="مثلاً: سمنت"></div>'+
+    '<div class="row"><label>الوحدة</label><input type="text" id="mUn" dir="auto" value="'+esc(it?it.unit:"")+'" placeholder="مثلاً: كيس، طن، م³، قطعة"></div>'+
+    '<div class="chips" id="mUs" style="margin-bottom:8px">'+["كيس","طن","كغم","م³","م²","متر","قطعة","لفة","كارتون","لتر"].map(function(u){return'<button class="small" data-u="'+u+'">'+u+'</button>'}).join("")+'</div>'+
+    '<p class="err" id="mErr"></p><div class="acts"><button id="mY" class="ok">حفظ</button>'+(it?'<button id="mD" class="dan">حذف</button>':'')+'<button id="mN">إلغاء</button></div>');
   each("#mUs button",function(b){b.onclick=function(){$("mUn").value=b.getAttribute("data-u")}});
   $("mN").onclick=closeModal;
   if(!it)setTimeout(function(){var x=$("mNm");if(x)x.focus()},50);
   $("mY").onclick=function(){var nm=clean($("mNm").value),un=clean($("mUn").value),e=$("mErr");
-    if(!nm){e.textContent="Enter the material name.";return}if(!un){e.textContent="Enter the unit.";return}
-    if(S.items.some(function(x){return x!==it&&x.name.toLowerCase()===nm.toLowerCase()})){e.textContent="A material with this name already exists.";return}
+    if(!nm){e.textContent="اكتب اسم المادة.";return}if(!un){e.textContent="اكتب الوحدة.";return}
+    if(S.items.some(function(x){return x!==it&&x.name.toLowerCase()===nm.toLowerCase()})){e.textContent="توجد مادة بنفس الاسم.";return}
     if(it){it.name=nm;it.unit=un}else{it={id:newId("i"),name:nm,unit:un};S.items.push(it)}
     save();closeModal();done(it)};
   var d=$("mD");if(d)d.onclick=function(){var n=usesOf(function(t){return t.item===it.id});
-    if(n){info("Cannot delete",'"'+esc(it.name)+'" has '+n+' recorded movement'+(n>1?'s':'')+'. Delete those movements first.');return}
+    if(n){info("لا يمكن الحذف",'على "'+esc(it.name)+'" '+n+' حركة مسجلة. احذف الحركات أولاً.');return}
     S.items=S.items.filter(function(x){return x!==it});save();closeModal();done(null)};
 }
 function itemsView(){
   var bal=balances(),its=itemsSorted();
-  app.innerHTML='<div class="box"><h2>Materials</h2><p class="hint" style="margin:-6px 0 8px">Tap a material to rename it or change its unit.</p>'+
-    (its.length?its.map(function(i){return'<div class="fl" data-item="'+i.id+'"><div><b dir="auto">'+esc(i.name)+'</b><br><span>Unit: '+esc(i.unit)+'</span></div><div class="n">'+fmtQ(bal[i.id])+' '+esc(i.unit)+'</div></div>'}).join(""):'<p class="muted">No materials yet.</p>')+
-    '</div><button class="big ok" id="iAdd">+ Add Material</button><button class="big" id="iBack" style="margin-top:8px">Back</button>';
+  app.innerHTML='<div class="box"><h2>المواد</h2><p class="hint" style="margin:-6px 0 8px">اضغط على مادة لتغيير اسمها أو وحدتها.</p>'+
+    (its.length?its.map(function(i){return'<div class="fl" data-item="'+i.id+'"><div><b dir="auto">'+esc(i.name)+'</b><br><span>الوحدة: '+esc(i.unit)+'</span></div><div class="n">'+fmtQ(bal[i.id])+' '+esc(i.unit)+'</div></div>'}).join(""):'<p class="muted">لا توجد مواد بعد.</p>')+
+    '</div><button class="big ok" id="iAdd">+ إضافة مادة</button><button class="big" id="iBack" style="margin-top:8px">رجوع</button>';
   each("#app .fl",function(el){el.onclick=function(){itemModal(itemById(el.getAttribute("data-item")),function(){itemsView()})}});
   $("iAdd").onclick=function(){itemModal(null,function(){itemsView()})};
   $("iBack").onclick=function(){history.back()};
@@ -298,13 +299,13 @@ function itemView(id){
   var it=itemById(id),run=0,rows=[],tot={in:0,out:0,ret:0,adj:0};
   sorted().forEach(function(t){if(t.item!==id)return;run=r3(run+sgn(t));tot[t.type]=r3(tot[t.type]+t.qty);rows.push({t:t,run:run})});
   var b=run,list=rows.slice().reverse().filter(function(r){return ITEM_TAB==="all"||r.t.type===ITEM_TAB});
-  app.innerHTML='<div class="box"><h2 dir="auto">'+esc(it.name)+'</h2><div class="bal1'+(b<0?' neg':'')+'"><span>Balance in store</span><b>'+fmtQ(b)+' '+esc(it.unit)+'</b></div>'+
-    '<div class="sum"><div>Total in: <b>'+fmtQ(tot.in)+'</b></div><div>Total out: <b>'+fmtQ(tot.out)+'</b></div><div>Returns: <b>'+fmtQ(tot.ret)+'</b></div><div>Count adjustments: <b>'+(tot.adj>0?"+":"")+fmtQ(tot.adj)+'</b></div></div></div>'+
-    '<div class="box"><div class="seg" style="grid-template-columns:repeat(5,1fr);margin-bottom:8px" id="itT">'+["all","in","out","ret","adj"].map(function(k){return'<button data-k="'+k+'" class="'+(ITEM_TAB===k?"on":"")+'">'+(k==="all"?"All":k==="adj"?"Count":k==="ret"?"Return":k==="in"?"In":"Out")+'</button>'}).join("")+'</div>'+
-    (list.length?list.map(function(r){return txRow(r.t,r.run)}).join(""):'<p class="muted">No movements.</p>')+'</div>'+
-    '<div class="two" style="margin-bottom:8px"><button class="ok" id="iIn">+ In</button><button class="dan" id="iOut">− Out</button></div>'+
-    '<div class="two" style="margin-bottom:8px"><button id="iPr">🖨 Print material card</button><button id="iEd">✏ Edit material</button></div>'+
-    '<button class="big" id="iBack">Back</button>';
+  app.innerHTML='<div class="box"><h2 dir="auto">'+esc(it.name)+'</h2><div class="bal1'+(b<0?' neg':'')+'"><span>الرصيد في المخزن</span><b>'+fmtQ(b)+' '+esc(it.unit)+'</b></div>'+
+    '<div class="sum"><div>مجموع الداخل: <b>'+fmtQ(tot.in)+'</b></div><div>مجموع الخارج: <b>'+fmtQ(tot.out)+'</b></div><div>الإرجاع: <b>'+fmtQ(tot.ret)+'</b></div><div>فروقات الجرد: <b>'+"<bdi dir=\"ltr\">"+(tot.adj>0?"+":"")+fmtQ(tot.adj)+"</bdi>"+'</b></div></div></div>'+
+    '<div class="box"><div class="seg" style="grid-template-columns:repeat(5,1fr);margin-bottom:8px" id="itT">'+["all","in","out","ret","adj"].map(function(k){return'<button data-k="'+k+'" class="'+(ITEM_TAB===k?"on":"")+'">'+(k==="all"?"الكل":k==="adj"?"جرد":k==="ret"?"إرجاع":k==="in"?"داخل":"خارج")+'</button>'}).join("")+'</div>'+
+    (list.length?list.map(function(r){return txRow(r.t,r.run)}).join(""):'<p class="muted">لا توجد حركات.</p>')+'</div>'+
+    '<div class="two" style="margin-bottom:8px"><button class="ok" id="iIn">+ داخل</button><button class="dan" id="iOut">− خارج</button></div>'+
+    '<div class="two" style="margin-bottom:8px"><button id="iPr">🖨 طباعة كارت المادة</button><button id="iEd">✏ تعديل المادة</button></div>'+
+    '<button class="big" id="iBack">رجوع</button>';
   bindRows();
   each("#itT button",function(x){x.onclick=function(){ITEM_TAB=x.getAttribute("data-k");itemView(id)}});
   $("iIn").onclick=function(){LAST.item=id;saveLast();go("new-in")};
@@ -317,63 +318,63 @@ function itemView(id){
 /* ---------- recording a movement ---------- */
 function formView(t,type){
   var isNew=!t,isPlace=type==="out"||type==="ret";
-  if(!S.items.length){app.innerHTML='<div class="box"><h2>'+TL[type]+'</h2><p>Add your materials first.</p><button class="pri" id="fM">+ Add Material</button></div><button class="big" id="fBack">Back</button>';
+  if(!S.items.length){app.innerHTML='<div class="box"><h2>'+TL[type]+'</h2><p>أضف موادك أولاً.</p><button class="pri" id="fM">+ إضافة مادة</button></div><button class="big" id="fBack">رجوع</button>';
     $("fM").onclick=function(){itemModal(null,function(){render()})};$("fBack").onclick=function(){history.back()};return}
-  if(isPlace&&!S.blds.length){app.innerHTML='<div class="box"><h2>'+TL[type]+'</h2><p>Set up your buildings, floors and flats first.</p><button class="pri" id="fB">🏢 Set Up Buildings</button></div><button class="big" id="fBack">Back</button>';
+  if(isPlace&&!S.blds.length){app.innerHTML='<div class="box"><h2>'+TL[type]+'</h2><p>جهّز البنايات والطوابق والشقق أولاً.</p><button class="pri" id="fB">🏢 إعداد البنايات</button></div><button class="big" id="fBack">رجوع</button>';
     $("fB").onclick=function(){go("blds")};$("fBack").onclick=function(){history.back()};return}
   var F=t?{item:t.item,qty:type==="adj"?t.cnt:t.qty,date:t.date,sup:t.sup||"",rcpt:t.rcpt||"",who:t.who||"",note:t.note||"",bld:t.bld||"",fl:t.fl||"",flat:t.flat||""}:
     {item:itemById(LAST.item)?LAST.item:"",qty:"",date:today(),sup:"",rcpt:"",who:"",note:"",bld:bldById(LAST.bld)?LAST.bld:"",fl:"",flat:""};
   if(isNew&&F.bld&&LAST.fl&&flById(bldById(F.bld),LAST.fl)){F.fl=LAST.fl;if(LAST.flat&&flatById(flById(bldById(F.bld),F.fl),LAST.flat))F.flat=LAST.flat}
   var col={in:"ok",out:"dan",ret:"bret",adj:"bcnt"}[type];
-  var h='<div class="box"><h2>'+(isNew?'New ':'Edit ')+TL[type]+'</h2>'+
-    '<div class="row"><label>Material</label><select id="fI"><option value="">— Select material —</option>'+itemsSorted().map(function(i){return'<option value="'+i.id+'"'+(i.id===F.item?' selected':'')+'>'+esc(i.name)+' ('+esc(i.unit)+')</option>'}).join("")+'</select><button class="small" id="fNI">+ New</button></div>'+
+  var h='<div class="box"><h2>'+(isNew?'تسجيل ':'تعديل ')+TL[type]+'</h2>'+
+    '<div class="row"><label>المادة</label><select id="fI"><option value="">— اختر المادة —</option>'+itemsSorted().map(function(i){return'<option value="'+i.id+'"'+(i.id===F.item?' selected':'')+'>'+esc(i.name)+' ('+esc(i.unit)+')</option>'}).join("")+'</select><button class="small" id="fNI">+ جديدة</button></div>'+
     '<div class="balnow" id="fBal"></div>'+
-    '<div class="row"><label>'+(type==="adj"?'Counted qty':'Quantity')+'</label><input type="text" id="fQ" inputmode="decimal" value="'+(F.qty===""?"":F.qty)+'" placeholder="0"><span id="fU" class="muted" style="min-width:40px"></span></div>'+
-    (type==="adj"?'<p class="hint" style="margin:-6px 0 10px">Enter the quantity you actually counted in the store. The app records the difference from the balance.</p><div class="balnow" id="fDiff"></div>':'')+
-    '<div class="row"><label>Date</label><input type="date" id="fD" value="'+F.date+'"></div>';
-  if(type==="in")h+='<div class="row"><label>Supplier</label><input type="text" id="fSup" dir="auto" value="'+esc(F.sup)+'"></div>'+
-    '<div class="row"><label>Receipt No.</label><input type="text" id="fR" value="'+esc(F.rcpt)+'" placeholder="Optional"></div>';
-  if(isPlace)h+='<div class="row"><label>Building</label><div class="chips" id="fBl"></div></div>'+
-    '<div class="row"><label>Floor</label><select id="fFl"></select></div>'+
-    '<div class="row" id="fFtR"><label>Flat</label><div class="chips" id="fFt"></div></div>'+
-    '<div class="row"><label>'+(type==="out"?'Received by':'Returned by')+'</label><input type="text" id="fW" dir="auto" value="'+esc(F.who)+'" placeholder="Optional"></div>';
-  h+='<div class="row"><label>'+(type==="adj"?'Reason':'Note')+'</label><input type="text" id="fN" dir="auto" value="'+esc(F.note)+'" placeholder="'+(type==="adj"?'e.g. damaged, lost, counting error':'Optional')+'"></div>'+
-    '<p class="err" id="fErr"></p><button class="big '+col+'" id="fSave">Save</button></div>'+
-    (isNew?'':'<button class="big" id="fDel" style="background:#fff;color:#d64545;border:2px solid #d64545;margin-bottom:8px">🗑 Delete This Movement</button>')+
-    '<button class="big" id="fBack">Back</button>';
+    '<div class="row"><label>'+(type==="adj"?'الكمية المعدودة':'الكمية')+'</label><input type="text" id="fQ" inputmode="decimal" value="'+(F.qty===""?"":F.qty)+'" placeholder="0"><span id="fU" class="muted" style="min-width:40px"></span></div>'+
+    (type==="adj"?'<p class="hint" style="margin:-6px 0 10px">اكتب الكمية التي عددتها فعلاً في المخزن، والبرنامج يسجل الفرق عن الرصيد.</p><div class="balnow" id="fDiff"></div>':'')+
+    '<div class="row"><label>التاريخ</label><input type="date" id="fD" value="'+F.date+'"></div>';
+  if(type==="in")h+='<div class="row"><label>المورّد</label><input type="text" id="fSup" dir="auto" value="'+esc(F.sup)+'"></div>'+
+    '<div class="row"><label>رقم الوصل</label><input type="text" id="fR" value="'+esc(F.rcpt)+'" placeholder="اختياري"></div>';
+  if(isPlace)h+='<div class="row"><label>البناية</label><div class="chips" id="fBl"></div></div>'+
+    '<div class="row"><label>الطابق</label><select id="fFl"></select></div>'+
+    '<div class="row" id="fFtR"><label>الشقة</label><div class="chips" id="fFt"></div></div>'+
+    '<div class="row"><label>'+(type==="out"?'المستلم':'أرجعها')+'</label><input type="text" id="fW" dir="auto" value="'+esc(F.who)+'" placeholder="اختياري"></div>';
+  h+='<div class="row"><label>'+(type==="adj"?'السبب':'ملاحظة')+'</label><input type="text" id="fN" dir="auto" value="'+esc(F.note)+'" placeholder="'+(type==="adj"?'مثلاً: تالف، ضائع، خطأ عدّ':'اختياري')+'"></div>'+
+    '<p class="err" id="fErr"></p><button class="big '+col+'" id="fSave">حفظ</button></div>'+
+    (isNew?'':'<button class="big" id="fDel" style="background:#fff;color:#d64545;border:2px solid #d64545;margin-bottom:8px">🗑 حذف هذه الحركة</button>')+
+    '<button class="big" id="fBack">رجوع</button>';
   app.innerHTML=h;
   var skip=t?t.id:null;
   function showBal(){var id=$("fI").value,el=$("fBal");$("fU").textContent=id?itemUnit(id):"";
     if(!id){el.textContent="";el.className="balnow";return}
-    var b=balOf(id,skip);el.className="balnow"+(b<0?" neg":"");el.textContent="Balance in store: "+fmtQ(b)+" "+itemUnit(id)+(skip?" (without this movement)":"");
-    if(type==="adj"){var q=parseQty($("fQ").value),d=$("fDiff");if(isNaN(q)){d.textContent="";return}var df=r3(q-b);d.className="balnow"+(df<0?" neg":"");d.textContent=df===0?"No difference.":"Difference: "+(df>0?"+":"")+fmtQ(df)+" "+itemUnit(id)}}
+    var b=balOf(id,skip);el.className="balnow"+(b<0?" neg":"");el.textContent="الرصيد في المخزن: "+fmtQ(b)+" "+itemUnit(id)+(skip?" (بدون هذه الحركة)":"");
+    if(type==="adj"){var q=parseQty($("fQ").value),d=$("fDiff");if(isNaN(q)){d.textContent="";return}var df=r3(q-b);d.className="balnow"+(df<0?" neg":"");d.textContent=df===0?"لا يوجد فرق.":"الفرق: "+(df>0?"+":"")+fmtQ(df)+" "+itemUnit(id)}}
   $("fI").onchange=showBal;$("fQ").oninput=function(){$("fQ").classList.remove("bad");if(type==="adj")showBal()};showBal();
   $("fNI").onclick=function(){itemModal(null,function(it){F.item=it.id;var s=$("fI"),o=document.createElement("option");o.value=it.id;o.textContent=it.name+" ("+it.unit+")";s.appendChild(o);s.value=it.id;showBal()})};
   if(isPlace){
     var paintB=function(){$("fBl").innerHTML=bldsSorted().map(function(b){return'<button data-b="'+b.id+'" class="'+(b.id===F.bld?"on":"")+'">'+esc(b.name)+'</button>'}).join("");
       each("#fBl button",function(x){x.onclick=function(){if(F.bld!==x.getAttribute("data-b")){F.bld=x.getAttribute("data-b");F.fl="";F.flat=""}paintB();paintF()}})};
     var paintF=function(){var b=bldById(F.bld),s=$("fFl");
-      s.innerHTML=b?'<option value="">— Whole building (general) —</option>'+floorsOf(b).map(function(f){return'<option value="'+f.id+'"'+(f.id===F.fl?' selected':'')+'>'+esc(f.name)+(f.flats.length?' ('+f.flats.length+' flats)':'')+'</option>'}).join(""):'<option value="">Select the building first</option>';
+      s.innerHTML=b?'<option value="">— عام للبناية —</option>'+floorsOf(b).map(function(f){return'<option value="'+f.id+'"'+(f.id===F.fl?' selected':'')+'>'+esc(f.name)+(f.flats.length?' ('+f.flats.length+' شقق)':'')+'</option>'}).join(""):'<option value="">اختر البناية أولاً</option>';
       s.disabled=!b;paintT()};
     var paintT=function(){var f=flById(bldById(F.bld),F.fl),r=$("fFtR");if(!f){r.style.display="none";F.flat="";return}r.style.display="";
       if(F.flat&&!flatById(f,F.flat))F.flat="";
-      $("fFt").innerHTML='<button data-t="" class="gen'+(!F.flat?" on":"")+'">Whole floor</button>'+flatsOf(f).map(function(x){return'<button data-t="'+x.id+'" class="'+(x.id===F.flat?"on":"")+'">'+esc(x.name)+'</button>'}).join("");
+      $("fFt").innerHTML='<button data-t="" class="gen'+(!F.flat?" on":"")+'">عام للطابق</button>'+flatsOf(f).map(function(x){return'<button data-t="'+x.id+'" class="'+(x.id===F.flat?"on":"")+'">'+esc(x.name)+'</button>'}).join("");
       each("#fFt button",function(x){x.onclick=function(){F.flat=x.getAttribute("data-t");paintT()}})};
     $("fFl").onchange=function(){F.fl=$("fFl").value;F.flat="";paintT()};
     paintB();paintF();
   }
   $("fBack").onclick=function(){history.back()};
-  if(!isNew)$("fDel").onclick=function(){confirmBox("Delete this movement?",esc(TL[type])+": "+esc(itemName(t.item))+" "+fmtQ(Math.abs(t.qty))+" "+esc(itemUnit(t.item))+" on "+fmtDate(t.date),"Delete","dan",function(){
+  if(!isNew)$("fDel").onclick=function(){confirmBox("حذف هذه الحركة؟",esc(TL[type])+": "+esc(itemName(t.item))+" "+fmtQ(Math.abs(t.qty))+" "+esc(itemUnit(t.item))+" بتاريخ "+fmtDate(t.date),"حذف","dan",function(){
     S.tx=S.tx.filter(function(x){return x!==t});save();history.back()})};
   $("fSave").onclick=function(){
     var e=$("fErr"),item=$("fI").value,q=parseQty($("fQ").value),date=$("fD").value;e.textContent="";
-    if(!item){e.textContent="Select the material.";$("fI").classList.add("bad");return}
-    if(isNaN(q)||(type!=="adj"&&q<=0)){e.textContent="Enter a valid quantity.";$("fQ").classList.add("bad");return}
-    if(!date){e.textContent="Enter the date.";return}
-    if(isPlace&&!F.bld){e.textContent="Select the building.";return}
+    if(!item){e.textContent="اختر المادة.";$("fI").classList.add("bad");return}
+    if(isNaN(q)||(type!=="adj"&&q<=0)){e.textContent="اكتب كمية صحيحة.";$("fQ").classList.add("bad");return}
+    if(!date){e.textContent="اختر التاريخ.";return}
+    if(isPlace&&!F.bld){e.textContent="اختر البناية.";return}
     var rec={id:t?t.id:newId("t"),type:type,item:item,date:date,at:t?(t.at||Date.now()):Date.now(),note:clean($("fN").value)};
     var b=balOf(item,skip);
-    if(type==="adj"){rec.cnt=r3(q);rec.qty=r3(q-b);if(rec.qty===0){e.textContent="The counted quantity equals the balance. Nothing to record.";return}}
+    if(type==="adj"){rec.cnt=r3(q);rec.qty=r3(q-b);if(rec.qty===0){e.textContent="الكمية المعدودة تساوي الرصيد، لا يوجد شيء للتسجيل.";return}}
     else rec.qty=r3(q);
     if(type==="in"){rec.sup=clean($("fSup").value);rec.rcpt=clean($("fR").value)}
     if(isPlace){rec.bld=F.bld;rec.fl=F.fl||"";rec.flat=F.fl?F.flat||"":"";rec.who=clean($("fW").value)}
@@ -381,12 +382,12 @@ function formView(t,type){
     function commit(){
       if(t){var i=S.tx.indexOf(t);S.tx[i]=rec}else S.tx.push(rec);
       LAST.item=item;if(isPlace){LAST.bld=rec.bld;LAST.fl=rec.fl;LAST.flat=rec.flat}saveLast();save();
-      if(isNew){var nb=balOf(item);go("");setTimeout(function(){info("✓ Saved",esc(TL[type])+": "+esc(itemName(item))+" "+fmtQ(Math.abs(rec.qty))+" "+esc(itemUnit(item))+(isPlace?"<br>"+esc(place(rec)):"")+'<br>Balance now: <b style="color:'+(nb<0?"#c62828":"#0f6b5c")+'">'+fmtQ(nb)+" "+esc(itemUnit(item))+"</b>")},80)}
+      if(isNew){var nb=balOf(item);go("");setTimeout(function(){info("✓ تم الحفظ",esc(TL[type])+": "+esc(itemName(item))+" "+fmtQ(Math.abs(rec.qty))+" "+esc(itemUnit(item))+(isPlace?"<br>"+esc(place(rec)):"")+'<br>الرصيد الآن: <b style="color:'+(nb<0?"#c62828":"#0f6b5c")+'">'+fmtQ(nb)+" "+esc(itemUnit(item))+"</b>")},80)}
       else history.back()}
     if(type==="out"&&b-rec.qty<0){
-      openModal('<h3>⚠ Not enough in store</h3><p>Balance of <b dir="auto">'+esc(itemName(item))+'</b> is <b>'+fmtQ(b)+' '+esc(itemUnit(item))+'</b> and you are taking out <b>'+fmtQ(rec.qty)+'</b>.</p>'+
-        '<p>The balance will become <b style="color:#c62828">'+fmtQ(r3(b-rec.qty))+' '+esc(itemUnit(item))+'</b>.</p><p class="hint">This usually means an incoming delivery was not recorded.</p>'+
-        '<div class="acts"><button id="mY" class="dan">Save Anyway</button><button id="mN">Go Back</button></div>');
+      openModal('<h3>⚠ الكمية غير موجودة في المخزن</h3><p>رصيد <b dir="auto">'+esc(itemName(item))+'</b> هو <b>'+fmtQ(b)+' '+esc(itemUnit(item))+'</b> وأنت تُخرج <b>'+fmtQ(rec.qty)+'</b>.</p>'+
+        '<p>سيصبح الرصيد <b style="color:#c62828">'+fmtQ(r3(b-rec.qty))+' '+esc(itemUnit(item))+'</b>.</p><p class="hint">هذا يعني غالباً أن هناك داخل لم يُسجَّل.</p>'+
+        '<div class="acts"><button id="mY" class="dan">احفظ على أي حال</button><button id="mN">رجوع</button></div>');
       $("mN").onclick=closeModal;$("mY").onclick=function(){closeModal();commit()};return}
     commit()};
 }
@@ -394,15 +395,15 @@ function formView(t,type){
 /* ---------- buildings, floors and flats (typed by the user from the flat distribution plan) ---------- */
 function bldsView(){
   var bs=bldsSorted();
-  app.innerHTML='<div class="box"><h2>Buildings</h2><p class="hint" style="margin:-6px 0 8px">Add each building, then its floors and the flats of each floor.</p>'+
+  app.innerHTML='<div class="box"><h2>البنايات</h2><p class="hint" style="margin:-6px 0 8px">أضف كل بناية، ثم طوابقها، ثم شقق كل طابق.</p>'+
     (bs.length?bs.map(function(b){var nf=b.floors.length,nt=b.floors.reduce(function(a,f){return a+f.flats.length},0);
-      return'<div class="fl" data-b="'+b.id+'"><div><b dir="auto">'+esc(bldLabel(b))+'</b><br><span>'+nf+' floor'+(nf!==1?'s':'')+' · '+nt+' flat'+(nt!==1?'s':'')+'</span></div><div class="n">›</div></div>'}).join(""):'<p class="muted">No buildings yet.</p>')+
-    '<div class="row" style="margin-top:12px"><input type="text" id="nbN" dir="auto" placeholder="New building name or number"><button class="ok small" id="nbA">+ Add</button></div><p class="err" id="nbE"></p></div>'+
-    '<button class="big" id="bBack">Back</button>';
+      return'<div class="fl" data-b="'+b.id+'"><div><b dir="auto">'+esc(bldLabel(b))+'</b><br><span>'+nf+' طابق · '+nt+' شقة</span></div><div class="n">‹</div></div>'}).join(""):'<p class="muted">لا توجد بنايات بعد.</p>')+
+    '<div class="row" style="margin-top:12px"><input type="text" id="nbN" dir="auto" placeholder="اسم أو رقم البناية الجديدة"><button class="ok small" id="nbA">+ إضافة</button></div><p class="err" id="nbE"></p></div>'+
+    '<button class="big" id="bBack">رجوع</button>';
   each("#app .fl",function(el){el.onclick=function(){go("bld-"+el.getAttribute("data-b"))}});
   $("nbA").onclick=function(){var nm=clean($("nbN").value);
-    if(!nm){$("nbE").textContent="Enter the building name.";return}
-    if(S.blds.some(function(b){return b.name.toLowerCase()===nm.toLowerCase()})){$("nbE").textContent="This building already exists.";return}
+    if(!nm){$("nbE").textContent="اكتب اسم البناية.";return}
+    if(S.blds.some(function(b){return b.name.toLowerCase()===nm.toLowerCase()})){$("nbE").textContent="هذه البناية موجودة.";return}
     var b={id:newId("b"),name:nm,floors:[]};S.blds.push(b);save();go("bld-"+b.id)};
   $("bBack").onclick=function(){history.back()};
 }
@@ -411,31 +412,31 @@ function bldView(id){
   var b=bldById(id),fs=floorsOf(b),nums=fs.filter(function(f){return f.r>0&&f.r<5000}).map(function(f){return f.r}),hasG=fs.some(function(f){return f.r===0}),
     nB=fs.filter(function(f){return f.r<0}).length,hasV=fs.some(function(f){return f.r===10000}),nextN=nums.length?Math.max.apply(null,nums)+1:1;
   app.innerHTML='<div class="box"><h2 dir="auto">'+esc(bldLabel(b))+'</h2>'+
-    '<div class="row"><label>Name</label><input type="text" id="bN" dir="auto" value="'+esc(b.name)+'"><button class="small" id="bNS">Rename</button></div>'+
-    '<div class="grp">Floors ('+fs.length+')</div>'+
-    (fs.length?fs.map(function(f){var fl=flatsOf(f);return'<div class="fl" data-f="'+f.id+'"><div style="min-width:0"><b dir="auto">'+esc(f.name)+'</b><br><span dir="auto">'+(fl.length?fl.length+' flat'+(fl.length>1?'s':'')+': '+esc(fl.map(function(x){return x.name}).join(", ")):'No flats')+'</span></div><div class="n">›</div></div>'}).join(""):'<p class="muted">No floors yet. Add them below.</p>')+
-    '</div><div class="box"><h2>Add Floors</h2>'+
-    '<div class="three" style="margin-bottom:10px"><button class="small" id="aB">+ Basement'+(nB?' '+(nB+1):'')+'</button><button class="small" id="aG"'+(hasG?' disabled':'')+'>+ Ground Floor</button><button class="small" id="aV"'+(hasV?' disabled':'')+'>+ Rooftop Villa</button></div>'+
-    '<div class="row"><label>Floors</label><input type="text" id="aF" inputmode="numeric" value="'+nextN+'" style="max-width:70px"><span>to</span><input type="text" id="aT" inputmode="numeric" placeholder="e.g. 20" style="max-width:70px"><button class="ok small" id="aN">+ Add</button></div>'+
-    '<div class="row"><label>Other name</label><input type="text" id="aC" dir="auto" placeholder="e.g. Mezzanine"><button class="small" id="aCA">+ Add</button></div><p class="err" id="aE"></p></div>'+
-    '<button class="big" id="bDel" style="background:#fff;color:#d64545;border:2px solid #d64545;margin-bottom:8px">🗑 Delete Building</button><button class="big" id="bBack">Back</button>';
+    '<div class="row"><label>الاسم</label><input type="text" id="bN" dir="auto" value="'+esc(b.name)+'"><button class="small" id="bNS">تغيير الاسم</button></div>'+
+    '<div class="grp">الطوابق ('+fs.length+')</div>'+
+    (fs.length?fs.map(function(f){var fl=flatsOf(f);return'<div class="fl" data-f="'+f.id+'"><div style="min-width:0"><b dir="auto">'+esc(f.name)+'</b><br><span dir="auto">'+(fl.length?fl.length+' شقة: '+esc(fl.map(function(x){return x.name}).join("، ")):'بدون شقق')+'</span></div><div class="n">‹</div></div>'}).join(""):'<p class="muted">لا توجد طوابق بعد. أضفها من الأسفل.</p>')+
+    '</div><div class="box"><h2>إضافة طوابق</h2>'+
+    '<div class="three" style="margin-bottom:10px"><button class="small" id="aB">+ سرداب'+(nB?' '+(nB+1):'')+'</button><button class="small" id="aG"'+(hasG?' disabled':'')+'>+ طابق أرضي</button><button class="small" id="aV"'+(hasV?' disabled':'')+'>+ فيلا السطح</button></div>'+
+    '<div class="row"><label>الطوابق من</label><input type="text" id="aF" inputmode="numeric" value="'+nextN+'" style="max-width:70px"><span>إلى</span><input type="text" id="aT" inputmode="numeric" placeholder="مثلاً 20" style="max-width:70px"><button class="ok small" id="aN">+ إضافة</button></div>'+
+    '<div class="row"><label>اسم آخر</label><input type="text" id="aC" dir="auto" placeholder="مثلاً: ميزانين"><button class="small" id="aCA">+ إضافة</button></div><p class="err" id="aE"></p></div>'+
+    '<button class="big" id="bDel" style="background:#fff;color:#d64545;border:2px solid #d64545;margin-bottom:8px">🗑 حذف البناية</button><button class="big" id="bBack">رجوع</button>';
   function add(name,r){if(b.floors.some(function(f){return f.name.toLowerCase()===name.toLowerCase()}))return false;b.floors.push({id:newId("f"),name:name,r:r,flats:[]});return true}
   each("#app .fl",function(el){el.onclick=function(){floorModal(b,flById(b,el.getAttribute("data-f")))}});
   $("bNS").onclick=function(){var nm=clean($("bN").value);if(!nm)return;
-    if(S.blds.some(function(x){return x!==b&&x.name.toLowerCase()===nm.toLowerCase()})){info("Name in use","Another building already has this name.");return}b.name=nm;save();bldView(id)};
-  $("aB").onclick=function(){add(nB?"Basement "+(nB+1):"Basement",floorRank("bas",nB+1));save();bldView(id)};
-  $("aG").onclick=function(){add("Ground Floor",0);save();bldView(id)};
-  $("aV").onclick=function(){add("Rooftop Villa",10000);save();bldView(id)};
+    if(S.blds.some(function(x){return x!==b&&x.name.toLowerCase()===nm.toLowerCase()})){info("الاسم مستخدم","توجد بناية أخرى بنفس الاسم.");return}b.name=nm;save();bldView(id)};
+  $("aB").onclick=function(){add(nB?"سرداب "+(nB+1):"سرداب",floorRank("bas",nB+1));save();bldView(id)};
+  $("aG").onclick=function(){add("الطابق الأرضي",0);save();bldView(id)};
+  $("aV").onclick=function(){add("فيلا السطح",10000);save();bldView(id)};
   $("aN").onclick=function(){var a=parseQty($("aF").value),z=$("aT").value.trim()?parseQty($("aT").value):a,e=$("aE");
-    if(isNaN(a)||isNaN(z)||a<1||z<a||a%1||z%1){e.textContent="Enter whole floor numbers, e.g. 1 to 20.";return}
-    if(z-a>99){e.textContent="Too many floors at once.";return}
-    var n=0;for(var k=a;k<=z;k++)if(add("Floor "+k,k))n++;
-    if(!n){e.textContent="These floors already exist.";return}save();bldView(id)};
-  $("aCA").onclick=function(){var nm=clean($("aC").value);if(!nm){$("aE").textContent="Enter the floor name.";return}
-    if(!add(nm,5000)){$("aE").textContent="A floor with this name already exists.";return}save();bldView(id)};
+    if(isNaN(a)||isNaN(z)||a<1||z<a||a%1||z%1){e.textContent="اكتب أرقام طوابق صحيحة، مثلاً من 1 إلى 20.";return}
+    if(z-a>99){e.textContent="عدد كبير جداً من الطوابق مرة واحدة.";return}
+    var n=0;for(var k=a;k<=z;k++)if(add("الطابق "+k,k))n++;
+    if(!n){e.textContent="هذه الطوابق موجودة.";return}save();bldView(id)};
+  $("aCA").onclick=function(){var nm=clean($("aC").value);if(!nm){$("aE").textContent="اكتب اسم الطابق.";return}
+    if(!add(nm,5000)){$("aE").textContent="يوجد طابق بنفس الاسم.";return}save();bldView(id)};
   $("bDel").onclick=function(){var n=usesOf(function(t){return t.bld===id});
-    if(n){info("Cannot delete",esc(bldLabel(b))+" has "+n+" recorded movement"+(n>1?"s":"")+". It cannot be deleted.");return}
-    confirmBox("Delete "+esc(bldLabel(b))+"?","Its "+b.floors.length+" floors and their flats will be removed.","Delete","dan",function(){S.blds=S.blds.filter(function(x){return x!==b});save();history.back()})};
+    if(n){info("لا يمكن الحذف","على "+esc(bldLabel(b))+" "+n+" حركة مسجلة، لذلك لا يمكن حذفها.");return}
+    confirmBox("حذف "+esc(bldLabel(b))+"؟","ستُحذف طوابقها ("+b.floors.length+") مع شققها.","حذف","dan",function(){S.blds=S.blds.filter(function(x){return x!==b});save();history.back()})};
   $("bBack").onclick=function(){history.back()};
 }
 /* "301" on floor 3 becomes "401" on floor 4 */
@@ -444,40 +445,40 @@ function floorModal(b,f){
   var fl=flatsOf(f),isNum=f.r>0&&f.r<5000,usedF=usesOf(function(t){return t.bld===b.id&&t.fl===f.id});
   var looksNum=isNum&&fl.length&&fl.every(function(x){return renum(x.name,f.r,f.r+1)!==x.name});
   openModal('<h3 dir="auto">'+esc(bldLabel(b))+' · '+esc(f.name)+'</h3>'+
-    '<div class="row"><input type="text" id="fmN" dir="auto" value="'+esc(f.name)+'"><button class="small" id="fmNS">Rename</button></div>'+
-    '<div class="grp">Flats ('+fl.length+')</div><p class="hint" style="margin:0 0 6px">Tap a flat to rename or remove it.</p>'+
-    '<div class="chips" id="fmF" style="margin-bottom:10px">'+(fl.length?fl.map(function(x){return'<button data-t="'+x.id+'">'+esc(x.name)+'</button>'}).join(""):'<span class="muted">No flats on this floor.</span>')+'</div>'+
-    '<div class="row"><input type="text" id="fmA" dir="auto" placeholder="e.g. 301, 302, 303 or A, B, C"><button class="ok small" id="fmAB">+ Add</button></div>'+
-    (isNum&&fl.length?'<div class="grp">Copy these flats to other floors</div><div class="row"><span>Floors</span><input type="text" id="cpF" inputmode="numeric" value="'+(f.r+1)+'" style="max-width:64px"><span>to</span><input type="text" id="cpT" inputmode="numeric" style="max-width:64px"><button class="pri small" id="cpB">Copy</button></div>'+
-      '<label class="row" style="cursor:pointer"><input type="checkbox" id="cpR" style="width:22px;height:22px"'+(looksNum?' checked':'')+'> Renumber by floor ('+esc(fl[0].name)+' → '+esc(renum(fl[0].name,f.r,f.r+1))+')</label>':'')+
-    '<p class="err" id="fmE"></p><div class="acts"><button id="fmD" class="dan">Delete Floor</button><button id="mN">Close</button></div>');
+    '<div class="row"><input type="text" id="fmN" dir="auto" value="'+esc(f.name)+'"><button class="small" id="fmNS">تغيير الاسم</button></div>'+
+    '<div class="grp">الشقق ('+fl.length+')</div><p class="hint" style="margin:0 0 6px">اضغط على شقة لتغيير اسمها أو حذفها.</p>'+
+    '<div class="chips" id="fmF" style="margin-bottom:10px">'+(fl.length?fl.map(function(x){return'<button data-t="'+x.id+'">'+esc(x.name)+'</button>'}).join(""):'<span class="muted">لا توجد شقق في هذا الطابق.</span>')+'</div>'+
+    '<div class="row"><input type="text" id="fmA" dir="auto" placeholder="مثلاً: 301، 302، 303 أو A، B، C"><button class="ok small" id="fmAB">+ إضافة</button></div>'+
+    (isNum&&fl.length?'<div class="grp">نسخ هذه الشقق إلى طوابق أخرى</div><div class="row"><span>من الطابق</span><input type="text" id="cpF" inputmode="numeric" value="'+(f.r+1)+'" style="max-width:64px"><span>إلى</span><input type="text" id="cpT" inputmode="numeric" style="max-width:64px"><button class="pri small" id="cpB">نسخ</button></div>'+
+      '<label class="row" style="cursor:pointer"><input type="checkbox" id="cpR" style="width:22px;height:22px"'+(looksNum?' checked':'')+'> ترقيم حسب الطابق ('+esc(fl[0].name)+' ← '+esc(renum(fl[0].name,f.r,f.r+1))+')</label>':'')+
+    '<p class="err" id="fmE"></p><div class="acts"><button id="fmD" class="dan">حذف الطابق</button><button id="mN">إغلاق</button></div>');
   function again(){save();floorModal(b,f);bldViewQuiet()}
   function bldViewQuiet(){if(location.hash==="#bld-"+b.id){var sy=scrollY;bldView(b.id);scrollTo(0,sy)}}
   $("mN").onclick=closeModal;
   $("fmNS").onclick=function(){var nm=clean($("fmN").value);if(!nm)return;
-    if(b.floors.some(function(x){return x!==f&&x.name.toLowerCase()===nm.toLowerCase()})){$("fmE").textContent="Another floor has this name.";return}f.name=nm;again()};
+    if(b.floors.some(function(x){return x!==f&&x.name.toLowerCase()===nm.toLowerCase()})){$("fmE").textContent="يوجد طابق آخر بنفس الاسم.";return}f.name=nm;again()};
   $("fmAB").onclick=function(){var names=clean($("fmA").value).split(/[,،;؛\n]+/).map(function(x){return x.trim()}).filter(Boolean),n=0;
     names.forEach(function(nm){if(!f.flats.some(function(x){return x.name.toLowerCase()===nm.toLowerCase()})){f.flats.push({id:newId("x"),name:nm});n++}});
-    if(!n){$("fmE").textContent=names.length?"These flats already exist.":"Type the flat names separated by commas.";return}again()};
+    if(!n){$("fmE").textContent=names.length?"هذه الشقق موجودة.":"اكتب أسماء الشقق مفصولة بفواصل.";return}again()};
   each("#fmF button",function(x){x.onclick=function(){var ft=flatById(f,x.getAttribute("data-t"));flatModal(b,f,ft)}});
   var cp=$("cpB");if(cp)cp.onclick=function(){var a=parseQty($("cpF").value),z=$("cpT").value.trim()?parseQty($("cpT").value):a,rn=$("cpR").checked,e=$("fmE");
-    if(isNaN(a)||isNaN(z)||z<a){e.textContent="Enter the floor numbers to copy to.";return}
+    if(isNaN(a)||isNaN(z)||z<a){e.textContent="اكتب أرقام الطوابق التي تريد النسخ إليها.";return}
     var targets=b.floors.filter(function(x){return x!==f&&x.r>=a&&x.r<=z&&x.r<5000});
-    if(!targets.length){e.textContent="No numbered floors in that range. Add the floors first.";return}
+    if(!targets.length){e.textContent="لا توجد طوابق بهذه الأرقام. أضف الطوابق أولاً.";return}
     var n=0;targets.forEach(function(tf){f.flats.forEach(function(x){var nm=rn?renum(x.name,f.r,tf.r):x.name;
       if(!tf.flats.some(function(y){return y.name.toLowerCase()===nm.toLowerCase()})){tf.flats.push({id:newId("x"),name:nm});n++}})});
-    save();bldViewQuiet();info("✓ Copied",n+" flat"+(n!==1?"s":"")+" added to "+targets.length+" floor"+(targets.length>1?"s":"")+". Flats that already existed were left as they are.")};
-  $("fmD").onclick=function(){if(usedF){$("fmE").textContent="This floor has "+usedF+" recorded movement"+(usedF>1?"s":"")+" and cannot be deleted.";return}
+    save();bldViewQuiet();info("✓ تم النسخ","أُضيفت "+n+" شقة إلى "+targets.length+" طابق. الشقق الموجودة سابقاً بقيت كما هي.")};
+  $("fmD").onclick=function(){if(usedF){$("fmE").textContent="على هذا الطابق "+usedF+" حركة مسجلة، لذلك لا يمكن حذفه.";return}
     b.floors=b.floors.filter(function(x){return x!==f});save();closeModal();bldViewQuiet()};
 }
 function flatModal(b,f,ft){
   var used=usesOf(function(t){return t.bld===b.id&&t.fl===f.id&&t.flat===ft.id});
-  openModal('<h3 dir="auto">Flat '+esc(ft.name)+' · '+esc(f.name)+'</h3><div class="row"><input type="text" id="ftN" dir="auto" value="'+esc(ft.name)+'"></div>'+
-    (used?'<p class="hint">'+used+' movement'+(used>1?'s':'')+' recorded for this flat. Renaming keeps them; deleting is not possible.</p>':'')+
-    '<p class="err" id="ftE"></p><div class="acts"><button id="ftS" class="ok">Rename</button>'+(used?'':'<button id="ftD" class="dan">Delete</button>')+'<button id="ftB">Back</button></div>');
+  openModal('<h3 dir="auto">شقة '+esc(ft.name)+' · '+esc(f.name)+'</h3><div class="row"><input type="text" id="ftN" dir="auto" value="'+esc(ft.name)+'"></div>'+
+    (used?'<p class="hint">على هذه الشقة '+used+' حركة مسجلة. تغيير الاسم يحافظ عليها، والحذف غير ممكن.</p>':'')+
+    '<p class="err" id="ftE"></p><div class="acts"><button id="ftS" class="ok">تغيير الاسم</button>'+(used?'':'<button id="ftD" class="dan">حذف</button>')+'<button id="ftB">رجوع</button></div>');
   $("ftB").onclick=function(){floorModal(b,f)};
   $("ftS").onclick=function(){var nm=clean($("ftN").value);if(!nm)return;
-    if(f.flats.some(function(x){return x!==ft&&x.name.toLowerCase()===nm.toLowerCase()})){$("ftE").textContent="Another flat on this floor has this name.";return}
+    if(f.flats.some(function(x){return x!==ft&&x.name.toLowerCase()===nm.toLowerCase()})){$("ftE").textContent="توجد شقة أخرى في هذا الطابق بنفس الاسم.";return}
     ft.name=nm;save();floorModal(b,f);if(location.hash==="#bld-"+b.id)bldView(b.id)};
   var d=$("ftD");if(d)d.onclick=function(){f.flats=f.flats.filter(function(x){return x!==ft});save();floorModal(b,f);if(location.hash==="#bld-"+b.id)bldView(b.id)};
 }
@@ -488,32 +489,32 @@ function inRange(t,from,to){return(!from||t.date>=from)&&(!to||t.date<=to)}
 /* net consumption per material for the movements that pass "f" */
 function consume(f){var m={};S.tx.forEach(function(t){if((t.type!=="out"&&t.type!=="ret")||!f(t))return;m[t.item]=r3((m[t.item]||0)+(t.type==="out"?t.qty:-t.qty))});return m}
 function matList(m){return Object.keys(m).filter(function(k){return m[k]!==0}).sort(function(a,b){return byName(itemName(a),itemName(b))})}
-function kvMat(m,cls){var ks=matList(m);if(!ks.length)return'<p class="muted" style="margin:4px 0 4px 8px">Nothing.</p>';
+function kvMat(m,cls){var ks=matList(m);if(!ks.length)return'<p class="muted" style="margin:4px 8px 4px 0">لا شيء.</p>';
   return ks.map(function(k){return'<div class="kv'+(cls?" "+cls:"")+'"><span dir="auto">'+esc(itemName(k))+'</span><b>'+fmtQ(m[k])+' '+esc(itemUnit(k))+'</b></div>'}).join("")}
 function repView(){
   var bs=bldsSorted();if(RF.bld&&!bldById(RF.bld))RF.bld="";
   var b=bldById(RF.bld);if(RF.fl&&!flById(b,RF.fl))RF.fl="";var f=flById(b,RF.fl);
-  var h='<div class="box"><h2>Consumption Report</h2>'+
-    '<div class="row"><label>Building</label><select id="rB"><option value="">All buildings</option>'+bs.map(function(x){return'<option value="'+x.id+'"'+(x.id===RF.bld?' selected':'')+'>'+esc(bldLabel(x))+'</option>'}).join("")+'</select></div>'+
-    (b?'<div class="row"><label>Floor</label><select id="rF"><option value="">All floors</option>'+floorsOf(b).map(function(x){return'<option value="'+x.id+'"'+(x.id===RF.fl?' selected':'')+'>'+esc(x.name)+'</option>'}).join("")+'</select></div>':'')+
-    (f?'<div class="row"><label>Flat</label><select id="rT"><option value="*">All flats</option><option value=""'+(RF.flat===""?' selected':'')+'>Whole floor (general)</option>'+flatsOf(f).map(function(x){return'<option value="'+x.id+'"'+(x.id===RF.flat?' selected':'')+'>Flat '+esc(x.name)+'</option>'}).join("")+'</select></div>':'')+
-    '<div class="row"><label>From</label><input type="date" id="rFr" value="'+RF.from+'"></div><div class="row"><label>To</label><input type="date" id="rTo" value="'+RF.to+'"></div>'+
-    '<p class="hint" style="margin:-4px 0 0">Leave the dates empty for all time. Quantities are outgoing minus returns.</p></div><div class="box" id="rOut"></div>'+
-    '<div class="two"><button class="pri" id="rPr">🖨 Print this report</button><button id="rBack">Back</button></div>';
+  var h='<div class="box"><h2>تقرير الاستهلاك</h2>'+
+    '<div class="row"><label>البناية</label><select id="rB"><option value="">كل البنايات</option>'+bs.map(function(x){return'<option value="'+x.id+'"'+(x.id===RF.bld?' selected':'')+'>'+esc(bldLabel(x))+'</option>'}).join("")+'</select></div>'+
+    (b?'<div class="row"><label>الطابق</label><select id="rF"><option value="">كل الطوابق</option>'+floorsOf(b).map(function(x){return'<option value="'+x.id+'"'+(x.id===RF.fl?' selected':'')+'>'+esc(x.name)+'</option>'}).join("")+'</select></div>':'')+
+    (f?'<div class="row"><label>الشقة</label><select id="rT"><option value="*">كل الشقق</option><option value=""'+(RF.flat===""?' selected':'')+'>عام للطابق</option>'+flatsOf(f).map(function(x){return'<option value="'+x.id+'"'+(x.id===RF.flat?' selected':'')+'>شقة '+esc(x.name)+'</option>'}).join("")+'</select></div>':'')+
+    '<div class="row"><label>من</label><input type="date" id="rFr" value="'+RF.from+'"></div><div class="row"><label>إلى</label><input type="date" id="rTo" value="'+RF.to+'"></div>'+
+    '<p class="hint" style="margin:-4px 0 0">اترك التاريخ فارغاً لكل المدة. الكميات = الخارج ناقص الإرجاع.</p></div><div class="box" id="rOut"></div>'+
+    '<div class="two"><button class="pri" id="rPr">🖨 طباعة هذا التقرير</button><button id="rBack">رجوع</button></div>';
   app.innerHTML=h;
   function rd(){RF.from=$("rFr").value;RF.to=$("rTo").value;var o="",fr=RF.from,to=RF.to;
-    if(!b){o='<h2>All buildings</h2>';var all=consume(function(t){return inRange(t,fr,to)});o+='<div class="grp">Total</div>'+kvMat(all);
+    if(!b){o='<h2>كل البنايات</h2>';var all=consume(function(t){return inRange(t,fr,to)});o+='<div class="grp">المجموع</div>'+kvMat(all);
       bs.forEach(function(x){o+='<div class="grp">'+esc(bldLabel(x))+'</div>'+kvMat(consume(function(t){return t.bld===x.id&&inRange(t,fr,to)}))})}
-    else if(!f){o='<h2 dir="auto">'+esc(bldLabel(b))+'</h2><div class="grp">Building total</div>'+kvMat(consume(function(t){return t.bld===b.id&&inRange(t,fr,to)}));
-      var g=consume(function(t){return t.bld===b.id&&!t.fl&&inRange(t,fr,to)});if(matList(g).length)o+='<div class="grp">Whole building (general)</div>'+kvMat(g);
+    else if(!f){o='<h2 dir="auto">'+esc(bldLabel(b))+'</h2><div class="grp">مجموع البناية</div>'+kvMat(consume(function(t){return t.bld===b.id&&inRange(t,fr,to)}));
+      var g=consume(function(t){return t.bld===b.id&&!t.fl&&inRange(t,fr,to)});if(matList(g).length)o+='<div class="grp">عام للبناية</div>'+kvMat(g);
       floorsOf(b).forEach(function(x){var m=consume(function(t){return t.bld===b.id&&t.fl===x.id&&inRange(t,fr,to)});if(matList(m).length)o+='<div class="grp">'+esc(x.name)+'</div>'+kvMat(m)})}
     else{o='<h2 dir="auto">'+esc(bldLabel(b))+' · '+esc(f.name)+'</h2>';
       var base=function(t){return t.bld===b.id&&t.fl===f.id&&inRange(t,fr,to)};
-      if(RF.flat==="*"){o+='<div class="grp">Floor total</div>'+kvMat(consume(base));
-        var g2=consume(function(t){return base(t)&&!t.flat});if(matList(g2).length)o+='<div class="grp">Whole floor (general)</div>'+kvMat(g2);
-        flatsOf(f).forEach(function(x){var m=consume(function(t){return base(t)&&t.flat===x.id});if(matList(m).length)o+='<div class="grp">Flat '+esc(x.name)+'</div>'+kvMat(m)})}
-      else{var ft=flatById(f,RF.flat);o+='<div class="grp">'+(ft?'Flat '+esc(ft.name):'Whole floor (general)')+'</div>'+kvMat(consume(function(t){return base(t)&&t.flat===RF.flat}))}}
-    if(!S.tx.some(function(t){return t.type==="out"}))o+='<p class="muted">No outgoing movements recorded yet.</p>';
+      if(RF.flat==="*"){o+='<div class="grp">مجموع الطابق</div>'+kvMat(consume(base));
+        var g2=consume(function(t){return base(t)&&!t.flat});if(matList(g2).length)o+='<div class="grp">عام للطابق</div>'+kvMat(g2);
+        flatsOf(f).forEach(function(x){var m=consume(function(t){return base(t)&&t.flat===x.id});if(matList(m).length)o+='<div class="grp">شقة '+esc(x.name)+'</div>'+kvMat(m)})}
+      else{var ft=flatById(f,RF.flat);o+='<div class="grp">'+(ft?'شقة '+esc(ft.name):'عام للطابق')+'</div>'+kvMat(consume(function(t){return base(t)&&t.flat===RF.flat}))}}
+    if(!S.tx.some(function(t){return t.type==="out"}))o+='<p class="muted">لا توجد حركات خارج بعد.</p>';
     $("rOut").innerHTML=o}
   rd();
   $("rB").onchange=function(){RF.bld=$("rB").value;RF.fl="";RF.flat="*";repView()};
@@ -527,18 +528,18 @@ function repView(){
 /* ---------- records with filters ---------- */
 var LF={type:"",item:"",bld:"",from:"",to:"",q:""};
 function logView(){
-  app.innerHTML='<div class="box"><h2>Records</h2>'+
-    '<div class="seg" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px" id="lT">'+[["","All"],["in","In"],["out","Out"],["ret","Return"],["adj","Count"]].map(function(k){return'<button data-k="'+k[0]+'" class="'+(LF.type===k[0]?"on":"")+'">'+k[1]+'</button>'}).join("")+'</div>'+
-    '<div class="row"><label>Material</label><select id="lI"><option value="">All materials</option>'+itemsSorted().map(function(i){return'<option value="'+i.id+'"'+(i.id===LF.item?' selected':'')+'>'+esc(i.name)+'</option>'}).join("")+'</select></div>'+
-    '<div class="row"><label>Building</label><select id="lB"><option value="">All buildings</option>'+bldsSorted().map(function(b){return'<option value="'+b.id+'"'+(b.id===LF.bld?' selected':'')+'>'+esc(bldLabel(b))+'</option>'}).join("")+'</select></div>'+
-    '<div class="row"><label>From</label><input type="date" id="lF" value="'+LF.from+'"></div><div class="row"><label>To</label><input type="date" id="lTo" value="'+LF.to+'"></div>'+
-    '<input type="text" id="lQ" dir="auto" placeholder="🔍 Search supplier, receiver, note, receipt" value="'+esc(LF.q)+'" style="width:100%"></div>'+
-    '<div class="box" id="lOut"></div><button class="big" id="lBack">Back</button>';
+  app.innerHTML='<div class="box"><h2>السجل</h2>'+
+    '<div class="seg" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px" id="lT">'+[["","الكل"],["in","داخل"],["out","خارج"],["ret","إرجاع"],["adj","جرد"]].map(function(k){return'<button data-k="'+k[0]+'" class="'+(LF.type===k[0]?"on":"")+'">'+k[1]+'</button>'}).join("")+'</div>'+
+    '<div class="row"><label>المادة</label><select id="lI"><option value="">كل المواد</option>'+itemsSorted().map(function(i){return'<option value="'+i.id+'"'+(i.id===LF.item?' selected':'')+'>'+esc(i.name)+'</option>'}).join("")+'</select></div>'+
+    '<div class="row"><label>البناية</label><select id="lB"><option value="">كل البنايات</option>'+bldsSorted().map(function(b){return'<option value="'+b.id+'"'+(b.id===LF.bld?' selected':'')+'>'+esc(bldLabel(b))+'</option>'}).join("")+'</select></div>'+
+    '<div class="row"><label>من</label><input type="date" id="lF" value="'+LF.from+'"></div><div class="row"><label>إلى</label><input type="date" id="lTo" value="'+LF.to+'"></div>'+
+    '<input type="text" id="lQ" dir="auto" placeholder="🔍 بحث: مورّد، مستلم، ملاحظة، وصل" value="'+esc(LF.q)+'" style="width:100%"></div>'+
+    '<div class="box" id="lOut"></div><button class="big" id="lBack">رجوع</button>';
   function rd(){LF.item=$("lI").value;LF.bld=$("lB").value;LF.from=$("lF").value;LF.to=$("lTo").value;LF.q=$("lQ").value.trim().toLowerCase();
     var list=sorted().reverse().filter(function(t){return(!LF.type||t.type===LF.type)&&(!LF.item||t.item===LF.item)&&(!LF.bld||t.bld===LF.bld)&&inRange(t,LF.from,LF.to)&&
       (!LF.q||[t.sup,t.who,t.note,t.rcpt,itemName(t.item)].join(" ").toLowerCase().indexOf(LF.q)>=0)});
-    var sm="";if(LF.item){var s=0;list.forEach(function(t){s=r3(s+(LF.type?Math.abs(t.qty):sgn(t)))});sm='<div class="kv"><span>'+(LF.type?"Total":"Net")+' quantity</span><b>'+fmtQ(s)+' '+esc(itemUnit(LF.item))+'</b></div>'}
-    $("lOut").innerHTML='<p class="muted" style="margin-top:0">'+list.length+' movement'+(list.length!==1?'s':'')+(list.length>300?' (showing the latest 300)':'')+'</p>'+sm+list.slice(0,300).map(function(t){return txRow(t)}).join("");bindRows()}
+    var sm="";if(LF.item){var s=0;list.forEach(function(t){s=r3(s+(LF.type?Math.abs(t.qty):sgn(t)))});sm='<div class="kv"><span>'+(LF.type?"مجموع":"صافي")+' الكمية</span><b>'+fmtQ(s)+' '+esc(itemUnit(LF.item))+'</b></div>'}
+    $("lOut").innerHTML='<p class="muted" style="margin-top:0">'+list.length+' حركة'+(list.length>300?' (يُعرض آخر 300)':'')+'</p>'+sm+list.slice(0,300).map(function(t){return txRow(t)}).join("");bindRows()}
   rd();
   each("#lT button",function(x){x.onclick=function(){LF.type=x.getAttribute("data-k");each("#lT button",function(y){y.classList.toggle("on",y===x)});rd()}});
   $("lI").onchange=rd;$("lB").onchange=rd;$("lF").onchange=rd;$("lTo").onchange=rd;$("lQ").oninput=rd;
@@ -548,7 +549,7 @@ function logView(){
 /* ---------- printing (A4 landscape sheets, same layout as the other SATCON apps) ---------- */
 var PAGE_W=1062,PAGE_H=733,TOP_H=74,TH_H=30,FT_H=22,ROW_H=22;
 var PF={kind:"bal",item:"",bld:"",fl:"",flat:"*",from:"",to:""};
-var PK={bal:"Stock Balances",in:"Incoming Materials",out:"Outgoing Materials",ret:"Returned Materials",card:"Material Card",rep:"Consumption Report"};
+var PK={bal:"أرصدة المخزن",in:"المواد الداخلة",out:"المواد الخارجة",ret:"المواد المُرجعة",card:"كارت مادة",rep:"تقرير الاستهلاك"};
 function monthRange(off){var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+off);var a=isoDate(d);d.setMonth(d.getMonth()+1);d.setDate(0);return[a,isoDate(d)]}
 function nC(v,cls){return'<td class="n'+(cls?" "+cls:"")+(typeof v==="number"&&v<0?" neg":"")+'">'+(v===""||v==null?"":fmtQ(v))+'</td>'}
 function tC(v,l){return'<td'+(l?' class="l"':'')+' dir="auto">'+esc(v)+'</td>'}
@@ -559,81 +560,81 @@ function paginate(o){
   if(used+lastH>cap&&cur.length){pages.push(cur);cur=[];used=0}
   (o.last||[]).forEach(function(r){cur.push(r)});pages.push(cur);
   var N=pages.length,printed=fmtDate(today());
-  var per=o.per||(!o.from?'Up to <b>'+fmtDate(o.to)+'</b>':o.from===o.to?'Date: <b>'+fmtDate(o.from)+'</b>':'From <b>'+fmtDate(o.from)+'</b> to <b>'+fmtDate(o.to)+'</b>');
+  var per=o.per||(!o.from?'حتى <b>'+fmtDate(o.to)+'</b>':o.from===o.to?'التاريخ: <b>'+fmtDate(o.from)+'</b>':'من <b>'+fmtDate(o.from)+'</b> إلى <b>'+fmtDate(o.to)+'</b>');
   return pages.map(function(pg,pi){
     return'<div class="sheet page" style="width:'+PAGE_W+'px">'+
       '<div class="hdr" style="height:'+(TOP_H-8)+'px"><div class="logo">SATCON</div><div class="ttl"><b>'+o.title+'</b><span dir="auto">'+esc(o.sub||S.project||"")+'</span></div>'+
       '<div class="per"><div>'+per+'</div></div></div>'+
       '<table>'+o.colg+o.head+pg.map(function(r){return r.html}).join("")+'</table>'+
-      '<div class="ft"><span>Printed on: '+printed+'</span><span>Page '+(pi+1)+' of '+N+'</span></div></div>'});
+      '<div class="ft"><span>تاريخ الطباعة: '+printed+'</span><span>صفحة '+(pi+1)+' من '+N+'</span></div></div>'});
 }
 function txRange(type){return sorted().filter(function(t){return t.type===type&&inRange(t,PF.from,PF.to)&&(type==="in"||!PF.bld||(t.bld===PF.bld&&(!PF.fl||(t.fl===PF.fl&&(PF.flat==="*"||t.flat===PF.flat)))))})}
-function placeParts(t){var b=bldById(t.bld),f=flById(b,t.fl),x=flatById(f,t.flat);return[b?b.name:"?",t.fl?(f?f.name:"?"):"Whole building",t.fl?(t.flat?(x?x.name:"?"):"Whole floor"):""]}
-function scopeText(){var b=bldById(PF.bld);if(!b)return S.project||"";var f=flById(b,PF.fl),s=bldLabel(b);if(f){s+=" · "+f.name;if(PF.flat!=="*"){var x=flatById(f,PF.flat);s+=" · "+(x?"Flat "+x.name:"Whole floor (general)")}}return s}
+function placeParts(t){var b=bldById(t.bld),f=flById(b,t.fl),x=flatById(f,t.flat);return[b?b.name:"?",t.fl?(f?f.name:"?"):"عام للبناية",t.fl?(t.flat?(x?x.name:"?"):"عام للطابق"):""]}
+function scopeText(){var b=bldById(PF.bld);if(!b)return S.project||"";var f=flById(b,PF.fl),s=bldLabel(b);if(f){s+=" · "+f.name;if(PF.flat!=="*"){var x=flatById(f,PF.flat);s+=" · "+(x?"شقة "+x.name:"عام للطابق")}}return s}
 function makePages(){var k=PF.kind,rows=[],last=[];
   if(k==="bal"){var bal=balances(addDays(PF.to,1));
     itemsSorted().forEach(function(i,n){rows.push({html:'<tr><td>'+(n+1)+'</td>'+tC(i.name,1)+tC(i.unit)+nC(bal[i.id],"")+'</tr>'})});
-    if(!rows.length)rows.push({html:'<tr><td colspan="4">No materials</td></tr>'});
-    return paginate({title:PK.bal,per:'Balances as of <b>'+fmtDate(PF.to)+'</b>',rows:rows,
-      colg:'<colgroup><col style="width:44px"><col><col style="width:140px"><col style="width:180px"></colgroup>',head:'<tr><th>No.</th><th>Material</th><th>Unit</th><th>Balance in Store</th></tr>'})}
+    if(!rows.length)rows.push({html:'<tr><td colspan="4">لا توجد مواد</td></tr>'});
+    return paginate({title:PK.bal,per:'الأرصدة بتاريخ <b>'+fmtDate(PF.to)+'</b>',rows:rows,
+      colg:'<colgroup><col style="width:44px"><col><col style="width:140px"><col style="width:180px"></colgroup>',head:'<tr><th>ت</th><th>المادة</th><th>الوحدة</th><th>الرصيد في المخزن</th></tr>'})}
   if(k==="in"){var L=txRange("in"),tot={};
     L.forEach(function(t,n){tot[t.item]=r3((tot[t.item]||0)+t.qty);rows.push({html:'<tr><td>'+(n+1)+'</td><td>'+fmtDate(t.date)+'</td>'+tC(itemName(t.item),1)+tC(itemUnit(t.item))+nC(t.qty)+tC(t.sup,1)+tC(t.rcpt)+tC(t.note,1)+'</tr>'})});
-    if(!L.length)rows.push({html:'<tr><td colspan="8">No incoming materials in this period</td></tr>'});
-    matList(tot).forEach(function(i){last.push({html:'<tr class="tot"><td colspan="2">Total</td>'+tC(itemName(i),1)+tC(itemUnit(i))+nC(tot[i])+'<td colspan="3"></td></tr>'})});
+    if(!L.length)rows.push({html:'<tr><td colspan="8">لا توجد مواد داخلة في هذه الفترة</td></tr>'});
+    matList(tot).forEach(function(i){last.push({html:'<tr class="tot"><td colspan="2">المجموع</td>'+tC(itemName(i),1)+tC(itemUnit(i))+nC(tot[i])+'<td colspan="3"></td></tr>'})});
     return paginate({title:PK.in,from:PF.from,to:PF.to,rows:rows,last:last,
       colg:'<colgroup><col style="width:40px"><col style="width:84px"><col style="width:190px"><col style="width:70px"><col style="width:90px"><col style="width:170px"><col style="width:90px"><col></colgroup>',
-      head:'<tr><th>No.</th><th>Date</th><th>Material</th><th>Unit</th><th>Quantity</th><th>Supplier</th><th>Receipt No.</th><th>Note</th></tr>'})}
+      head:'<tr><th>ت</th><th>التاريخ</th><th>المادة</th><th>الوحدة</th><th>الكمية</th><th>المورّد</th><th>رقم الوصل</th><th>ملاحظة</th></tr>'})}
   if(k==="out"||k==="ret"){var L2=txRange(k),tot2={};
     L2.forEach(function(t,n){var p=placeParts(t);tot2[t.item]=r3((tot2[t.item]||0)+t.qty);
       rows.push({html:'<tr><td>'+(n+1)+'</td><td>'+fmtDate(t.date)+'</td>'+tC(itemName(t.item),1)+tC(itemUnit(t.item))+nC(t.qty)+tC(p[0])+tC(p[1])+tC(p[2])+tC(t.who,1)+tC(t.note,1)+'</tr>'})});
-    if(!L2.length)rows.push({html:'<tr><td colspan="10">Nothing in this period</td></tr>'});
-    matList(tot2).forEach(function(i){last.push({html:'<tr class="tot"><td colspan="2">Total</td>'+tC(itemName(i),1)+tC(itemUnit(i))+nC(tot2[i])+'<td colspan="5"></td></tr>'})});
+    if(!L2.length)rows.push({html:'<tr><td colspan="10">لا شيء في هذه الفترة</td></tr>'});
+    matList(tot2).forEach(function(i){last.push({html:'<tr class="tot"><td colspan="2">المجموع</td>'+tC(itemName(i),1)+tC(itemUnit(i))+nC(tot2[i])+'<td colspan="5"></td></tr>'})});
     return paginate({title:PK[k],sub:scopeText(),from:PF.from,to:PF.to,rows:rows,last:last,
       colg:'<colgroup><col style="width:36px"><col style="width:80px"><col style="width:170px"><col style="width:62px"><col style="width:80px"><col style="width:80px"><col style="width:100px"><col style="width:80px"><col style="width:130px"><col></colgroup>',
-      head:'<tr><th>No.</th><th>Date</th><th>Material</th><th>Unit</th><th>Quantity</th><th>Building</th><th>Floor</th><th>Flat</th><th>'+(k==="out"?"Received by":"Returned by")+'</th><th>Note</th></tr>'})}
+      head:'<tr><th>ت</th><th>التاريخ</th><th>المادة</th><th>الوحدة</th><th>الكمية</th><th>البناية</th><th>الطابق</th><th>الشقة</th><th>'+(k==="out"?"المستلم":"أرجعها")+'</th><th>ملاحظة</th></tr>'})}
   if(k==="card"){var it=itemById(PF.item),open=0,run;if(!it)return[];
     S.tx.forEach(function(t){if(t.item===it.id&&PF.from&&t.date<PF.from)open=r3(open+sgn(t))});run=open;
-    if(PF.from)rows.push({html:'<tr class="g"><td colspan="6">Balance brought forward before '+fmtDate(PF.from)+'</td>'+nC(open)+'</tr>'});
+    if(PF.from)rows.push({html:'<tr class="g"><td colspan="6">الرصيد المدوّر قبل '+fmtDate(PF.from)+'</td>'+nC(open)+'</tr>'});
     sorted().forEach(function(t){if(t.item!==it.id||!inRange(t,PF.from,PF.to))return;run=r3(run+sgn(t));
-      var d=t.type==="in"?[t.sup,t.rcpt?"Rcpt "+t.rcpt:"",t.note].filter(Boolean).join(" · "):t.type==="adj"?"Stock count: "+fmtQ(t.cnt)+(t.note?" · "+t.note:""):place(t,true)+(t.who?" · "+t.who:"")+(t.note?" · "+t.note:"");
+      var d=t.type==="in"?[t.sup,t.rcpt?"وصل "+t.rcpt:"",t.note].filter(Boolean).join(" · "):t.type==="adj"?"الجرد: "+fmtQ(t.cnt)+(t.note?" · "+t.note:""):place(t,true)+(t.who?" · "+t.who:"")+(t.note?" · "+t.note:"");
       rows.push({html:'<tr><td>'+fmtDate(t.date)+'</td>'+tC(TL[t.type])+tC(d,1)+nC(t.type==="in"||t.type==="ret"||(t.type==="adj"&&t.qty>0)?Math.abs(t.qty):"")+nC(t.type==="out"||(t.type==="adj"&&t.qty<0)?Math.abs(t.qty):"")+'<td></td>'+nC(run)+'</tr>'})});
-    last.push({html:'<tr class="tot"><td colspan="6">Balance at '+fmtDate(PF.to)+'</td>'+nC(run)+'</tr>'});
+    last.push({html:'<tr class="tot"><td colspan="6">الرصيد بتاريخ '+fmtDate(PF.to)+'</td>'+nC(run)+'</tr>'});
     return paginate({title:PK.card+': '+esc(it.name)+' ('+esc(it.unit)+')',from:PF.from,to:PF.to,rows:rows,last:last,
       colg:'<colgroup><col style="width:84px"><col style="width:90px"><col><col style="width:100px"><col style="width:100px"><col style="width:0"><col style="width:110px"></colgroup>',
-      head:'<tr><th>Date</th><th>Type</th><th>Details</th><th>In</th><th>Out</th><th></th><th>Balance</th></tr>'})}
+      head:'<tr><th>التاريخ</th><th>النوع</th><th>التفاصيل</th><th>داخل</th><th>خارج</th><th></th><th>الرصيد</th></tr>'})}
   if(k==="rep"){var b=bldById(PF.bld),fr=PF.from,to=PF.to,grp=function(title,m){var ks=matList(m);if(!ks.length)return;rows.push({html:'<tr class="g"><td colspan="3" dir="auto">'+esc(title)+'</td></tr>'});
       ks.forEach(function(i){rows.push({html:'<tr>'+tC(itemName(i),1)+tC(itemUnit(i))+nC(m[i])+'</tr>'})})};
     var f=flById(b,PF.fl),scope=function(t){return inRange(t,fr,to)&&(!b||t.bld===b.id)&&(!f||t.fl===f.id)&&(!f||PF.flat==="*"||t.flat===PF.flat)};
     if(!b)bldsSorted().forEach(function(x){grp(bldLabel(x),consume(function(t){return t.bld===x.id&&inRange(t,fr,to)}))});
-    else if(!f){grp("Whole building (general)",consume(function(t){return scope(t)&&!t.fl}));floorsOf(b).forEach(function(x){grp(x.name,consume(function(t){return scope(t)&&t.fl===x.id}))})}
-    else if(PF.flat==="*"){grp("Whole floor (general)",consume(function(t){return scope(t)&&!t.flat}));flatsOf(f).forEach(function(x){grp("Flat "+x.name,consume(function(t){return scope(t)&&t.flat===x.id}))})}
-    else grp(PF.flat?"Flat "+(flatById(f,PF.flat)||{}).name:"Whole floor (general)",consume(scope));
-    if(!rows.length)rows.push({html:'<tr><td colspan="3">Nothing consumed in this period</td></tr>'});
-    var all=consume(scope);rows.push({html:'<tr class="g"><td colspan="3">TOTAL</td></tr>'});
+    else if(!f){grp("عام للبناية",consume(function(t){return scope(t)&&!t.fl}));floorsOf(b).forEach(function(x){grp(x.name,consume(function(t){return scope(t)&&t.fl===x.id}))})}
+    else if(PF.flat==="*"){grp("عام للطابق",consume(function(t){return scope(t)&&!t.flat}));flatsOf(f).forEach(function(x){grp("شقة "+x.name,consume(function(t){return scope(t)&&t.flat===x.id}))})}
+    else grp(PF.flat?"شقة "+(flatById(f,PF.flat)||{}).name:"عام للطابق",consume(scope));
+    if(!rows.length)rows.push({html:'<tr><td colspan="3">لا يوجد استهلاك في هذه الفترة</td></tr>'});
+    var all=consume(scope);rows.push({html:'<tr class="g"><td colspan="3">المجموع الكلي</td></tr>'});
     matList(all).forEach(function(i){rows.push({html:'<tr class="tot">'+tC(itemName(i),1)+tC(itemUnit(i))+nC(all[i])+'</tr>'})});
-    return paginate({title:PK.rep,sub:scopeText()||"All buildings",from:fr,to:to,rows:rows,
-      colg:'<colgroup><col><col style="width:160px"><col style="width:200px"></colgroup>',head:'<tr><th>Material</th><th>Unit</th><th>Quantity (out − returns)</th></tr>'})}
+    return paginate({title:PK.rep,sub:scopeText()||"كل البنايات",from:fr,to:to,rows:rows,
+      colg:'<colgroup><col><col style="width:160px"><col style="width:200px"></colgroup>',head:'<tr><th>المادة</th><th>الوحدة</th><th>الكمية (خارج − إرجاع)</th></tr>'})}
   return[]}
 function addDays(iso,n){var p=iso.split("-"),d=new Date(+p[0],+p[1]-1,+p[2]+n);return isoDate(d)}
 function printView(){
   if(!PF.to)PF.to=today();
   var needD=PF.kind!=="bal",needB=PF.kind==="out"||PF.kind==="ret"||PF.kind==="rep",b=bldById(PF.bld),f=flById(b,PF.fl);
-  app.innerHTML='<div class="box"><h2>Print</h2>'+
+  app.innerHTML='<div class="box"><h2>الطباعة</h2>'+
     '<div class="seg" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px" id="pK">'+["bal","in","out","ret","card","rep"].map(function(k){return'<button data-k="'+k+'" class="'+(PF.kind===k?"on":"")+'">'+PK[k]+'</button>'}).join("")+'</div>'+
-    (PF.kind==="card"?'<div class="row"><label>Material</label><select id="pI"><option value="">— Select —</option>'+itemsSorted().map(function(i){return'<option value="'+i.id+'"'+(i.id===PF.item?' selected':'')+'>'+esc(i.name)+'</option>'}).join("")+'</select></div>':'')+
-    (needB?'<div class="row"><label>Building</label><select id="pB"><option value="">All buildings</option>'+bldsSorted().map(function(x){return'<option value="'+x.id+'"'+(x.id===PF.bld?' selected':'')+'>'+esc(bldLabel(x))+'</option>'}).join("")+'</select></div>'+
-      (b?'<div class="row"><label>Floor</label><select id="pF"><option value="">All floors</option>'+floorsOf(b).map(function(x){return'<option value="'+x.id+'"'+(x.id===PF.fl?' selected':'')+'>'+esc(x.name)+'</option>'}).join("")+'</select></div>':'')+
-      (f?'<div class="row"><label>Flat</label><select id="pT"><option value="*">All flats</option><option value=""'+(PF.flat===""?' selected':'')+'>Whole floor (general)</option>'+flatsOf(f).map(function(x){return'<option value="'+x.id+'"'+(x.id===PF.flat?' selected':'')+'>Flat '+esc(x.name)+'</option>'}).join("")+'</select></div>':''):'')+
-    (needD?'<div class="row"><label>From</label><input type="date" id="pFr" value="'+PF.from+'"></div>':'')+
-    '<div class="row"><label>'+(needD?'To':'As of')+'</label><input type="date" id="pTo" value="'+PF.to+'"></div>'+
-    (needD?'<div class="three" style="margin-bottom:10px"><button class="small" id="q0">This month</button><button class="small" id="q1">Last month</button><button class="small" id="qA">All time</button></div>':'')+
-    '<div id="pInfo"></div><div class="two" style="margin-top:10px"><button class="big pri" id="pPr">🖨 Print</button><button class="big ok" id="pPdf">📄 PDF</button></div></div>'+
-    '<button class="big" id="pBack">Back</button>';
+    (PF.kind==="card"?'<div class="row"><label>المادة</label><select id="pI"><option value="">— اختر —</option>'+itemsSorted().map(function(i){return'<option value="'+i.id+'"'+(i.id===PF.item?' selected':'')+'>'+esc(i.name)+'</option>'}).join("")+'</select></div>':'')+
+    (needB?'<div class="row"><label>البناية</label><select id="pB"><option value="">كل البنايات</option>'+bldsSorted().map(function(x){return'<option value="'+x.id+'"'+(x.id===PF.bld?' selected':'')+'>'+esc(bldLabel(x))+'</option>'}).join("")+'</select></div>'+
+      (b?'<div class="row"><label>الطابق</label><select id="pF"><option value="">كل الطوابق</option>'+floorsOf(b).map(function(x){return'<option value="'+x.id+'"'+(x.id===PF.fl?' selected':'')+'>'+esc(x.name)+'</option>'}).join("")+'</select></div>':'')+
+      (f?'<div class="row"><label>الشقة</label><select id="pT"><option value="*">كل الشقق</option><option value=""'+(PF.flat===""?' selected':'')+'>عام للطابق</option>'+flatsOf(f).map(function(x){return'<option value="'+x.id+'"'+(x.id===PF.flat?' selected':'')+'>شقة '+esc(x.name)+'</option>'}).join("")+'</select></div>':''):'')+
+    (needD?'<div class="row"><label>من</label><input type="date" id="pFr" value="'+PF.from+'"></div>':'')+
+    '<div class="row"><label>'+(needD?'إلى':'بتاريخ')+'</label><input type="date" id="pTo" value="'+PF.to+'"></div>'+
+    (needD?'<div class="three" style="margin-bottom:10px"><button class="small" id="q0">هذا الشهر</button><button class="small" id="q1">الشهر الماضي</button><button class="small" id="qA">كل المدة</button></div>':'')+
+    '<div id="pInfo"></div><div class="two" style="margin-top:10px"><button class="big pri" id="pPr">🖨 طباعة</button><button class="big ok" id="pPdf">📄 PDF</button></div></div>'+
+    '<button class="big" id="pBack">رجوع</button>';
   each("#pK button",function(x){x.onclick=function(){PF.kind=x.getAttribute("data-k");printView()}});
   function upd(){if($("pFr"))PF.from=$("pFr").value;PF.to=$("pTo").value||today();if($("pI"))PF.item=$("pI").value;
-    if(PF.kind==="card"&&!PF.item){$("pInfo").innerHTML='<p class="err">Select the material.</p>';return false}
-    if(PF.from&&PF.from>PF.to){$("pInfo").innerHTML='<p class="err">Invalid date range.</p>';return false}
-    $("pInfo").innerHTML='<div class="kv"><span>Pages</span><b>'+makePages().length+'</b></div>';return true}
+    if(PF.kind==="card"&&!PF.item){$("pInfo").innerHTML='<p class="err">اختر المادة.</p>';return false}
+    if(PF.from&&PF.from>PF.to){$("pInfo").innerHTML='<p class="err">التواريخ غير صحيحة.</p>';return false}
+    $("pInfo").innerHTML='<div class="kv"><span>عدد الصفحات</span><b>'+makePages().length+'</b></div>';return true}
   if($("pB"))$("pB").onchange=function(){PF.bld=$("pB").value;PF.fl="";PF.flat="*";printView()};
   if($("pF"))$("pF").onchange=function(){PF.fl=$("pF").value;PF.flat="*";printView()};
   if($("pT"))$("pT").onchange=function(){PF.flat=$("pT").value;upd()};
@@ -656,13 +657,13 @@ function printPages(pages,title,fallback){
   window.addEventListener("beforeprint",mk,{once:true});
   try{window.print()}catch(e){}
   setTimeout(function(){window.removeEventListener("beforeprint",mk);if(opened)return;
-    openModal('<h3>Direct printing did not open</h3><p>A PDF will be prepared instead. Open it in a PDF viewer and print from there.</p><div class="acts"><button id="mS" class="pri">Prepare PDF</button><button id="mN">Cancel</button></div>');
+    openModal('<h3>لم تفتح الطباعة المباشرة</h3><p>سيُجهَّز ملف PDF بدلاً منها. افتحه بقارئ PDF واطبع منه.</p><div class="acts"><button id="mS" class="pri">تجهيز PDF</button><button id="mN">إلغاء</button></div>');
     $("mS").onclick=function(){closeModal();fallback()};$("mN").onclick=closeModal},1500);
 }
 var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js","https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
 function loadScript(u){return new Promise(function(res,rej){var s=document.createElement("script");s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 function pdfPages(mk,name,title){
-  openModal('<h3 style="text-align:center">Preparing PDF...</h3>');
+  openModal('<h3 style="text-align:center">جارٍ تجهيز PDF...</h3>');
   var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
   p.then(function(){
     var pages=mk(),pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"}),chain=Promise.resolve();
@@ -679,7 +680,7 @@ function pdfPages(mk,name,title){
       if(navigator.canShare&&navigator.canShare({files:[file]}))return navigator.share({files:[file],title:title}).catch(function(){});
       var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()});
   }).catch(function(){
-    openModal('<h3>Could not prepare the PDF</h3><p>'+(window.jspdf?'An error occurred while preparing the file. Please try again.':'An internet connection is required the first time, to download the PDF tools.')+'</p><div class="acts"><button id="mN">OK</button></div>');
+    openModal('<h3>تعذّر تجهيز PDF</h3><p>'+(window.jspdf?'حدث خطأ أثناء تجهيز الملف. حاول مرة أخرى.':'يلزم الإنترنت في المرة الأولى لتنزيل أدوات PDF.')+'</p><div class="acts"><button id="mN">تمام</button></div>');
     $("mN").onclick=closeModal});
 }
 
@@ -698,34 +699,34 @@ function saveText(text,name,mime){
 function backup(){
   var text=JSON.stringify({app:"satcon-stock",v:1,at:Date.now(),state:S}),name="stock_"+today()+".json";
   var canSave=!NATIVE||!!(window.AndroidBridge&&window.AndroidBridge.saveDownload);
-  openModal('<h3>💾 Backup</h3><p class="muted" style="margin-top:0">'+S.items.length+' materials · '+S.blds.length+' buildings · '+S.tx.length+' movements</p>'+
-    '<div class="acts" style="flex-direction:column"><button id="bS" class="pri">📤 Share (WhatsApp, ...)</button>'+(canSave?'<button id="bD">💾 Save to Downloads</button>':'')+'<button id="mN">Close</button></div><p class="hint" id="bMsg"></p>');
+  openModal('<h3>💾 نسخة احتياطية</h3><p class="muted" style="margin-top:0">'+S.items.length+' مادة · '+S.blds.length+' بناية · '+S.tx.length+' حركة</p>'+
+    '<div class="acts" style="flex-direction:column"><button id="bS" class="pri">📤 مشاركة (واتساب...)</button>'+(canSave?'<button id="bD">💾 حفظ في التنزيلات</button>':'')+'<button id="mN">إغلاق</button></div><p class="hint" id="bMsg"></p>');
   function msg(t,c){var m=$("bMsg");if(m){m.textContent=t;m.style.color=c||""}}
   function done(){S.lastBackup=Date.now();save()}
-  window.__shareFailed=function(){msg("The share menu did not open. Try saving to Downloads.","#d64545")};
-  $("bS").onclick=function(){if(shareText(text,name,"application/json","Stock backup")){done();msg("✓ Once sent, the backup is safe with you.","#1f9d55")}else msg("Sharing failed.","#d64545")};
-  var d=$("bD");if(d)d.onclick=function(){if(saveText(text,name,"application/json")){done();msg("✓ Saved to the Download folder as "+name,"#1f9d55")}else msg("Could not save. Use Share instead.","#d64545")};
+  window.__shareFailed=function(){msg("لم تفتح قائمة المشاركة. جرّب الحفظ في التنزيلات.","#d64545")};
+  $("bS").onclick=function(){if(shareText(text,name,"application/json","نسخة المخزن")){done();msg("✓ بعد الإرسال تصبح النسخة محفوظة عندك.","#1f9d55")}else msg("فشلت المشاركة.","#d64545")};
+  var d=$("bD");if(d)d.onclick=function(){if(saveText(text,name,"application/json")){done();msg("✓ حُفظت في مجلد التنزيلات باسم "+name,"#1f9d55")}else msg("تعذّر الحفظ. استعمل المشاركة.","#d64545")};
   $("mN").onclick=function(){closeModal();render()};
 }
 function restore(file){
   file.text().then(function(t){var d=JSON.parse(t);if(!d||d.app!=="satcon-stock"||!d.state||!Array.isArray(d.state.tx))throw 0;return d}).then(function(d){
     var inc=d.state,b0=blank(),k;for(k in b0)if(inc[k]===undefined)inc[k]=b0[k];
-    openModal('<h3>📥 Restore Backup</h3><p>Backup dated <b>'+fmtDate(isoDate(new Date(d.at)))+'</b></p>'+
-      '<div class="kv"><span>Materials</span><b>'+inc.items.length+'</b></div><div class="kv"><span>Buildings</span><b>'+inc.blds.length+'</b></div><div class="kv"><span>Movements</span><b>'+inc.tx.length+'</b></div>'+
-      (S.tx.length||S.items.length?'<p class="hint" style="color:#a15c00">Warning: the current data ('+S.items.length+' materials, '+S.tx.length+' movements) will be replaced by this file.</p>':'')+
-      '<div class="acts"><button id="mY" class="dan">Restore</button><button id="mN">Cancel</button></div>');
+    openModal('<h3>📥 استعادة نسخة</h3><p>نسخة بتاريخ <b>'+fmtDate(isoDate(new Date(d.at)))+'</b></p>'+
+      '<div class="kv"><span>المواد</span><b>'+inc.items.length+'</b></div><div class="kv"><span>البنايات</span><b>'+inc.blds.length+'</b></div><div class="kv"><span>الحركات</span><b>'+inc.tx.length+'</b></div>'+
+      (S.tx.length||S.items.length?'<p class="hint" style="color:#a15c00">تنبيه: البيانات الحالية ('+S.items.length+' مادة، '+S.tx.length+' حركة) ستُستبدل بهذا الملف.</p>':'')+
+      '<div class="acts"><button id="mY" class="dan">استعادة</button><button id="mN">إلغاء</button></div>');
     $("mN").onclick=closeModal;
     $("mY").onclick=function(){S=inc;S.lastBackup=Date.now();save();closeModal();go("")};
-  }).catch(function(){info("Not a Stock backup","Select a stock_....json backup file.")});
+  }).catch(function(){info("ليست نسخة مخزن","اختر ملف نسخة باسم stock_....json")});
 }
 function settingsView(){
-  app.innerHTML=syncBox()+'<div class="box"><h2>Settings</h2>'+
-    '<div class="row"><label>Project name</label><input type="text" id="sP" dir="auto" value="'+esc(S.project)+'"></div>'+
-    '<p class="hint" style="margin:-4px 0 10px">Shown at the top of the screen and on printed sheets.</p><button class="big pri" id="sSave">Save</button></div>'+
-    '<div class="box"><h2>Backup</h2><p class="muted" style="margin-top:0">'+(S.lastBackup?'Last backup: '+fmtDate(isoDate(new Date(S.lastBackup))):'No backup yet')+'</p>'+
-    '<button class="big ok" id="sBk">💾 Create Backup</button>'+
-    '<label class="big" style="display:block;text-align:center;border-radius:10px;padding:16px;background:#dfe5f0;cursor:pointer;font-weight:600;margin-top:8px">📥 Restore from File<input type="file" id="sIn" accept=".json,application/json,*/*" style="display:none"></label></div>'+
-    '<button class="big" id="sBack">Back</button>';
+  app.innerHTML=syncBox()+'<div class="box"><h2>الإعدادات</h2>'+
+    '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" dir="auto" value="'+esc(S.project)+'"></div>'+
+    '<p class="hint" style="margin:-4px 0 10px">يظهر أعلى الشاشة وعلى الأوراق المطبوعة.</p><button class="big pri" id="sSave">حفظ</button></div>'+
+    '<div class="box"><h2>النسخ الاحتياطي</h2><p class="muted" style="margin-top:0">'+(S.lastBackup?'آخر نسخة: '+fmtDate(isoDate(new Date(S.lastBackup))):'لا توجد نسخة بعد')+'</p>'+
+    '<button class="big ok" id="sBk">💾 عمل نسخة احتياطية</button>'+
+    '<label class="big" style="display:block;text-align:center;border-radius:10px;padding:16px;background:#dfe5f0;cursor:pointer;font-weight:600;margin-top:8px">📥 استعادة من ملف<input type="file" id="sIn" accept=".json,application/json,*/*" style="display:none"></label></div>'+
+    '<button class="big" id="sBack">رجوع</button>';
   bindSyncBox();
   $("sSave").onclick=function(){S.project=clean($("sP").value);save();history.back()};
   $("sBk").onclick=backup;
@@ -823,70 +824,70 @@ function badgeTxt(){if(!SY.code)return"";var n=pendN();
 function updBadge(){var b=$("syncB");if(b)b.textContent=badgeTxt();var x=$("syS");if(x)x.innerHTML=syncStatus()}
 function hm(ts){var d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())+" "+fmtDate(isoDate(d))}
 function syncStatus(){var n=pendN();
-  if(SST.err==="nofb")return"⚪ Sync components are missing from this version. Install the latest APK.";
-  if(!SST.ready)return"🟠 Connecting...";
-  return(SST.cache?"🟠 Offline. Changes will sync automatically when the connection returns.":"🟢 Connected")+
-    (n?"<br>Pending upload: <b>"+n+"</b>":"<br>All changes uploaded ✓")+(SST.lastOk?"<br><span class='muted'>Last connection: "+hm(SST.lastOk)+"</span>":"")}
+  if(SST.err==="nofb")return"⚪ مكونات المزامنة غير موجودة في هذه النسخة. نصّب آخر APK.";
+  if(!SST.ready)return"🟠 جارٍ الاتصال...";
+  return(SST.cache?"🟠 بدون إنترنت. التغييرات تُرفع تلقائياً عند رجوع الاتصال.":"🟢 متصل")+
+    (n?"<br>بانتظار الرفع: <b>"+n+"</b>":"<br>كل التغييرات مرفوعة ✓")+(SST.lastOk?"<br><span class='muted'>آخر اتصال: "+hm(SST.lastOk)+"</span>":"")}
 function netMsg(e){var c=String(e&&e.code||e&&e.message||e);
-  if(/noconfig/.test(c))return"Sync is not set up in this version yet.";
-  if(/admin-restricted|operation-not-allowed/.test(c))return"Anonymous sign-in is not enabled on the server.";
-  return"No internet connection, or the connection is weak. Please try again."}
+  if(/noconfig/.test(c))return"المزامنة غير مفعلة في هذه النسخة.";
+  if(/admin-restricted|operation-not-allowed/.test(c))return"الدخول المجهول (Anonymous) غير مفعّل على السيرفر.";
+  return"لا يوجد إنترنت أو الاتصال ضعيف. حاول مرة أخرى."}
 function syncBox(){
-  if(!FB_CFG)return'<div class="box"><h2>☁ Device Sync</h2><p class="muted" style="margin:0">Sync between the phone and the laptop will be enabled in an update.</p></div>';
-  if(!SY.code)return'<div class="box"><h2>☁ Device Sync</h2><p class="muted" style="margin-top:0">Every device (phone or laptop) that uses the same <b>project code</b> sees the same stock. No email or password is needed.</p>'+
-    '<div class="row"><label>Project code</label><input type="text" id="syC" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. satcon-stock-2026"></div><p class="err" id="syErr"></p>'+
-    '<button class="big pri" id="syU">📤 First device: upload this device\'s data</button>'+
-    '<button class="big" id="syJ" style="margin-top:8px">📥 Join: load the project\'s data</button>'+
-    '<p class="hint">Internet is needed only while connecting. After that the app works offline and syncs when the connection returns.</p></div>';
-  return'<div class="box"><h2>☁ Sync</h2><p style="margin-top:0">Project code: <b dir="ltr">'+esc(SY.code)+'</b></p><p id="syS">'+syncStatus()+'</p>'+
-    '<div class="two"><button id="syNow">🔄 Sync Now</button><button class="dan" id="syOut">Disconnect</button></div></div>'}
+  if(!FB_CFG)return'<div class="box"><h2>☁ المزامنة بين الأجهزة</h2><p class="muted" style="margin:0">المزامنة بين الموبايل واللابتوب ستُفعَّل في تحديث قادم.</p></div>';
+  if(!SY.code)return'<div class="box"><h2>☁ المزامنة بين الأجهزة</h2><p class="muted" style="margin-top:0">كل جهاز (موبايل أو لابتوب) يستعمل نفس <b>رمز المشروع</b> يرى نفس المخزن. لا يحتاج إيميل ولا كلمة سر.</p>'+
+    '<div class="row"><label>رمز المشروع</label><input type="text" id="syC" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="مثلاً satcon-stock-2026"></div><p class="err" id="syErr"></p>'+
+    '<button class="big pri" id="syU">📤 أول جهاز: رفع بيانات هذا الجهاز</button>'+
+    '<button class="big" id="syJ" style="margin-top:8px">📥 انضمام: تنزيل بيانات المشروع</button>'+
+    '<p class="hint">الإنترنت مطلوب وقت الاتصال فقط. بعدها يعمل البرنامج بدون إنترنت ويزامن عند رجوع الاتصال.</p></div>';
+  return'<div class="box"><h2>☁ المزامنة</h2><p style="margin-top:0">رمز المشروع: <b dir="ltr">'+esc(SY.code)+'</b></p><p id="syS">'+syncStatus()+'</p>'+
+    '<div class="two"><button id="syNow">🔄 مزامنة الآن</button><button class="dan" id="syOut">فصل الجهاز</button></div></div>'}
 function bindSyncBox(){
   var c=$("syC");
   function code(){var v=c.value.trim().toLowerCase(),e=$("syErr");
-    if(!/^[a-z0-9_-]{6,40}$/.test(v)){e.textContent="The code must be at least 6 English letters or digits (dashes allowed), with no spaces.";return null}e.textContent="";return v}
+    if(!/^[a-z0-9_-]{6,40}$/.test(v)){e.textContent="الرمز لازم يكون 6 أحرف إنكليزية أو أرقام على الأقل (يُسمح بالشرطة -)، بدون فراغات.";return null}e.textContent="";return v}
   function connected(v){SY.code=v;saveSY();SST.ready=true;shadowInit();listen();flush()}
   if(c){
     $("syU").onclick=function(){var v=code();if(!v)return;
-      openModal('<h3 style="text-align:center">Connecting...</h3>');
+      openModal('<h3 style="text-align:center">جارٍ الاتصال...</h3>');
       withNet(ensureFb().then(function(){return fbx.getDocsFromServer(fbx.query(colOf(v),fbx.limit(1)))})).then(function(q){
-        if(!q.empty){info("Code already in use","This code already has data. Use <b>Join</b> to load it, or choose a new code.");return}
+        if(!q.empty){info("الرمز مستعمل","توجد بيانات بهذا الرمز. استعمل <b>انضمام</b> لتنزيلها، أو اختر رمزاً جديداً.");return}
         PEND={};var all=allRecs();for(var k in all)mark(k);savePend();connected(v);closeModal();render();
-        info("✓ Connected","Uploading this device's data ("+pendN()+" items). Keep the app open and online until the indicator turns 🟢. Then on the other device: Settings → type the same code <b dir=\"ltr\">"+esc(v)+"</b> → Join.")
-      }).catch(function(e){info("Could not connect",netMsg(e))})};
+        info("✓ تم الاتصال","جارٍ رفع بيانات هذا الجهاز ("+pendN()+" عنصر). أبقِ البرنامج مفتوحاً ومتصلاً حتى يصير المؤشر 🟢. بعدها على الجهاز الثاني: الإعدادات ← اكتب نفس الرمز <b dir=\"ltr\">"+esc(v)+"</b> ← انضمام.")
+      }).catch(function(e){info("تعذّر الاتصال",netMsg(e))})};
     $("syJ").onclick=function(){var v=code();if(!v)return;
       var local=S.tx.length+S.items.length+S.blds.length;
       function go2(){download(v)}
       if(!local)return go2();
-      openModal('<h3>Replace this device\'s data?</h3><p>This device will load the project\'s data, and <b>the data on this device ('+S.items.length+' materials, '+S.tx.length+' movements) will be replaced</b>.</p><p class="hint">If this device holds anything not on the server, create a backup first.</p>'+
-        '<div class="acts" style="flex-direction:column"><button id="mBk">💾 Create Backup First</button><button id="mY" class="dan">Continue and Load</button><button id="mN">Cancel</button></div>');
+      openModal('<h3>استبدال بيانات هذا الجهاز؟</h3><p>سيُنزّل هذا الجهاز بيانات المشروع، و<b>البيانات الموجودة عليه ('+S.items.length+' مادة، '+S.tx.length+' حركة) ستُستبدل</b>.</p><p class="hint">إذا كان على هذا الجهاز شيء غير موجود على السيرفر، اعمل نسخة احتياطية أولاً.</p>'+
+        '<div class="acts" style="flex-direction:column"><button id="mBk">💾 نسخة احتياطية أولاً</button><button id="mY" class="dan">متابعة وتنزيل</button><button id="mN">إلغاء</button></div>');
       $("mBk").onclick=backup;$("mN").onclick=closeModal;$("mY").onclick=function(){closeModal();go2()}};
   }
   var bNow=$("syNow");if(bNow)bNow.onclick=function(){if(!SST.ready)startSync();else{flush();listen()}updBadge()};
   var bOut=$("syOut");if(bOut)bOut.onclick=function(){var n=pendN();
-    openModal('<h3>Disconnect this device?</h3><p>Your data stays on this device but will no longer sync.</p>'+(n?'<p class="err">'+n+' change(s) have not been uploaded yet and will not reach the server.</p>':'')+
-      '<div class="acts"><button id="mY" class="dan">Disconnect</button><button id="mN">Cancel</button></div>');
+    openModal('<h3>فصل هذا الجهاز؟</h3><p>البيانات تبقى على الجهاز لكنها لن تتزامن بعد الآن.</p>'+(n?'<p class="err">'+n+' تغيير لم يُرفع بعد ولن يصل للسيرفر.</p>':'')+
+      '<div class="acts"><button id="mY" class="dan">فصل</button><button id="mN">إلغاء</button></div>');
     $("mN").onclick=closeModal;
     $("mY").onclick=function(){stopListen();SY.code=null;saveSY();PEND={};savePend();SST.ready=false;closeModal();render()}};
 }
 /* joining device: take the project's data in place of this device's */
 function download(v){
-  openModal('<h3 style="text-align:center">Downloading data...</h3>');
+  openModal('<h3 style="text-align:center">جارٍ تنزيل البيانات...</h3>');
   withNet(ensureFb().then(function(){return fbx.getDocsFromServer(colOf(v))})).then(function(q){
-    if(q.empty){info("No data with this code","Check the code. If this is the first device, use <b>First device: upload</b>.");return}
+    if(q.empty){info("لا توجد بيانات بهذا الرمز","تأكد من الرمز. إذا كان هذا أول جهاز، استعمل <b>أول جهاز: رفع</b>.");return}
     var ns=blank();ns.lastBackup=S.lastBackup;var keep=S;S=ns;
     q.docs.forEach(function(d){var x=d.data()||{};delete x.k;if(!x.deleted)applyRec(d.id,x)});
     try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){S=keep;throw e}
     PEND={};savePend();SY.code=v;saveSY();SST.ready=true;shadowInit();listen();
     closeModal();go("");render();
-    setTimeout(function(){info("✓ Connected",S.items.length+" materials, "+S.blds.length+" buildings and "+S.tx.length+" movements downloaded. Anything recorded here will appear on the other device.")},150);
-  }).catch(function(e){info("Download failed",netMsg(e))});
+    setTimeout(function(){info("✓ تم الاتصال","نزلت "+S.items.length+" مادة و"+S.blds.length+" بناية و"+S.tx.length+" حركة. أي شيء تسجله هنا يظهر على الجهاز الثاني.")},150);
+  }).catch(function(e){info("فشل التنزيل",netMsg(e))});
 }
 
 window.__updateReady=function(){
   if($("updBar"))return;
   var b=document.createElement("div");b.id="updBar";
   b.style.cssText="position:fixed;bottom:0;left:0;right:0;background:#1f9d55;color:#fff;padding:12px;display:flex;align-items:center;justify-content:space-between;z-index:60;font-size:15px";
-  b.innerHTML='<span>A new version of the app is available</span><button style="background:#fff;color:#1f9d55;font-weight:700">Update Now</button>';
+  b.innerHTML='<span>يوجد إصدار جديد من البرنامج</span><button style="background:#fff;color:#1f9d55;font-weight:700">تحديث الآن</button>';
   b.querySelector("button").onclick=function(){location.reload()};document.body.appendChild(b);
 };
 if(SY.code)shadowInit();
