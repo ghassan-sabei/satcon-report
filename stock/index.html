@@ -740,7 +740,8 @@ function settingsView(){
    without internet. Every local change is noted in PEND until the server confirms it, so nothing
    is lost if the app closes while offline. Changes from the server never overwrite a record that
    still has an unsent local change. */
-var FB_CFG=null; /* filled in once the Firebase project for the stock app exists */
+var FB_CFG={apiKey:"AIzaSyDbMXJrstRY3G178Rd4R1J7VzVfFmeFlzk",authDomain:"satcon-stock-3dfa9.firebaseapp.com",projectId:"satcon-stock-3dfa9",
+  storageBucket:"satcon-stock-3dfa9.firebasestorage.app",messagingSenderId:"320241280463",appId:"1:320241280463:web:7118b1f56c1458db9f5eba"};
 var SY_KEY="satcon_stock_sync",PEND_KEY="satcon_stock_pend";
 var SY=(function(){try{return JSON.parse(localStorage.getItem(SY_KEY))||{}}catch(e){return{}}})();
 var PEND=(function(){try{return JSON.parse(localStorage.getItem(PEND_KEY))||{}}catch(e){return{}}})();
