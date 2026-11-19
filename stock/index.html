@@ -733,12 +733,13 @@ function settingsView(){
   $("sBack").onclick=function(){history.back()};
 }
 
-/* ---------- sync between devices (Firebase) ----------
-   Everything lives in one collection "d": one document per material (i...), building (b...)
-   and movement (t...), plus "__meta" for the project name. The phone and the laptop keep their
-   own copy in localStorage and work without internet. Every local change is noted in PEND until
-   the server confirms it, so nothing is lost if the app closes while offline. Changes from the
-   server never overwrite a record that still has an unsent local change. */
+/* ---------- sync between devices (Firebase), like the daily report: no email ----------
+   Each device signs in anonymously by itself. Devices that use the same PROJECT CODE share
+   the data in p/{code}/d: one document per material (i...), building (b...) and movement (t...),
+   plus "__meta" for the project name. Each device keeps its own copy in localStorage and works
+   without internet. Every local change is noted in PEND until the server confirms it, so nothing
+   is lost if the app closes while offline. Changes from the server never overwrite a record that
+   still has an unsent local change. */
 var FB_CFG=null; /* filled in once the Firebase project for the stock app exists */
 var SY_KEY="satcon_stock_sync",PEND_KEY="satcon_stock_pend";
 var SY=(function(){try{return JSON.parse(localStorage.getItem(SY_KEY))||{}}catch(e){return{}}})();
@@ -752,31 +753,33 @@ function mark(key){PEND[key]=Date.now()+Math.random()}
 var LISTS={i:"items",b:"blds",t:"tx"};
 function kindOf(id){return id==="__meta"?"m":id.charAt(0)}
 function canon(o){return JSON.parse(JSON.stringify(o))}
+function colOf(code){return fbx.collection(fdb,"p",code,"d")}
 /* every record by id, as JSON text */
 function allRecs(){var m={"__meta":JSON.stringify({project:S.project||""})};
   S.items.forEach(function(x){m[x.id]=JSON.stringify(x)});S.blds.forEach(function(x){m[x.id]=JSON.stringify(x)});S.tx.forEach(function(x){m[x.id]=JSON.stringify(x)});return m}
 function recById(id){if(id==="__meta")return{project:S.project||""};var L=S[LISTS[kindOf(id)]];if(!L)return null;for(var i=0;i<L.length;i++)if(L[i].id===id)return L[i];return null}
 function shadowInit(){SHADOW=allRecs()}
 function syncChanged(){
-  if(!SY||!SY.on)return;if(!SHADOW){shadowInit();return}
+  if(!SY||!SY.code)return;if(!SHADOW){shadowInit();return}
   var now=allRecs(),ch=false,k;
   for(k in now)if(SHADOW[k]!==now[k]){mark(k);ch=true}
   for(k in SHADOW)if(!(k in now)){mark(k);ch=true}
   SHADOW=now;if(ch){savePend();updBadge();setTimeout(flush,300)}
 }
 function withNet(p){return Promise.race([p,new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},25000)})])}
+function authUser(){return new Promise(function(res){var done=false,un=fbx.onAuthStateChanged(fauth,function(u){if(done)return;done=true;res(u);setTimeout(function(){try{un()}catch(e){}},0)})})}
+/* loads Firebase and signs this device in anonymously (no email, no password) */
 function ensureFb(){if(fbP)return fbP;
   if(!FB_CFG)return Promise.reject({code:"noconfig"});
-  fbP=(window.FBS?Promise.resolve():loadScript("fb.js")).then(function(){fbx=window.FBS;
+  fbP=(window.FB?Promise.resolve():loadScript("fb.js")).then(function(){fbx=window.FB;
     var a=fbx.initializeApp(FB_CFG);
     try{fauth=fbx.initializeAuth(a,{persistence:[fbx.indexedDBLocalPersistence,fbx.browserLocalPersistence]})}catch(e){fauth=fbx.initializeAuth(a,{persistence:fbx.inMemoryPersistence})}
     try{fdb=fbx.initializeFirestore(a,{localCache:fbx.persistentLocalCache({tabManager:fbx.persistentMultipleTabManager()})})}catch(e){fdb=fbx.initializeFirestore(a,{localCache:fbx.memoryLocalCache()})}
-  });
-  fbP.catch(function(){fbP=null;SST.err="nofb";updBadge()});
+    return authUser()}).then(function(u){return u||fbx.signInAnonymously(fauth)});
+  fbP.catch(function(e){fbP=null;SST.err=fbx?"auth":"nofb";updBadge()});
   return fbP}
-function authUser(){return new Promise(function(res){var done=false,un=fbx.onAuthStateChanged(fauth,function(u){if(done)return;done=true;res(u);setTimeout(function(){try{un()}catch(e){}},0)})})}
-function startSync(){if(!SY.on||!FB_CFG)return;
-  ensureFb().then(authUser).then(function(u){if(!u){SST.err="out";updBadge();return}SST.err="";SST.ready=true;listen();flush();updBadge()}).catch(function(){})}
+function startSync(){if(!SY.code||!FB_CFG)return;
+  ensureFb().then(function(){SST.err="";SST.ready=true;listen();flush();updBadge()}).catch(function(){setTimeout(startSync,30000)})}
 function stopListen(){if(unsub){try{unsub()}catch(e){}unsub=null}}
 /* apply one record from the server to the local data */
 function applyRec(id,data){var k=kindOf(id);
@@ -786,102 +789,96 @@ function applyRec(id,data){var k=kindOf(id);
   var rec=canon(data);rec.id=id;if(i<0){L.push(rec);return true}
   if(JSON.stringify(L[i])===JSON.stringify(rec))return false;L[i]=rec;return true}
 function listen(){stopListen();
-  unsub=fbx.onSnapshot(fbx.collection(fdb,"d"),{includeMetadataChanges:true},function(snap){
+  unsub=fbx.onSnapshot(colOf(SY.code),{includeMetadataChanges:true},function(snap){
     SST.cache=snap.metadata.fromCache;if(!SST.cache)SST.lastOk=Date.now();
     var ch=false;
     snap.docChanges().forEach(function(c){var id=c.doc.id;if(PEND[id])return;if(c.type==="removed")return;
       var d=c.doc.data()||{};delete d.k;if(applyRec(id,d))ch=true});
     if(ch){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}shadowInit();needRender=true}
     updBadge();
-  },function(e){SST.err=String(e&&e.code||e);updBadge()});
+  },function(e){SST.err=String(e&&e.code||e);updBadge();stopListen();setTimeout(function(){if(SST.ready&&!unsub)listen()},20000)});
 }
 /* send what is in PEND; a change made while sending stays in PEND for the next round */
 function flush(){
-  if(!SY.on||!SST.ready||SST.flushing||!pendN())return;
+  if(!SY.code||!SST.ready||SST.flushing||!pendN())return;
   SST.flushing=true;var b=fbx.writeBatch(fdb),taken=[],n=0;
   for(var key in PEND){if(n>=400)break;var r=recById(key),k=kindOf(key);
-    b.set(fbx.doc(fdb,"d",key),r?Object.assign({k:k},canon(r)):{k:k,id:key,deleted:true,at:Date.now()});taken.push([key,PEND[key]]);n++}
+    b.set(fbx.doc(fdb,"p",SY.code,"d",key),r?Object.assign({k:k},canon(r)):{k:k,id:key,deleted:true,at:Date.now()});taken.push([key,PEND[key]]);n++}
   b.commit().then(function(){
     taken.forEach(function(x){if(PEND[x[0]]===x[1])delete PEND[x[0]]});
     savePend();SST.flushing=false;SST.lastOk=Date.now();SST.err="";updBadge();if(pendN())setTimeout(flush,200);
   },function(e){SST.flushing=false;SST.err=String(e&&e.code||e);updBadge();setTimeout(flush,15000)});
 }
-setInterval(function(){if(SY.on&&SST.ready&&pendN()&&!SST.flushing)flush()},20000);
+setInterval(function(){if(SY.code&&SST.ready&&pendN()&&!SST.flushing)flush()},20000);
 /* redraw lists when the other device changed something, but never under the user's fingers */
 setInterval(function(){if(!needRender)return;
   var h=location.hash.replace(/^#/,""),busy=document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if(modal.classList.contains("show")||busy)return;
   if(h===""||h==="log"||h==="items"||h==="blds"||h==="rep"||/^item-/.test(h)||/^bld-/.test(h)){needRender=false;render()}
 },1500);
-function badgeTxt(){if(!SY.on)return"";var n=pendN();
-  if(SST.err==="out")return"🔴";if(SST.err==="nofb")return"⚪";
+function badgeTxt(){if(!SY.code)return"";var n=pendN();
+  if(SST.err==="nofb")return"⚪";
   if(!SST.ready||SST.cache)return"🟠"+(n?" "+n:"");return n?"🟠 "+n:"🟢"}
 function updBadge(){var b=$("syncB");if(b)b.textContent=badgeTxt();var x=$("syS");if(x)x.innerHTML=syncStatus()}
 function hm(ts){var d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())+" "+fmtDate(isoDate(d))}
 function syncStatus(){var n=pendN();
   if(SST.err==="nofb")return"⚪ Sync components are missing from this version. Install the latest APK.";
-  if(SST.err==="out")return"🔴 Please sign in again.";
   if(!SST.ready)return"🟠 Connecting...";
   return(SST.cache?"🟠 Offline. Changes will sync automatically when the connection returns.":"🟢 Connected")+
     (n?"<br>Pending upload: <b>"+n+"</b>":"<br>All changes uploaded ✓")+(SST.lastOk?"<br><span class='muted'>Last connection: "+hm(SST.lastOk)+"</span>":"")}
-function authMsg(e){var c=String(e&&e.code||e&&e.message||e);
-  if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c))return"Incorrect email or password.";
-  if(/network|timeout|unavailable/.test(c))return"No internet connection, or the connection is weak. Please try again.";
-  if(/too-many/.test(c))return"Too many attempts. Please wait a moment and try again.";
+function netMsg(e){var c=String(e&&e.code||e&&e.message||e);
   if(/noconfig/.test(c))return"Sync is not set up in this version yet.";
-  return"Error: "+c}
+  if(/admin-restricted|operation-not-allowed/.test(c))return"Anonymous sign-in is not enabled on the server.";
+  return"No internet connection, or the connection is weak. Please try again."}
 function syncBox(){
   if(!FB_CFG)return'<div class="box"><h2>☁ Device Sync</h2><p class="muted" style="margin:0">Sync between the phone and the laptop will be enabled in an update.</p></div>';
-  var form='<div class="row"><input type="email" id="syE" dir="ltr" autocomplete="username" placeholder="Email" value="'+esc(SY.email||"")+'"></div>'+
-    '<div class="row"><input type="password" id="syP" dir="ltr" autocomplete="current-password" placeholder="Password"></div><p class="err" id="syErr"></p>';
-  if(!SY.on)return'<div class="box"><h2>☁ Device Sync</h2><p class="muted" style="margin-top:0">Sign in with the same account on the phone and the laptop to keep both in sync. The app works offline and syncs when the connection returns.</p>'+
-    form+'<button class="big pri" id="syIn">Sign In and Connect</button></div>';
-  if(SST.err==="out")return'<div class="box"><h2>☁ Sync</h2><p id="syS">'+syncStatus()+'</p>'+form+'<button class="big pri" id="syIn">Sign In</button></div>';
-  return'<div class="box"><h2>☁ Sync</h2><p style="margin-top:0">Account: <b dir="ltr">'+esc(SY.email||"")+'</b></p><p id="syS">'+syncStatus()+'</p>'+
-    '<div class="two"><button id="syNow">🔄 Sync Now</button><button class="dan" id="syOut">Sign Out</button></div></div>'}
+  if(!SY.code)return'<div class="box"><h2>☁ Device Sync</h2><p class="muted" style="margin-top:0">Every device (phone or laptop) that uses the same <b>project code</b> sees the same stock. No email or password is needed.</p>'+
+    '<div class="row"><label>Project code</label><input type="text" id="syC" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. satcon-stock-2026"></div><p class="err" id="syErr"></p>'+
+    '<button class="big pri" id="syU">📤 First device: upload this device\'s data</button>'+
+    '<button class="big" id="syJ" style="margin-top:8px">📥 Join: load the project\'s data</button>'+
+    '<p class="hint">Internet is needed only while connecting. After that the app works offline and syncs when the connection returns.</p></div>';
+  return'<div class="box"><h2>☁ Sync</h2><p style="margin-top:0">Project code: <b dir="ltr">'+esc(SY.code)+'</b></p><p id="syS">'+syncStatus()+'</p>'+
+    '<div class="two"><button id="syNow">🔄 Sync Now</button><button class="dan" id="syOut">Disconnect</button></div></div>'}
 function bindSyncBox(){
-  var bIn=$("syIn");
-  if(bIn)bIn.onclick=function(){
-    var em=$("syE").value.trim(),pw=$("syP").value,er=$("syErr");
-    if(!em||!pw){er.textContent="Enter the email and password.";return}
-    bIn.disabled=true;er.style.color="#555";er.textContent="Connecting...";
-    withNet(ensureFb().then(function(){return fbx.signInWithEmailAndPassword(fauth,em,pw)})).then(function(cred){
-      SY.email=em;SY.uid=cred.user.uid;saveSY();
-      if(SY.on){SST.err="";SST.ready=true;shadowInit();listen();flush();render();return}
-      return withNet(fbx.getDocsFromServer(fbx.query(fbx.collection(fdb,"d"),fbx.limit(1)))).then(function(q){
-        if(q.empty)return firstUpload();
-        var local=S.tx.length+S.items.length+S.blds.length;
-        if(!local)return download();
-        openModal('<h3>Data found on the server</h3><p>This device will load the server data, and <b>the data on this device ('+S.items.length+' materials, '+S.tx.length+' movements) will be replaced</b>.</p><p class="hint">If this device holds anything not on the server, create a backup first.</p>'+
-          '<div class="acts" style="flex-direction:column"><button id="mBk">💾 Create Backup First</button><button id="mY" class="dan">Continue and Load Server Data</button><button id="mN">Cancel</button></div>');
-        $("mBk").onclick=backup;
-        $("mN").onclick=function(){closeModal();fbx.signOut(fauth);render()};
-        $("mY").onclick=function(){closeModal();download()};
-      });
-    }).catch(function(e){bIn.disabled=false;er.style.color="";er.textContent=authMsg(e)});
-  };
-  var bNow=$("syNow");if(bNow)bNow.onclick=function(){if(!SST.ready)startSync();else flush();updBadge()};
+  var c=$("syC");
+  function code(){var v=c.value.trim().toLowerCase(),e=$("syErr");
+    if(!/^[a-z0-9_-]{6,40}$/.test(v)){e.textContent="The code must be at least 6 English letters or digits (dashes allowed), with no spaces.";return null}e.textContent="";return v}
+  function connected(v){SY.code=v;saveSY();SST.ready=true;shadowInit();listen();flush()}
+  if(c){
+    $("syU").onclick=function(){var v=code();if(!v)return;
+      openModal('<h3 style="text-align:center">Connecting...</h3>');
+      withNet(ensureFb().then(function(){return fbx.getDocsFromServer(fbx.query(colOf(v),fbx.limit(1)))})).then(function(q){
+        if(!q.empty){info("Code already in use","This code already has data. Use <b>Join</b> to load it, or choose a new code.");return}
+        PEND={};var all=allRecs();for(var k in all)mark(k);savePend();connected(v);closeModal();render();
+        info("✓ Connected","Uploading this device's data ("+pendN()+" items). Keep the app open and online until the indicator turns 🟢. Then on the other device: Settings → type the same code <b dir=\"ltr\">"+esc(v)+"</b> → Join.")
+      }).catch(function(e){info("Could not connect",netMsg(e))})};
+    $("syJ").onclick=function(){var v=code();if(!v)return;
+      var local=S.tx.length+S.items.length+S.blds.length;
+      function go2(){download(v)}
+      if(!local)return go2();
+      openModal('<h3>Replace this device\'s data?</h3><p>This device will load the project\'s data, and <b>the data on this device ('+S.items.length+' materials, '+S.tx.length+' movements) will be replaced</b>.</p><p class="hint">If this device holds anything not on the server, create a backup first.</p>'+
+        '<div class="acts" style="flex-direction:column"><button id="mBk">💾 Create Backup First</button><button id="mY" class="dan">Continue and Load</button><button id="mN">Cancel</button></div>');
+      $("mBk").onclick=backup;$("mN").onclick=closeModal;$("mY").onclick=function(){closeModal();go2()}};
+  }
+  var bNow=$("syNow");if(bNow)bNow.onclick=function(){if(!SST.ready)startSync();else{flush();listen()}updBadge()};
   var bOut=$("syOut");if(bOut)bOut.onclick=function(){var n=pendN();
-    openModal('<h3>Sign out of sync?</h3><p>Your data stays on this device but will no longer sync.</p>'+(n?'<p class="err">'+n+' change(s) have not been uploaded yet and will not reach the server.</p>':'')+
-      '<div class="acts"><button id="mY" class="dan">Sign Out</button><button id="mN">Cancel</button></div>');
+    openModal('<h3>Disconnect this device?</h3><p>Your data stays on this device but will no longer sync.</p>'+(n?'<p class="err">'+n+' change(s) have not been uploaded yet and will not reach the server.</p>':'')+
+      '<div class="acts"><button id="mY" class="dan">Disconnect</button><button id="mN">Cancel</button></div>');
     $("mN").onclick=closeModal;
-    $("mY").onclick=function(){stopListen();try{fbx.signOut(fauth)}catch(e){}SY.on=false;saveSY();PEND={};savePend();SST.ready=false;closeModal();render()}};
+    $("mY").onclick=function(){stopListen();SY.code=null;saveSY();PEND={};savePend();SST.ready=false;closeModal();render()}};
 }
-/* first device: send everything on this device */
-function firstUpload(){var all=allRecs();for(var k in all)mark(k);
-  savePend();SY.on=true;saveSY();SST.ready=true;shadowInit();listen();flush();
-  info("✓ Connected","Uploading this device's data ("+pendN()+" items). Keep the app open and online until the indicator turns 🟢, then sign in on the other device.");render()}
-/* other devices: take the server's data in place of this device's */
-function download(){
+/* joining device: take the project's data in place of this device's */
+function download(v){
   openModal('<h3 style="text-align:center">Downloading data...</h3>');
-  withNet(fbx.getDocsFromServer(fbx.collection(fdb,"d"))).then(function(q){
+  withNet(ensureFb().then(function(){return fbx.getDocsFromServer(colOf(v))})).then(function(q){
+    if(q.empty){info("No data with this code","Check the code. If this is the first device, use <b>First device: upload</b>.");return}
     var ns=blank();ns.lastBackup=S.lastBackup;var keep=S;S=ns;
     q.docs.forEach(function(d){var x=d.data()||{};delete x.k;if(!x.deleted)applyRec(d.id,x)});
     try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){S=keep;throw e}
-    PEND={};savePend();SY.on=true;saveSY();SST.ready=true;shadowInit();listen();
+    PEND={};savePend();SY.code=v;saveSY();SST.ready=true;shadowInit();listen();
     closeModal();go("");render();
     setTimeout(function(){info("✓ Connected",S.items.length+" materials, "+S.blds.length+" buildings and "+S.tx.length+" movements downloaded. Anything recorded here will appear on the other device.")},150);
-  }).catch(function(e){closeModal();info("Download failed",authMsg(e));try{fbx.signOut(fauth)}catch(x){}});
+  }).catch(function(e){info("Download failed",netMsg(e))});
 }
 
 window.__updateReady=function(){
@@ -891,7 +888,7 @@ window.__updateReady=function(){
   b.innerHTML='<span>A new version of the app is available</span><button style="background:#fff;color:#1f9d55;font-weight:700">Update Now</button>';
   b.querySelector("button").onclick=function(){location.reload()};document.body.appendChild(b);
 };
-if(SY.on)shadowInit();
+if(SY.code)shadowInit();
 render();
 startSync();
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!NATIVE){navigator.serviceWorker.register("sw.js",{scope:"./"}).catch(function(){})}
