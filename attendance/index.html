@@ -654,6 +654,10 @@ function renderSettings(app){
   }
 }
 
+/* ---------- each machine has its own summary period (kept on this device) ---------- */
+function mRanges(){try{return JSON.parse(localStorage.getItem("satcon_attend_mrange"+SLOT))||{}}catch(e){return{}}}
+function mRange(id){var r=mRanges()[id],t=isoDate(new Date());return r&&r.f&&r.t?r:{f:t.slice(0,8)+"01",t:t}}
+function setMRange(id,r){var o=mRanges();o[id]=r;try{localStorage.setItem("satcon_attend_mrange"+SLOT,JSON.stringify(o))}catch(e){}}
 /* ---------- wages (hourly, with history; amounts are computed, never stored) ---------- */
 function wageOn(w,d){var g=w&&w.wages;if(!g||!g.length)return null;var s=g.slice().sort(function(a,b){return a.from<b.from?-1:1}),r=s[0];
   for(var i=0;i<s.length;i++)if(s[i].from<=d)r=s[i];return r}
@@ -725,13 +729,17 @@ function renderMonth(app){
     (payOn()?'<br><b style="color:#16a34a">💰 '+payTxt(x.pay)+'</b>'+(x.nopay?' <span style="color:#d64545">(في ساعات بدون أجر)</span>':''):'')+'</span>'+
     (payOn()?'<span style="display:flex;gap:6px"><button class="small ok" data-stpr="'+x.w.id+'">🖨 كشف</button><button class="small pri" data-stpdf="'+x.w.id+'">📄 PDF</button></span>':'')+'</div>'});
   h+='</div></div>';
-  S.machines.forEach(function(m){var st=machineRange(m.id,mFrom,mTo);if(!st.days&&m.active===false)return;
-    h+='<div class="box"><h2>'+esc(m.name)+'</h2><div class="stat"><div><b>'+st.days+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div></div>'+
+  S.machines.forEach(function(m){var R=mRange(m.id),st=machineRange(m.id,R.f,R.t);if(!st.days&&m.active===false)return;
+    h+='<div class="box"><h2>'+esc(m.name)+'</h2>'+
+      '<div class="two" style="margin-bottom:8px"><div><label class="muted" style="font-size:13px">من تاريخ</label><input type="date" data-mrf="'+m.id+'" value="'+R.f+'" style="width:100%"></div><div><label class="muted" style="font-size:13px">إلى تاريخ</label><input type="date" data-mrt="'+m.id+'" value="'+R.t+'" style="width:100%"></div></div>'+
+      '<div class="stat"><div><b>'+st.days+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div></div>'+
       (st.days?'<div class="two" style="margin-top:10px"><button class="ok" data-mpr="'+m.id+'">🖨 طباعة</button><button class="pri" data-mpdf="'+m.id+'">📄 PDF</button></div>':'')+'</div>'});
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
-  app.querySelectorAll("[data-mpr]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-mpr");printPages(machinePages(id,mFrom,mTo),"machine_"+mFrom+"_"+mTo,function(){machinePdf(id,mFrom,mTo)})}});
-  app.querySelectorAll("[data-mpdf]").forEach(function(b){b.onclick=function(){machinePdf(+b.getAttribute("data-mpdf"),mFrom,mTo)}});
+  app.querySelectorAll("[data-mpr]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-mpr"),R=mRange(id);printPages(machinePages(id,R.f,R.t),"machine_"+R.f+"_"+R.t,function(){machinePdf(id,R.f,R.t)})}});
+  app.querySelectorAll("[data-mpdf]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-mpdf"),R=mRange(id);machinePdf(id,R.f,R.t)}});
+  app.querySelectorAll("[data-mrf],[data-mrt]").forEach(function(i){i.onchange=function(){if(!i.value)return;var id=i.getAttribute("data-mrf")||i.getAttribute("data-mrt"),R=mRange(id);
+    if(i.hasAttribute("data-mrf"))R.f=i.value;else R.t=i.value;setMRange(id,R);render()}});
   document.getElementById("rFrom").onchange=function(e){if(e.target.value){mFrom=e.target.value;render()}};
   document.getElementById("rTo").onchange=function(e){if(e.target.value){mTo=e.target.value;render()}};
   var po=document.getElementById("payOn");if(po)po.onclick=function(){requireAdmin(function(){setUnl("pay",Date.now()+UNLOCK_MS);render()})};
