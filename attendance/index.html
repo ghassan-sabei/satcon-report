@@ -246,8 +246,7 @@ function renderDay(app){
     h+='<div class="box"><p>ما في عمال بعد. ضيف العمال أول مرة من هون:</p><button class="big pri" id="goW2">+ إضافة عمال</button></div>';
   }else{
     h+='<div class="box"><div class="stat"><div><b>'+pres+'</b><span>حاضر</span></div><div><b>'+abs+'</b><span>غائب</span></div><div><b>'+dur(ot)+'</b><span>مجموع الساعات</span></div></div>'+
-       '<button class="big ok" id="allIn" style="margin-top:10px">دخول الكل</button>'+
-       '<button class="big" id="advDay" style="margin-top:8px">💵 سلف هاليوم'+(dayAdv(curDate).length?' ('+dayAdv(curDate).length+')':'')+'</button></div>';
+       '<button class="big" id="advDay" style="margin-top:10px">💵 سلف هاليوم'+(dayAdv(curDate).length?' ('+dayAdv(curDate).length+')':'')+'</button></div>';
     h+='<div class="box"><h2>العمال</h2>';
     ws.forEach(function(w){
       var r=rec(curDate,w.id,false)||{},wk=worked(r);
