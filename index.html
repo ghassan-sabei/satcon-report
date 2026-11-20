@@ -98,8 +98,14 @@ button:active{transform:scale(.97)}
 <script>
 (function(){
 "use strict";
-var KEY="satcon_daily_v1";
-var APP_VER="2026.11.20-b";
+var KEYBASE="satcon_daily_v1";
+/* projects: the default project ("") keeps the old keys; each other project gets its own suffix */
+var REGK="satcon_report_projects";
+var REG={cur:"",slots:[]};
+try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
+var SUF=REG.cur?"_"+REG.cur:"";
+var KEY=KEYBASE+SUF;
+var APP_VER="2026.11.20-c";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -1025,7 +1031,7 @@ function pwEditor(){
    pushed; the newest write of a document wins. */
 var FB_CFG={apiKey:"AIzaSyAvNtxvPz5277FBgz31P1p3kpcDUvjr_vg",authDomain:"satcon-report.firebaseapp.com",projectId:"satcon-report",storageBucket:"satcon-report.firebasestorage.app",messagingSenderId:"579779180757",appId:"1:579779180757:web:34f994c3ab8bad1c204a5c"};
 var FB_JS="https://ghassan-sabei.github.io/satcon-report/attendance/fb.js",CHUNK=700000;
-var SKEY="satcon_report_sync",PKEY="satcon_report_pending";
+var SKEY="satcon_report_sync"+SUF,PKEY="satcon_report_pending"+SUF;
 var SY={};try{SY=JSON.parse(localStorage.getItem(SKEY))||{}}catch(e){}
 if(!SY.dev)SY.dev=Math.random().toString(36).slice(2,10);
 function saveSY(){try{localStorage.setItem(SKEY,JSON.stringify(SY))}catch(e){}}
@@ -1188,6 +1194,41 @@ setInterval(function(){if(view==="main"&&activePause(S.cur)&&!M.classList.contai
 
 render();
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}
+/* ---- projects: tap the title to switch; creating one needs the admin password ---- */
+function projList(){return[{id:"",name:"المشروع الأول"}].concat(REG.slots||[])}
+function projName(){var f=projList().filter(function(x){return x.id===REG.cur})[0];return f?f.name:"المشروع الأول"}
+function saveREG(){try{localStorage.setItem(REGK,JSON.stringify(REG))}catch(e){}}
+function switchProject(id){
+  if(id===REG.cur){closeModal();return}
+  if(S.editing){openModal('<h3>خلّص التعديل أول</h3><p>عم تعدّل يوم '+fmtDate(S.cur.date)+'.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
+  REG.cur=id;saveREG();location.reload()}
+function projMenu(){
+  var h='<h3>المشاريع</h3>';
+  projList().forEach(function(x){
+    h+='<button class="big'+(x.id===REG.cur?' pri':'')+'" data-pj="'+esc(x.id)+'" style="margin-bottom:8px">'+(x.id===REG.cur?'✓ ':'')+esc(x.name)+'</button>'});
+  h+='<button class="big" id="pjNew" style="margin-top:6px">＋ مشروع جديد (كلمة سر الإدارة)</button>'+
+     '<div class="acts"><button id="mN">إغلاق</button></div>';
+  openModal(h);
+  MI.querySelectorAll("[data-pj]").forEach(function(b){b.onclick=function(){switchProject(b.getAttribute("data-pj"))}});
+  document.getElementById("mN").onclick=closeModal;
+  document.getElementById("pjNew").onclick=function(){requireAdmin(newProjectForm)}}
+function newProjectForm(){
+  openModal('<h3>مشروع جديد</h3><div class="row"><label>اسم المشروع</label><input type="text" id="pjN" style="font-size:18px;width:100%"></div>'+
+    '<p class="hint" id="pjE" style="color:#d64545;display:none">اكتب اسم المشروع</p>'+
+    '<p class="hint">بعد ما يتفتح المشروع، من الإعدادات تقدر تحط رمز المشاركة وتنضم أو ترفع.</p>'+
+    '<div class="acts"><button id="mS" class="pri">إنشاء</button><button id="mN">إلغاء</button></div>');
+  var i=document.getElementById("pjN");setTimeout(function(){i.focus()},50);
+  function ok(){var v=i.value.trim();if(!v){document.getElementById("pjE").style.display="";return}
+    var id="p"+Date.now().toString(36);
+    var fresh={settings:{project:v,depth:"20.0",steel:"12.0"},cur:null,archive:[]};
+    if(S.settings.adminPw)fresh.settings.adminPw=S.settings.adminPw;
+    try{localStorage.setItem(KEYBASE+"_"+id,JSON.stringify(fresh))}catch(e){}
+    REG.slots=(REG.slots||[]).concat([{id:id,name:v}]);REG.cur=id;saveREG();location.reload()}
+  document.getElementById("mS").onclick=ok;i.onkeydown=function(e){if(e.key==="Enter")ok()};
+  document.getElementById("mN").onclick=closeModal}
+(function(){var t=document.querySelector("header h1");if(!t)return;
+  t.textContent="التقرير اليومي · "+projName();t.style.cursor="pointer";
+  t.onclick=projMenu})();
 })();
 </script>
 </body>
