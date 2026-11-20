@@ -99,7 +99,7 @@ button:active{transform:scale(.97)}
 (function(){
 "use strict";
 var KEY="satcon_daily_v1";
-var APP_VER="2026.11.20-a";
+var APP_VER="2026.11.20-b";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -153,7 +153,6 @@ function delayMs(day){
 function delayHours(day){return Math.round(delayMs(day)/360000)/10}
 function activePause(day){var p=day.pauses[day.pauses.length-1];return p&&!p.end?p:null}
 function isDone(p){return p.pourEnd&&p.vol!==""&&p.vol!=null}
-function stageOf(p){var last=null;STEPS.forEach(function(x){if(p[x.k])last=x});return last?'آخر خطوة: '+last.n+' '+hm(p[last.k]):'لم يبدأ الحفر بعد'}
 function totals(day){
   var n=0,v=0;
   day.piles.forEach(function(p){if(p.pourEnd){n++;v+=num(p.vol)}});
@@ -245,11 +244,16 @@ function render(){
   var todayIso=isoDate(new Date()),remote=[];
   (S.archive||[]).forEach(function(d){if(d&&d.date===todayIso&&d.uid!==(S.cur&&S.cur.uid))(d.piles||[]).forEach(function(p){if(!isDone(p))remote.push({d:d,p:p})})});
   if(remote.length){
-    h+='<div class="box"><h2>حفر مفتوحة الآن من الأجهزة الأخرى</h2>';
+    h+='<div class="box"><h2>حفر مفتوحة الآن من الأجهزة الأخرى</h2><p class="hint" style="margin-top:0">نفس البطاقة كما عند الجهاز الذي فتحها</p></div>';
     remote.forEach(function(r){
-      h+='<div class="it"><span><b>حفرة رقم '+esc(r.p.no)+'</b> &nbsp; بلوك '+esc(r.d.block||"—")+'</span><span class="tm">'+esc(stageOf(r.p))+'</span></div>';
+      var p=r.p;
+      h+='<div class="box card" style="border:2px dashed #9aa6c4"><div class="hd"><b>حفرة رقم '+esc(p.no)+'</b><span class="tm">بلوك '+esc(r.d.block||"—")+'</span></div><div class="steps">';
+      STEPS.forEach(function(s){
+        h+='<div class="step '+(p[s.k]?'done':'')+'">'+s.n+'<span class="t">'+(p[s.k]?hm(p[s.k]):'--:--')+'</span></div>';
+      });
+      h+='</div><div class="tm" style="margin-top:10px">كمية الصب m3: <b>'+esc(p.vol||"—")+'</b></div>'+
+         (p.note?'<div class="tm">ملاحظات: '+esc(p.note)+'</div>':'')+'</div>';
     });
-    h+='</div>';
   }
 
   open.forEach(function(p){
