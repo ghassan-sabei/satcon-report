@@ -99,7 +99,7 @@ button:active{transform:scale(.97)}
 (function(){
 "use strict";
 var KEY="satcon_daily_v1";
-var APP_VER="2026.11.19-d";
+var APP_VER="2026.11.20-a";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -153,6 +153,7 @@ function delayMs(day){
 function delayHours(day){return Math.round(delayMs(day)/360000)/10}
 function activePause(day){var p=day.pauses[day.pauses.length-1];return p&&!p.end?p:null}
 function isDone(p){return p.pourEnd&&p.vol!==""&&p.vol!=null}
+function stageOf(p){var last=null;STEPS.forEach(function(x){if(p[x.k])last=x});return last?'آخر خطوة: '+last.n+' '+hm(p[last.k]):'لم يبدأ الحفر بعد'}
 function totals(day){
   var n=0,v=0;
   day.piles.forEach(function(p){if(p.pourEnd){n++;v+=num(p.vol)}});
@@ -240,6 +241,16 @@ function render(){
   h+='<div class="tm">مجموع التأخير: <b>'+delayHours(day)+'</b> ساعة</div></div>';
 
   h+='<button class="big pri" id="newPile" style="margin-bottom:12px">+ حفرة جديدة</button>';
+  /* open piles being worked on today from the other phones (shared live) */
+  var todayIso=isoDate(new Date()),remote=[];
+  (S.archive||[]).forEach(function(d){if(d&&d.date===todayIso&&d.uid!==(S.cur&&S.cur.uid))(d.piles||[]).forEach(function(p){if(!isDone(p))remote.push({d:d,p:p})})});
+  if(remote.length){
+    h+='<div class="box"><h2>حفر مفتوحة الآن من الأجهزة الأخرى</h2>';
+    remote.forEach(function(r){
+      h+='<div class="it"><span><b>حفرة رقم '+esc(r.p.no)+'</b> &nbsp; بلوك '+esc(r.d.block||"—")+'</span><span class="tm">'+esc(stageOf(r.p))+'</span></div>';
+    });
+    h+='</div>';
+  }
 
   open.forEach(function(p){
     var nextIdx=-1;for(var i=0;i<STEPS.length;i++){if(!p[STEPS[i].k]){nextIdx=i;break}}
