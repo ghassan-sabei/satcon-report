@@ -248,12 +248,12 @@ function render(){
   h+='<button class="big pri" id="newPile" style="margin-bottom:12px">+ حفرة جديدة</button>';
   /* open piles being worked on today from the other phones (shared live) */
   var todayIso=isoDate(new Date()),remote=[];
-  (S.archive||[]).forEach(function(d){if(d&&d.date===todayIso&&d.uid!==(S.cur&&S.cur.uid))(d.piles||[]).forEach(function(p){if(!isDone(p))remote.push({d:d,p:p})})});
+  (S.archive||[]).forEach(function(d){if(d&&d.date===todayIso&&d.uid!==(S.cur&&S.cur.uid))(d.piles||[]).forEach(function(p){remote.push({d:d,p:p})})});
   if(remote.length){
-    h+='<div class="box"><h2>حفر مفتوحة الآن من الأجهزة الأخرى</h2><p class="hint" style="margin-top:0">نفس البطاقة كما عند الجهاز الذي فتحها</p></div>';
+    h+='<div class="box"><h2>حفر اليوم من الأجهزة الأخرى</h2><p class="hint" style="margin-top:0">نفس البطاقة كما عند الجهاز الذي فتحها، والخالصة معلّمة بعلامة ✓</p></div>';
     remote.forEach(function(r){
       var p=r.p;
-      h+='<div class="box card" style="border:2px dashed #9aa6c4"><div class="hd"><b>حفرة رقم '+esc(p.no)+'</b><span class="tm">بلوك '+esc(r.d.block||"—")+'</span></div><div class="steps">';
+      h+='<div class="box card" style="border:2px dashed #9aa6c4"><div class="hd"><b>'+(isDone(p)?'✓ ':'')+'حفرة رقم '+esc(p.no)+'</b><span class="tm">بلوك '+esc(r.d.block||"—")+'</span></div><div class="steps">';
       STEPS.forEach(function(s){
         h+='<div class="step '+(p[s.k]?'done':'')+'">'+s.n+'<span class="t">'+(p[s.k]?hm(p[s.k]):'--:--')+'</span></div>';
       });
