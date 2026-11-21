@@ -98,6 +98,8 @@ button:active{transform:scale(.97)}
 <script>
 (function(){
 "use strict";
+var _renderBase=render;
+render=function(){_renderBase();applyLang(document.getElementById("app"));applyLang(document.querySelector("header"))};
 var KEYBASE="satcon_daily_v1";
 /* projects: the default project ("") keeps the old keys; each other project gets its own suffix */
 var REGK="satcon_report_projects";
@@ -105,7 +107,7 @@ var REG={cur:"",slots:[]};
 try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
 var SUF=REG.cur?"_"+REG.cur:"";
 var KEY=KEYBASE+SUF;
-var APP_VER="2026.11.21-h";
+var APP_VER="2026.11.21-i";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -115,6 +117,194 @@ var STEPS=[
  {k:"pourEnd",n:"انتهاء الصب"}
 ];
 var REASONS=["عطل","انتظار كونكريت","طقس","غيره"];
+var LANG_KEY="satcon_report_lang",PLANG_KEY="satcon_report_plang";
+var LANG=(function(){try{var v=localStorage.getItem(LANG_KEY);return v==="en"||v==="fr"?v:"ar"}catch(e){return"ar"}})();
+var PLANG=(function(){try{var v=localStorage.getItem(PLANG_KEY);return v==="en"||v==="fr"?v:"ar"}catch(e){return"ar"}})();
+var DICT=[
+["الأحد","Sunday","Dimanche"],
+["الاثنين","Monday","Lundi"],
+["الثلاثاء","Tuesday","Mardi"],
+["الأربعاء","Wednesday","Mercredi"],
+["الخميس","Thursday","Jeudi"],
+["الجمعة","Friday","Vendredi"],
+["السبت","Saturday","Samedi"],
+["بدء الحفر","Drilling start","Début du forage"],
+["انتهاء الحفر","Drilling end","Fin du forage"],
+["طلب الكونكريت","Concrete order","Commande de béton"],
+["وصول الكونكريت","Concrete arrival","Arrivée du béton"],
+["بدء الصب","Pour start","Début du coulage"],
+["انتهاء الصب","Pour end","Fin du coulage"],
+["انتظار كونكريت","Waiting for concrete","Attente de béton"],
+["عطل","Breakdown","Panne"],
+["طقس","Weather","Météo"],
+["غيره","Other","Autre"],
+["التقرير اليومي","Daily report","Rapport journalier"],
+["المشروع الأول","First project","Premier projet"],
+["✏️ عم تعدّل يوم","✏️ Editing day","✏️ Modification du jour"],
+["اليوم الحالي محفوظ على جنب. لما تخلص اكبس","Today is set aside. When you finish, press","Le jour actuel est mis de côté. Quand vous avez fini, appuyez sur"],
+["✓ خلّصت التعديل","✓ Finished editing","✓ Modification terminée"],
+["خلّصت التعديل","Finished editing","Modification terminée"],
+["↩ إلغاء التعديل","↩ Cancel editing","↩ Annuler la modification"],
+["⚠️ سلّمت البيانات لمشرف تاني بتاريخ","⚠️ Data handed over to another supervisor on","⚠️ Données remises à un autre superviseur le"],
+["أي شي بتسجّله هون بعد التسليم ما بيوصله.","Anything you record here after handover will not reach them.","Tout ce que vous enregistrez ici après la remise ne leur parviendra pas."],
+["فهمت، خفّي التنبيه","Got it, hide the alert","Compris, masquer l'alerte"],
+["معلومات اليوم (من الجهاز الذي يسجّل)","Day info (from the device recording)","Infos du jour (depuis l'appareil qui enregistre)"],
+["معلومات اليوم","Day info","Infos du jour"],
+["تاريخ التقرير","Report date","Date du rapport"],
+["⚠️ تاريخ التقرير مش تاريخ اليوم. إذا غلط صلّحه من هون.","⚠️ Report date is not today. If it is wrong, fix it here.","⚠️ La date du rapport n'est pas aujourd'hui. Si c'est faux, corrigez-la ici."],
+["رقم البلوك","Block no.","N° de bloc"],
+["بدء العمل ✓","Start work ✓","Début du travail ✓"],
+["بدء العمل","Start work","Début du travail"],
+["انتهاء العمل ✓","End work ✓","Fin du travail ✓"],
+["انتهاء العمل","End work","Fin du travail"],
+["ضغطة مطوّلة على أي زر لتعديل الوقت","Long-press any button to edit the time","Appui long sur un bouton pour modifier l'heure"],
+["متوقف منذ","Stopped since","Arrêté depuis"],
+["— السبب:","— Reason:","— Raison :"],
+["استئناف","Resume","Reprendre"],
+["توقف","Stop","Arrêter"],
+["التوقف","Stop","Arrêt"],
+["مجموع التأخير:","Total delay:","Retard total :"],
+["+ حفرة جديدة","+ New pile","+ Nouveau pieu"],
+["حالة العمل من الأجهزة الأخرى","Work status from other devices","État du travail des autres appareils"],
+["انتهى الدوام","Work ended","Travail terminé"],
+["عم يشتغل منذ","Working since","En cours depuis"],
+["ما بدأ الدوام بعد","Work not started yet","Travail pas encore commencé"],
+["حفر مفتوحة من الأجهزة الأخرى","Open piles from other devices","Pieux ouverts des autres appareils"],
+["نفس البطاقة كما عند الجهاز الذي فتحها","Same card as on the device that opened it","Même fiche que sur l'appareil qui l'a ouverte"],
+["حفر خالصة من الأجهزة الأخرى","Finished piles from other devices","Pieux terminés des autres appareils"],
+["حفرة رقم","Pile no.","Pieu n°"],
+["كمية الصب m3:","Concrete volume m3:","Volume de béton m3 :"],
+["كمية الصب m3","Concrete volume m3","Volume de béton m3"],
+["ملاحظات:","Notes:","Remarques :"],
+["ملاحظات","Notes","Remarques"],
+["✎ تعديل الرقم","✎ Edit no.","✎ Modifier le n°"],
+["اكتب كمية الصب لإغلاق الحفرة","Enter the concrete volume to close the pile","Saisissez le volume de béton pour fermer le pieu"],
+["ملخص اليوم","Day summary","Résumé du jour"],
+["بايلات منفذة","Piles done","Pieux réalisés"],
+["كونكريت m3","Concrete m3","Béton m3"],
+["المورتر m3","Mortar m3","Mortier m3"],
+["التأخير","Delay","Retard"],
+["بلوك","Block","Bloc"],
+["فتح","Open","Ouvrir"],
+["🖨 طباعة","🖨 Print","🖨 Imprimer"],
+["📄 إرسال PDF","📄 Send PDF","📄 Envoyer PDF"],
+["📊 ملخص البلوكات","📊 Block summary","📊 Résumé des blocs"],
+["🗺️ المخطط","🗺️ Plan","🗺️ Plan"],
+["الأيام السابقة","Previous days","Jours précédents"],
+["الإعدادات","Settings","Paramètres"],
+["بدء يوم جديد","Start new day","Commencer une nouvelle journée"],
+["اللغة","Language","Langue"],
+["لغة الواجهة","Interface language","Langue de l'interface"],
+["لغة الطباعة","Print language","Langue d'impression"],
+["كل جهاز يختار لغته لحاله.","Each device chooses its own language.","Chaque appareil choisit sa propre langue."]
+,
+["حذف","Delete","Supprimer"],
+["العدد","No.","N°"],
+["الملاحظات","Notes","Remarques"],
+["اليوم والتاريخ","Day and date","Jour et date"],
+["تقرير يومي","Daily report","Rapport journalier"],
+["رقم الحفرة","Pile no.","N° du pieu"],
+["وقت إنتهاء الحفر","Drilling end time","Heure fin du forage"],
+["وقت إنتهاء الصب","Pour end time","Heure fin du coulage"],
+["وقت بدء الحفر","Drilling start time","Heure début du forage"],
+["وقت بدء الصب","Pour start time","Heure début du coulage"],
+["وقت طلب الكونكريت","Concrete order time","Heure commande béton"],
+["وقت وصول الكونكريت","Concrete arrival time","Heure arrivée béton"],
+["توقفات:","Stops:","Arrêts :"],
+["الطباعة المباشرة ما فتحت","Direct printing did not open","L'impression directe ne s'est pas ouverte"],
+["رح جهّزلك التقرير PDF، اختار تطبيق PDF من القائمة وافتحه واطبع منه.","I will prepare the PDF. Choose a PDF app from the list, open it and print.","Je prépare le PDF. Choisissez une appli PDF dans la liste, ouvrez-le et imprimez."],
+["تجهيز PDF","Prepare PDF","Préparer le PDF"],
+["إلغاء","Cancel","Annuler"],
+["جاري تجهيز PDF...","Preparing PDF...","Préparation du PDF..."],
+["ما قدر يجهّز PDF","Could not prepare the PDF","Impossible de préparer le PDF"],
+["أول مرة لازم يكون في إنترنت حتى ينزّل أدوات الـPDF، بعدها بيشتغل بدون نت.","The first time, the internet is needed to download the PDF tools; after that it works offline.","La première fois, une connexion internet est nécessaire pour télécharger les outils PDF ; ensuite cela fonctionne hors ligne."],
+["تمام","OK","OK"],
+["بدون رقم","No number","Sans numéro"],
+["أيام عمل","Work days","Jours de travail"],
+["بايلات","Piles","Pieux"],
+["أمتار","Meters","Mètres"]
+,
+["→ رجوع للتقرير","→ Back to report","→ Retour au rapport"],
+["→ رجوع","→ Back","→ Retour"],
+["ما في يوم بهالبحث","No day matches this search","Aucun jour ne correspond à cette recherche"],
+["✏️ تعديل","✏️ Edit","✏️ Modifier"],
+["📅 التاريخ","📅 Date","📅 Date"],
+["طباعة","Print","Imprimer"],
+["🖨 طباعة كل البلوكات","🖨 Print all blocks","🖨 Imprimer tous les blocs"],
+["📄 PDF كل البلوكات","📄 PDF all blocks","📄 PDF de tous les blocs"],
+["ملخص البلوكات","Block summary","Résumé des blocs"],
+["بلوك J3","Block J3","Bloc J3"],
+["بايلات","Piles","Pieux"],
+["بايل","pile","pieu"],
+["مورتر m3","Mortar m3","Mortier m3"],
+["🗺️ مخطط الحفر","🗺️ Pile plan","🗺️ Plan des pieux"],
+["البلوك","Block","Bloc"],
+["📥 استيراد مخطط (DWG)","📥 Import plan (DWG)","📥 Importer le plan (DWG)"],
+["المجموع","Total","Total"],
+["منفّذة","Done","Réalisés"],
+["باقية","Left","Restants"],
+["الإنجاز","Progress","Avancement"],
+["الأزرار على طرف المخطط: ＋ تكبير، － تصغير، ⟳ تدوير، ⤢ المخطط كامل. حرّك بإصبع، كبّر بإصبعين. كبسة على حفرة باقية بتفتحها بالتقرير.","Buttons at the edge of the plan: ＋ zoom in, － zoom out, ⟳ rotate, ⤢ full plan. Move with one finger, zoom with two. Tap a remaining pile to open it in the report.","Boutons sur le bord du plan : ＋ zoom avant, － zoom arrière, ⟳ rotation, ⤢ plan complet. Déplacez avec un doigt, zoomez avec deux. Appuyez sur un pieu restant pour l'ouvrir dans le rapport."],
+["◯ أخضر","◯ Green","◯ Vert"],
+["= خالصة ·","= done ·","= terminé ·"],
+["◯ برتقالي","◯ Orange","◯ Orange"],
+["= مفتوحة اليوم.","= open today.","= ouvert aujourd'hui."],
+["حجم الورق","Paper size","Format du papier"],
+["تكبير الطباعة","Print zoom","Zoom d'impression"],
+["عادي (كامل بورقة واحدة)","Normal (whole plan on one sheet)","Normal (plan entier sur une feuille)"],
+["حذف مخطط","Delete plan","Supprimer le plan"],
+["اسم المشروع","Project name","Nom du projet"],
+["عمق البايل (m)","Pile depth (m)","Profondeur du pieu (m)"],
+["طول الحديد (m)","Steel length (m)","Longueur d'acier (m)"],
+["تاريخ اليوم الحالي","Current day date","Date du jour actuel"],
+["🔗 المشاركة بين الهواتف","🔗 Sharing between phones","🔗 Partage entre téléphones"],
+["كل الهواتف (والكمبيوتر) اللي عندها نفس","All phones (and computers) that have the same","Tous les téléphones (et ordinateurs) ayant le même"],
+["رمز المشروع","Project code","Code du projet"],
+["بتشوف كل التقارير والمخططات.","will see all reports and plans.","verront tous les rapports et plans."],
+["📥 انضمام (بيدمج تقارير هالهاتف مع المشروع)","📥 Join (merges this phone's reports into the project)","📥 Rejoindre (fusionne les rapports de ce téléphone au projet)"],
+["📤 أول هاتف: ارفع تقارير هالهاتف","📤 First phone: upload this phone's reports","📤 Premier téléphone : envoyer les rapports de ce téléphone"],
+["بدو إنترنت وقت الانضمام بس. ما بينمسح شي من هالهاتف: الأيام اللي عليه بتنضاف للمشروع.","Internet is only needed when joining. Nothing is deleted from this phone: its days are added to the project.","Internet n'est nécessaire que pour rejoindre. Rien n'est effacé de ce téléphone : ses jours sont ajoutés au projet."],
+["🔒 كلمة سر الإدارة","🔒 Admin password","🔒 Mot de passe admin"],
+["لحذف مخطط وفصل الهاتف عن المشاركة.","To delete a plan and disconnect the phone from sharing.","Pour supprimer un plan et déconnecter le téléphone du partage."],
+["تعيين كلمة السر","Set password","Définir le mot de passe"],
+["التحديثات","Updates","Mises à jour"],
+["نسخة الصفحة:","Page version:","Version de la page :"],
+[". التطبيق بينزّل التحديث لحاله كل ما ينفتح وفي نت.",". The app downloads updates by itself whenever it opens with internet.",". L'application télécharge les mises à jour automatiquement à l'ouverture, avec internet."],
+["🔄 فحص التحديثات","🔄 Check for updates","🔄 Vérifier les mises à jour"],
+["تسليم واستلام بين المشرفين","Handover between supervisors","Remise et réception entre superviseurs"],
+["التسليم بيطلّع ملف فيه كل شي: اليوم الحالي، الأيام السابقة، المخططات، والإعدادات. المشرف الجديد بيستلمه وبيكمّل من مكانك.","Handover creates a file with everything: today, previous days, plans and settings. The new supervisor receives it and continues from where you stopped.","La remise crée un fichier contenant tout : le jour actuel, les jours précédents, les plans et les paramètres. Le nouveau superviseur le reçoit et continue là où vous vous êtes arrêté."],
+["📤 تسليم البيانات","📤 Hand over data","📤 Remettre les données"],
+["📥 استلام البيانات","📥 Receive data","📥 Recevoir les données"],
+["الملف نفسه بيصلح نسخة احتياطية إذا ضاع الموبايل.","The file also works as a backup if the phone is lost.","Le fichier sert aussi de sauvegarde si le téléphone est perdu."]
+,
+["إغلاق","Close","Fermer"],
+["تغيير","Change","Modifier"],
+["تعيين","Set","Définir"],
+["استبدال","Replace","Remplacer"],
+["فصل","Disconnect","Déconnecter"],
+["يوم جديد","New day","Nouveau jour"],
+["حفظ","Save","Enregistrer"],
+["إضافة","Add","Ajouter"],
+["بعدين","Later","Plus tard"],
+["بدّل","Replace","Remplacer"],
+["بالتقرير","in the report","dans le rapport"],
+["تم ✓","Done ✓","Terminé ✓"],
+["تحديث الآن","Update now","Mettre à jour maintenant"],
+["جاري التحديث...","Updating...","Mise à jour..."],
+["عندك آخر نسخة ✓","You have the latest version ✓","Vous avez la dernière version ✓"],
+["ما قدرت افحص","Could not check","Impossible de vérifier"],
+["جاري فحص التحديثات...","Checking for updates...","Recherche de mises à jour..."],
+["مش محطوط","not on the plan","absent du plan"],
+["ما في إنترنت","No internet","Pas d'internet"]
+].sort(function(a,b){return b[0].length-a[0].length});
+/* translate Arabic phrases in an html string for en/fr (Arabic is the source text) */
+function trs(html,l){if(!html||l==="ar")return html;var i=l==="en"?1:2;
+  html=html.replace(/(\d) ص(?![\u0600-\u06FF])/g,"$1 AM").replace(/(\d) م(?![\u0600-\u06FF])/g,"$1 PM").replace(/(\d) د(?![\u0600-\u06FF])/g,"$1 min");
+  DICT.forEach(function(p){if(html.indexOf(p[0])>=0)html=html.split(p[0]).join(p[i])});return html}
+/* translate the text on screen (after each render and in dialogs) */
+function applyLang(root){if(!root)return;document.documentElement.lang=LANG;document.documentElement.dir=LANG==="ar"?"rtl":"ltr";
+  if(LANG==="ar")return;var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null),n;
+  while((n=w.nextNode())){if(/[\u0600-\u06FF]/.test(n.nodeValue)){var v=trs(n.nodeValue,LANG);if(v!==n.nodeValue)n.nodeValue=v}}}
 var DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
 
 var S=load();
@@ -176,7 +366,7 @@ function totals(day){
 
 /* ---------- modal helpers ---------- */
 var M=document.getElementById("modal"),MI=document.getElementById("modalIn");
-function openModal(html){MI.innerHTML=html;M.classList.add("show")}
+function openModal(html){MI.innerHTML=html;applyLang(MI);M.classList.add("show")}
 function closeModal(){M.classList.remove("show");MI.innerHTML="";if(window.__syncKick)setTimeout(window.__syncKick,0)}
 M.addEventListener("click",function(e){if(e.target===M)closeModal()});
 function confirmBox(msg,yes,cb){
@@ -691,6 +881,8 @@ function renderArchive(app){
 function renderSettings(app){
   var s=S.settings;
   app.innerHTML='<button id="back" style="margin-bottom:12px">→ رجوع</button><div class="box"><h2>الإعدادات</h2>'+
+   '<div class="row"><label>لغة الواجهة</label><select id="langUI"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option></select></div>'+
+   '<div class="row"><label>لغة الطباعة</label><select id="langPR"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option></select></div><p class="hint">كل جهاز يختار لغته لحاله.</p>'+
    '<div class="row"><label>اسم المشروع</label><input type="text" id="sP" value="'+esc(s.project)+'"></div>'+
    '<div class="row"><label>عمق البايل (m)</label><input type="number" inputmode="decimal" id="sD" value="'+esc(s.depth)+'"></div>'+
    '<div class="row"><label>طول الحديد (m)</label><input type="number" inputmode="decimal" id="sS" value="'+esc(s.steel)+'"></div>'+
@@ -703,6 +895,9 @@ function renderSettings(app){
    '<label class="big" style="display:block;text-align:center;border-radius:10px;padding:16px;background:#dfe5f0;cursor:pointer;font-weight:600">📥 استلام البيانات<input type="file" id="hoIn" accept=".json,application/json,*/*" style="display:none"></label>'+
    '<p class="hint">الملف نفسه بيصلح نسخة احتياطية إذا ضاع الموبايل.</p></div>';
   document.getElementById("back").onclick=function(){view="main";render()};
+  var lu=document.getElementById("langUI"),lp=document.getElementById("langPR");
+  if(lu){lu.value=LANG;lu.onchange=function(){try{localStorage.setItem(LANG_KEY,this.value)}catch(e){}location.reload()}}
+  if(lp){lp.value=PLANG;lp.onchange=function(){try{localStorage.setItem(PLANG_KEY,this.value)}catch(e){}location.reload()}}
   document.getElementById("sP").oninput=function(e){s.project=e.target.value;save()};
   document.getElementById("sD").oninput=function(e){s.depth=e.target.value;S.cur.depth=e.target.value;save()};
   document.getElementById("sS").oninput=function(e){s.steel=e.target.value;S.cur.steel=e.target.value;save()};
@@ -883,6 +1078,7 @@ var A3_W=1527,A3_H=1062;
 var pageStyle=document.createElement("style");document.head.appendChild(pageStyle);
 pageStyle.textContent=NATIVE?"@page{size:A4 landscape;margin:8mm}":"";
 function printPages(pages,title,fallback,a3,rotate){
+  pages=pages.map(function(x){return trs(x,PLANG)});
   if(NATIVE&&rotate&&window.AndroidBridge.printSized){
     /* landscape sheet rotated onto a portrait page: comes out right whatever the printer decides */
     pageStyle.textContent="@page{size:"+(a3?"A3":"A4")+" portrait;margin:8mm}";
@@ -921,6 +1117,7 @@ function loadScript(u){return new Promise(function(res,rej){var s=document.creat
 function busy(msg){openModal('<h3 style="text-align:center">'+esc(msg)+'</h3>')}
 function pdfPages(makePages,name,title,a3){
   var PW=a3?A3_W:PAGE_W,PH=a3?A3_H:PAGE_H,FMT=a3?"a3":"a4",MW=a3?404:281;
+  var makeRaw=makePages;makePages=function(){return makeRaw().map(function(x){return trs(x,PLANG)})};
   busy("جاري تجهيز PDF...");
   var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
   p.then(function(){
