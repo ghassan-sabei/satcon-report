@@ -105,7 +105,7 @@ var REG={cur:"",slots:[]};
 try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
 var SUF=REG.cur?"_"+REG.cur:"";
 var KEY=KEYBASE+SUF;
-var APP_VER="2026.11.21-c";
+var APP_VER="2026.11.21-d";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -157,6 +157,9 @@ function delayMs(day){
   return t;
 }
 function delayHours(day){return Math.round(delayMs(day)/360000)/10}
+/* delay as hours and minutes, e.g. 2 ساعة و 5 دقيقة */
+function delayTxtMs(ms){var m=Math.round(ms/60000);return Math.floor(m/60)+' ساعة و '+(m%60)+' دقيقة'}
+function delayTxt(day){return delayTxtMs(delayMs(day))}
 function activePause(day){var p=day.pauses[day.pauses.length-1];return p&&!p.end?p:null}
 function isDone(p){return p.pourEnd&&p.vol!==""&&p.vol!=null}
 function totals(day){
@@ -243,9 +246,19 @@ function render(){
     });
     h+='</div>';
   }
-  h+='<div class="tm">مجموع التأخير: <b>'+delayHours(day)+'</b> ساعة</div></div>';
+  h+='<div class="tm">مجموع التأخير: <b>'+delayTxt(day)+'</b></div></div>';
 
   h+='<button class="big pri" id="newPile" style="margin-bottom:12px">+ حفرة جديدة</button>';
+  /* live work status of today on the other phones (working / paused with the reason / finished) */
+  var stDays=(S.archive||[]).filter(function(d){return d&&d.date===todayIso&&d.uid!==(S.cur&&S.cur.uid)});
+  if(stDays.length){
+    h+='<div class="box"><h2>حالة العمل من الأجهزة الأخرى</h2>';
+    stDays.forEach(function(d){
+      var ap=activePause(d),txt=ap?'متوقف منذ <b>'+hm(ap.start)+'</b> — السبب: <b>'+esc(ap.reason)+'</b>':(d.workEnd?'انتهى الدوام <b>'+hm(d.workEnd)+'</b>':(d.workStart?'عم يشتغل منذ <b>'+hm(d.workStart)+'</b>':'ما بدأ الدوام بعد'));
+      h+='<div class="it"><span>بلوك '+esc(d.block||"—")+'</span><span>'+txt+'</span></div>';
+    });
+    h+='</div>';
+  }
   /* today's piles from the other phones: open ones as full cards, finished ones as a short list (like this phone's) */
   var todayIso=isoDate(new Date()),remote=[];
   (S.archive||[]).forEach(function(d){if(d&&d.date===todayIso&&d.uid!==(S.cur&&S.cur.uid))(d.piles||[]).forEach(function(p){remote.push({d:d,p:p})})});
@@ -284,10 +297,13 @@ function render(){
        '</div>';
   });
 
-  h+='<div class="box"><h2>ملخص اليوم</h2><div class="stat">'+
-     '<div><b>'+tt.n+'</b><span>بايلات منفذة</span></div>'+
-     '<div><b>'+tt.v+'</b><span>كونكريت m3</span></div>'+
-     '<div><b>'+delayHours(day)+'</b><span>تأخير (ساعة)</span></div></div>'+
+    /* the summary covers every phone's day today (this phone's and the others') */
+  var allToday=[S.cur].concat(stDays||[]),sumN=0,sumV=0,sumMs=0;
+  allToday.forEach(function(d){var t=totals(d);sumN+=t.n;sumV+=t.v;sumMs+=delayMs(d)});
+h+='<div class="box"><h2>ملخص اليوم</h2><div class="stat">'+
+     '<div><b>'+sumN+'</b><span>بايلات منفذة</span></div>'+
+     '<div><b>'+sumV+'</b><span>كونكريت m3</span></div>'+
+     '<div><b>'+delayTxtMs(sumMs)+'</b><span>التأخير</span></div></div>'+
      '<div class="row" style="margin-top:10px"><label>المورتر m3</label><input type="number" inputmode="decimal" step="0.1" id="mortar" value="'+esc(day.mortar)+'"></div>';
   if(done.length){
     h+='<div class="done-list">';
