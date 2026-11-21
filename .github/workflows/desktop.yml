@@ -1,0 +1,39 @@
+name: stock-desktop
+
+on:
+  push:
+    branches: [main]
+    paths: ['stock/**']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+          - os: ubuntu-latest
+            target: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        working-directory: stock/desktop
+        run: npm install
+      - name: Build
+        working-directory: stock/desktop
+        run: npx electron-builder --${{ matrix.target }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-${{ matrix.target }}
+          path: stock/desktop/dist/*.exe
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-${{ matrix.target }}-appimage
+          path: stock/desktop/dist/*.AppImage
+          if-no-files-found: ignore

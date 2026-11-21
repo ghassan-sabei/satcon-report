@@ -1,0 +1,27 @@
+{
+  "name": "satcon-stock",
+  "productName": "ستوك",
+  "version": "1.0.0",
+  "description": "Stock app desktop wrapper",
+  "main": "main.js",
+  "author": "Satcon",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.satcon.stock",
+    "productName": "Stock",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "package.json", "build/**"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Stock" },
+    "linux": { "target": ["AppImage"], "category": "Office" }
+  }
+}
