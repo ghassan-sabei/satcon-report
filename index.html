@@ -105,7 +105,7 @@ var REG={cur:"",slots:[]};
 try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
 var SUF=REG.cur?"_"+REG.cur:"";
 var KEY=KEYBASE+SUF;
-var APP_VER="2026.11.21-f";
+var APP_VER="2026.11.21-g";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -160,6 +160,12 @@ function delayHours(day){return Math.round(delayMs(day)/360000)/10}
 /* delay as hours and minutes, e.g. 2 ساعة و 5 دقيقة */
 function delayTxtMs(ms){var m=Math.round(ms/60000);return Math.floor(m/60)+' ساعة و '+(m%60)+' دقيقة'}
 function delayTxt(day){return delayTxtMs(delayMs(day))}
+/* read-only top of the day another phone is recording (used on a phone with nothing recorded yet) */
+function watchBox(d){var ap=activePause(d);
+  return '<div class="box"><h2>معلومات اليوم (من الجهاز الذي يسجّل)</h2><p class="tm" style="margin:0">التاريخ: <b>'+fmtDate(d.date)+'</b> — البلوك: <b>'+esc(d.block||"—")+'</b></p>'+
+    '<div class="two" style="margin-top:8px"><div><div class="tm">بدء العمل</div><b>'+(d.workStart?hm(d.workStart):'—')+'</b></div><div><div class="tm">انتهاء العمل</div><b>'+(d.workEnd?hm(d.workEnd):'—')+'</b></div></div></div>'+
+    '<div class="box '+(ap?'paused':'')+'"><h2>التوقف</h2>'+(ap?'<p style="margin:0">متوقف منذ <b>'+hm(ap.start)+'</b> — السبب: <b>'+esc(ap.reason)+'</b></p>':'<p class="tm" style="margin:0">ما في توقف الآن</p>')+
+    '<div class="tm" style="margin-top:6px">مجموع التأخير: <b>'+delayTxt(d)+'</b></div></div>';}
 function activePause(day){var p=day.pauses[day.pauses.length-1];return p&&!p.end?p:null}
 function isDone(p){return p.pourEnd&&p.vol!==""&&p.vol!=null}
 function totals(day){
@@ -193,6 +199,7 @@ function timeEdit(title,ts,cb){
 
 /* long press */
 function bindPress(el,tap,long){
+  if(!el)return;
   var t=null,fired=false;
   function start(){fired=false;t=setTimeout(function(){fired=true;long()},600)}
   function end(e){clearTimeout(t);if(!fired&&e.type!=="pointerleave"&&e.type!=="pointercancel")tap()}
@@ -218,6 +225,9 @@ function render(){
   var open=day.piles.filter(function(p){return!isDone(p)});
   var done=day.piles.filter(isDone);
   var h="";
+  var todayIso0=isoDate(new Date()),otherToday=(S.archive||[]).filter(function(d){return d&&d.date===todayIso0&&d.uid!==(S.cur&&S.cur.uid)&&hasContent(d)});
+  var ro=!hasContent(day)&&otherToday.length>0;
+  if(ro){h+=watchBox(otherToday[0]);}else{
   if(S.editing)h+='<div class="box" style="background:#fff4e0;border:2px solid #e08a00"><b>✏️ عم تعدّل يوم '+dayName(day.date)+' '+fmtDate(day.date)+'</b><br><span class="muted">اليوم الحالي محفوظ على جنب. لما تخلص اكبس "خلّصت التعديل".</span>'+
     '<div class="two" style="margin-top:8px"><button class="ok" id="edDone">✓ خلّصت التعديل</button><button id="edCancel">↩ إلغاء التعديل</button></div></div>';
 
@@ -249,9 +259,10 @@ function render(){
   h+='<div class="tm">مجموع التأخير: <b>'+delayTxt(day)+'</b></div></div>';
 
   h+='<button class="big pri" id="newPile" style="margin-bottom:12px">+ حفرة جديدة</button>';
+  }
   /* live work status of today on the other phones (working / paused with the reason / finished) */
   var stDays=(S.archive||[]).filter(function(d){return d&&d.date===isoDate(new Date())&&d.uid!==(S.cur&&S.cur.uid)&&hasContent(d)});
-  if(stDays.length){
+  if(stDays.length&&!ro){
     h+='<div class="box"><h2>حالة العمل من الأجهزة الأخرى</h2>';
     stDays.forEach(function(d){
       var ap=activePause(d),txt=ap?'متوقف منذ <b>'+hm(ap.start)+'</b> — السبب: <b>'+esc(ap.reason)+'</b>':(d.workEnd?'انتهى الدوام <b>'+hm(d.workEnd)+'</b>':(d.workStart?'عم يشتغل منذ <b>'+hm(d.workStart)+'</b>':'ما بدأ الدوام بعد'));
@@ -329,9 +340,9 @@ function findPile(id){id=+id;for(var i=0;i<S.cur.piles.length;i++)if(S.cur.piles
 
 function wire(app){
   var day=S.cur;
-  document.getElementById("block").oninput=function(e){day.block=e.target.value;save()};
-  document.getElementById("dayDate").onchange=function(e){if(e.target.value){day.date=e.target.value;save();render()}};
-  document.getElementById("mortar").oninput=function(e){day.mortar=e.target.value;save()};
+  if(document.getElementById("block"))document.getElementById("block").oninput=function(e){day.block=e.target.value;save()};
+  if(document.getElementById("dayDate"))document.getElementById("dayDate").onchange=function(e){if(e.target.value){day.date=e.target.value;save();render()}};
+  if(document.getElementById("mortar"))document.getElementById("mortar").oninput=function(e){day.mortar=e.target.value;save()};
   bindPress(app.querySelector('[data-id=ws]'),function(){
     if(!day.workStart){if(!day.piles.length&&day.date!==isoDate(new Date()))day.date=isoDate(new Date());day.workStart=Date.now();save();render()}
   },function(){timeEdit("وقت بدء العمل",day.workStart,function(t){day.workStart=t;save();render()})});
@@ -363,7 +374,7 @@ function wire(app){
     confirmBox("حذف هذا التوقف؟","حذف",function(){day.pauses.splice(+b.getAttribute("data-delp"),1);save();render()});
   }});
 
-  document.getElementById("newPile").onclick=function(){
+  if(document.getElementById("newPile"))document.getElementById("newPile").onclick=function(){
     openModal('<h3>رقم الحفرة</h3><input type="text" id="mP" inputmode="text" style="font-size:22px"><div class="acts"><button id="mS" class="pri">إضافة</button><button id="mN">إلغاء</button></div>');
     var inp=document.getElementById("mP");setTimeout(function(){inp.focus()},50);
     document.getElementById("mS").onclick=function(){
