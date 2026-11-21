@@ -105,7 +105,7 @@ var REG={cur:"",slots:[]};
 try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
 var SUF=REG.cur?"_"+REG.cur:"";
 var KEY=KEYBASE+SUF;
-var APP_VER="2026.11.21-e";
+var APP_VER="2026.11.21-f";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -250,7 +250,7 @@ function render(){
 
   h+='<button class="big pri" id="newPile" style="margin-bottom:12px">+ حفرة جديدة</button>';
   /* live work status of today on the other phones (working / paused with the reason / finished) */
-  var stDays=(S.archive||[]).filter(function(d){return d&&d.date===isoDate(new Date())&&d.uid!==(S.cur&&S.cur.uid)});
+  var stDays=(S.archive||[]).filter(function(d){return d&&d.date===isoDate(new Date())&&d.uid!==(S.cur&&S.cur.uid)&&hasContent(d)});
   if(stDays.length){
     h+='<div class="box"><h2>حالة العمل من الأجهزة الأخرى</h2>';
     stDays.forEach(function(d){
