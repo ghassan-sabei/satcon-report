@@ -105,7 +105,7 @@ var REG={cur:"",slots:[]};
 try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
 var SUF=REG.cur?"_"+REG.cur:"";
 var KEY=KEYBASE+SUF;
-var APP_VER="2026.11.21-b";
+var APP_VER="2026.11.21-c";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -246,20 +246,29 @@ function render(){
   h+='<div class="tm">مجموع التأخير: <b>'+delayHours(day)+'</b> ساعة</div></div>';
 
   h+='<button class="big pri" id="newPile" style="margin-bottom:12px">+ حفرة جديدة</button>';
-  /* open piles being worked on today from the other phones (shared live) */
+  /* today's piles from the other phones: open ones as full cards, finished ones as a short list (like this phone's) */
   var todayIso=isoDate(new Date()),remote=[];
   (S.archive||[]).forEach(function(d){if(d&&d.date===todayIso&&d.uid!==(S.cur&&S.cur.uid))(d.piles||[]).forEach(function(p){remote.push({d:d,p:p})})});
-  if(remote.length){
-    h+='<div class="box"><h2>حفر اليوم من الأجهزة الأخرى</h2><p class="hint" style="margin-top:0">نفس البطاقة كما عند الجهاز الذي فتحها، والخالصة معلّمة بعلامة ✓</p></div>';
-    remote.forEach(function(r){
+  var rOpen=remote.filter(function(r){return!isDone(r.p)}),rDone=remote.filter(function(r){return isDone(r.p)});
+  if(rOpen.length){
+    h+='<div class="box"><h2>حفر مفتوحة من الأجهزة الأخرى</h2><p class="hint" style="margin-top:0">نفس البطاقة كما عند الجهاز الذي فتحها</p></div>';
+    rOpen.forEach(function(r){
       var p=r.p;
-      h+='<div class="box card" style="border:2px dashed #9aa6c4"><div class="hd"><b>'+(isDone(p)?'✓ ':'')+'حفرة رقم '+esc(p.no)+'</b><span class="tm">بلوك '+esc(r.d.block||"—")+'</span></div><div class="steps">';
+      h+='<div class="box card" style="border:2px dashed #9aa6c4"><div class="hd"><b>حفرة رقم '+esc(p.no)+'</b><span class="tm">بلوك '+esc(r.d.block||"—")+'</span></div><div class="steps">';
       STEPS.forEach(function(s){
         h+='<div class="step '+(p[s.k]?'done':'')+'">'+s.n+'<span class="t">'+(p[s.k]?hm(p[s.k]):'--:--')+'</span></div>';
       });
       h+='</div><div class="tm" style="margin-top:10px">كمية الصب m3: <b>'+esc(p.vol||"—")+'</b></div>'+
          (p.note?'<div class="tm">ملاحظات: '+esc(p.note)+'</div>':'')+'</div>';
     });
+  }
+  if(rDone.length){
+    h+='<div class="box"><h2>حفر خالصة من الأجهزة الأخرى</h2><div class="done-list">';
+    rDone.forEach(function(r){
+      var p=r.p;
+      h+='<div class="it"><span><b>'+esc(p.no)+'</b> &nbsp; بلوك '+esc(r.d.block||"—")+' &nbsp; '+hm(p.drillStart)+' ← '+hm(p.pourEnd)+' &nbsp; <b>'+esc(p.vol)+' m3</b></span></div>';
+    });
+    h+='</div></div>';
   }
 
   open.forEach(function(p){
