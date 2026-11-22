@@ -19,6 +19,7 @@ main{padding:12px;max-width:680px;margin:0 auto;padding-bottom:40px}
 .row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
 .row label{min-width:96px;font-size:14px;color:#555}
 input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],select,textarea{font:inherit;padding:10px;border:1px solid #c8cfdb;border-radius:8px;flex:1;min-width:0;background:#fff}
+input[inputmode],input[type=date],input[type=email],input[type=password]{direction:ltr}
 input.bad{border-color:#d64545;background:#fff5f5}
 button{font:inherit;border:0;border-radius:10px;padding:12px 14px;cursor:pointer;background:#dfe5f0;color:#1d2433}
 button:active{transform:scale(.97)}
@@ -43,6 +44,7 @@ button:active{transform:scale(.97)}
 .seg button.on.in{background:#d8f0e1;color:#14532d;border-color:#1f9d55}
 .seg button.on.out{background:#fde2e2;color:#8a1c1c;border-color:#d64545}
 .seg button.on.cur{background:#dce8fb;color:#1a3f8a;border-color:#2f6fd6}
+.seg button.on.lg{background:#dce8fb;color:#1a3f8a;border-color:#2f6fd6}
 .prev{font-size:15px;font-weight:700;color:#2b3a67;margin:-4px 0 8px;min-height:1.2em}
 .tx{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid #eee;cursor:pointer}
 .tx:last-child{border:0}
@@ -61,7 +63,7 @@ button:active{transform:scale(.97)}
 .bseg{display:flex;flex-wrap:wrap;gap:6px;flex:1}.bseg button{padding:10px 14px;background:#eef1f6;border:2px solid transparent;font-weight:600;min-width:52px}.bseg button.on{background:#e6dcfb;color:#4b2a8a;border-color:#7a4fd6}
 .adv-btn{background:#e08a00;color:#fff}
 .wk{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #eee;cursor:pointer}
-.wk b{font-size:15px}.wk span{font-size:12px;color:#777}.wk .t{direction:ltr;text-align:right;font-weight:700;color:#b26a00;font-size:14px}
+.wk b{font-size:15px}.wk span{font-size:12px;color:#777}.wk .t{direction:ltr;text-align:end;font-weight:700;color:#b26a00;font-size:14px}
 .sum{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;margin-top:8px}
 .sum div{background:#f3f6fb;border-radius:8px;padding:6px 8px}
 .sum b{direction:ltr;display:inline-block}
@@ -83,20 +85,20 @@ button:active{transform:scale(.97)}
   header.top,main,.modal,#updBar{display:none!important}
   #printArea{display:block}
 }
-.sheet{font-family:Arial,Tahoma,sans-serif;color:#000;width:100%;font-size:12px;direction:ltr}
+.sheet{font-family:Arial,Tahoma,sans-serif;color:#000;width:100%;font-size:12px}
 .sheet .hdr{display:flex;align-items:stretch;border:1px solid #1f2a5a;margin-bottom:6px}
 .sheet .logo{background:#2b3a67;color:#fff;font-size:20px;letter-spacing:4px;font-weight:300;padding:0 18px;display:flex;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet .ttl{flex:1;text-align:center;padding:6px}
 .sheet .ttl b{font-size:18px;display:block}
 .sheet .ttl span{font-size:13px}
-.sheet .per{padding:6px 12px;font-size:13px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid #1f2a5a;min-width:200px;text-align:center}
+.sheet .per{padding:6px 12px;font-size:13px;display:flex;flex-direction:column;justify-content:center;border-inline-start:1px solid #1f2a5a;min-width:200px;text-align:center}
 .sheet table{border-collapse:collapse;width:100%;table-layout:fixed}
 .sheet td,.sheet th{border:1px solid #1f2a5a;padding:2px 4px;text-align:center;vertical-align:middle;overflow:hidden}
 .sheet th{background:#5b9bd5;font-weight:700;font-size:11px;height:28px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet th.iq{background:#9cc2e5}
 .sheet th.us{background:#a9d18e}
 .sheet td.n{direction:ltr;font-size:12px;white-space:nowrap}
-.sheet td.ds{text-align:left;font-size:12px;line-height:15px}
+.sheet td.ds{text-align:start;font-size:12px;line-height:15px}
 .sheet td.ds div{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .sheet td.bl{font-weight:700;background:#f2f2f2;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet .neg{color:#c00}
@@ -118,6 +120,251 @@ button:active{transform:scale(.97)}
 <script>
 (function(){
 "use strict";
+/* ---------- language: English or Arabic, chosen in Settings ----------
+   Every screen text goes through t(). The English text is the key itself;
+   STR holds [English, Arabic]. Numbers and dates stay in Western digits in both languages. */
+var LANG_KEY="satcon_sandoq_lang";
+var LANG=(function(){try{return localStorage.getItem(LANG_KEY)==="ar"?"ar":"en"}catch(e){return"en"}})();
+function isAr(){return LANG==="ar"}
+function setLangDir(){document.documentElement.lang=LANG;document.documentElement.dir=isAr()?"rtl":"ltr"}
+setLangDir();
+var STR={
+"Cash Box":["Cash Box","الصندوق"],
+"Site ":["Site ","موقع "],
+"{n} transactions":["{n} transactions","{n} حركات"],
+"Sites":["Sites","المواقع"],
+"New site name":["New site name","اسم الموقع الجديد"],
+"+ Add site":["+ Add site","+ إضافة موقع"],
+"Close":["Close","إغلاق"],
+"Enter the site name.":["Enter the site name.","أدخل اسم الموقع."],
+"A site with this name already exists.":["A site with this name already exists.","يوجد موقع بهذا الاسم."],
+"Could not save.":["Could not save.","تعذّر الحفظ."],
+"Delete site \"{name}\"?":["Delete site \"{name}\"?","حذف الموقع \"{name}\"؟"],
+"All of its transactions ({n}) and its balances (IQD {iqd}, USD {usd}) will be deleted. They can only be recovered from a backup.":["All of its transactions ({n}) and its balances (IQD {iqd}, USD {usd}) will be deleted. They can only be recovered from a backup.","سيتم حذف جميع حركاته ({n}) وأرصدته (IQD {iqd}، USD {usd}). لا يمكن استرجاعها إلا من نسخة احتياطية."],
+"Type the site name to confirm:":["Type the site name to confirm:","اكتب اسم الموقع للتأكيد:"],
+"The name does not match.":["The name does not match.","الاسم غير مطابق."],
+"Delete":["Delete","حذف"],
+"Cancel":["Cancel","إلغاء"],
+"Back":["Back","رجوع"],
+"Save":["Save","حفظ"],
+"OK":["OK","حسناً"],
+"No backup has been made yet.":["No backup has been made yet.","لم تُعمل نسخة احتياطية بعد."],
+"Last backup was {n} days ago.":["Last backup was {n} days ago.","آخر نسخة احتياطية قبل {n} يوم."],
+"Back up now":["Back up now","انسخ الآن"],
+"+ Income":["+ Income","+ وارد"],
+"− Expense":["− Expense","− صادر"],
+"− Expenses":["− Expenses","− الصادر"],
+"Advance":["Advance","سلفة"],
+"Advances":["Advances","السلف"],
+"Income":["Income","الوارد"],
+"Expenses":["Expenses","الصادر"],
+"Expense":["Expense","الصادر"],
+"income":["income","الوارد"],
+"expenses":["expenses","الصادر"],
+"advances":["advances","السلف"],
+"No income recorded yet.":["No income recorded yet.","لم يُسجَّل أي وارد بعد."],
+"No expenses recorded yet.":["No expenses recorded yet.","لم يُسجَّل أي صادر بعد."],
+"No advances recorded yet.":["No advances recorded yet.","لم تُسجَّل أي سلف بعد."],
+"Advances by Worker":["Advances by Worker","السلف حسب العامل"],
+"🔍 Search worker name":["🔍 Search worker name","🔍 ابحث باسم العامل"],
+"Recent Advances":["Recent Advances","آخر السلف"],
+"{n} advance":["{n} advance","{n} سلفة"],
+"{n} advances":["{n} advances","{n} سلف"],
+"First: {d}":["First: {d}","الأولى: {d}"],
+"Last: {d}":["Last: {d}","الأخيرة: {d}"],
+"Advances: {name}":["Advances: {name}","السلف: {name}"],
+"Total advances (IQD)":["Total advances (IQD)","مجموع السلف (IQD)"],
+"Total advances (USD)":["Total advances (USD)","مجموع السلف (USD)"],
+"🖨 Print advances: {name}":["🖨 Print advances: {name}","🖨 طباعة سلف: {name}"],
+"{c} balance":["{c} balance","رصيد {c}"],
+"Rcpt":["Rcpt","وصل"],
+"Inv":["Inv","فاتورة"],
+"⚠ Duplicate":["⚠ Duplicate","⚠ مكرر"],
+"← Previous day":["← Previous day","← اليوم السابق"],
+"Next day →":["Next day →","اليوم التالي →"],
+"Today":["Today","اليوم"],
+"Opening Balance of the Day":["Opening Balance of the Day","رصيد بداية اليوم"],
+"Closing Balance of the Day":["Closing Balance of the Day","رصيد نهاية اليوم"],
+"None.":["None.","لا يوجد."],
+"Total":["Total","المجموع"],
+"🖨 Print this day":["🖨 Print this day","🖨 طباعة هذا اليوم"],
+"Edit Transaction":["Edit Transaction","تعديل حركة"],
+"New Income":["New Income","وارد جديد"],
+"New Expense":["New Expense","صادر جديد"],
+"New Advance":["New Advance","سلفة جديدة"],
+"Type":["Type","النوع"],
+"Worker":["Worker","العامل"],
+"Building":["Building","البناية"],
+"General":["General","عام"],
+"Currency":["Currency","العملة"],
+"Amount":["Amount","المبلغ"],
+"Date":["Date","التاريخ"],
+"Description":["Description","الشرح"],
+"Receipt No.":["Receipt No.","رقم الوصل"],
+"Invoice No.":["Invoice No.","رقم الفاتورة"],
+"Optional":["Optional","اختياري"],
+"Add the building numbers under ⚙ Settings.":["Add the building numbers under ⚙ Settings.","أضف أرقام البنايات من ⚙ الإعدادات."],
+"Enter the amount.":["Enter the amount.","أدخل المبلغ."],
+"IQD amounts cannot have decimals.":["IQD amounts cannot have decimals.","لا يمكن أن يحتوي مبلغ الدينار على كسور."],
+"Select the date.":["Select the date.","اختر التاريخ."],
+"Enter the worker's name.":["Enter the worker's name.","أدخل اسم العامل."],
+"Select the building (or General for site-wide expenses).":["Select the building (or General for site-wide expenses).","اختر البناية (أو عام للمصاريف العامة)."],
+"Receipt No. {rc} is already used ({d} · {desc} · {amt} {sym}).":["Receipt No. {rc} is already used ({d} · {desc} · {amt} {sym}).","رقم الوصل {rc} مستخدم سابقاً ({d} · {desc} · {amt} {sym})."],
+"Delete this transaction?":["Delete this transaction?","حذف هذه الحركة؟"],
+"Records":["Records","السجلات"],
+"Search: receipt, invoice, description, worker":["Search: receipt, invoice, description, worker","بحث: الوصل، الفاتورة، الشرح، العامل"],
+"All currencies":["All currencies","كل العملات"],
+"All buildings":["All buildings","كل البنايات"],
+"Total {what} ({c})":["Total {what} ({c})","مجموع {what} ({c})"],
+"Showing the first 300. Narrow the search.":["Showing the first 300. Narrow the search.","يتم عرض أول 300 حركة فقط. ضيّق البحث."],
+"{n} transaction":["{n} transaction","{n} حركة"],
+"No results.":["No results.","لا توجد نتائج."],
+"🏢 Expenses by Building":["🏢 Expenses by Building","🏢 الصادر حسب البناية"],
+"This month":["This month","هذا الشهر"],
+"Last month":["Last month","الشهر الماضي"],
+"All":["All","الكل"],
+"From {a} to {b}":["From {a} to {b}","من {a} إلى {b}"],
+"the start":["the start","البداية"],
+"today":["today","اليوم"],
+"All dates":["All dates","كل التواريخ"],
+"{n} invoice":["{n} invoice","{n} فاتورة"],
+"{n} invoices":["{n} invoices","{n} فواتير"],
+"Add the building numbers under ⚙ Settings, then select a building when recording an expense.":["Add the building numbers under ⚙ Settings, then select a building when recording an expense.","أضف أرقام البنايات من ⚙ الإعدادات، ثم اختر البناية عند تسجيل الصادر."],
+"🖨 Print Buildings Summary":["🖨 Print Buildings Summary","🖨 طباعة ملخص البنايات"],
+"Print":["Print","طباعة"],
+"Full Statement":["Full Statement","كشف كامل"],
+"All workers":["All workers","كل العمال"],
+"Daily subtotal under each day":["Daily subtotal under each day","مجموع يومي تحت كل يوم"],
+"🖨 Print":["🖨 Print","🖨 طباعة"],
+"Invalid date range.":["Invalid date range.","نطاق التاريخ غير صحيح."],
+"Transactions":["Transactions","عدد الحركات"],
+"IQD balance at period end":["IQD balance at period end","رصيد IQD في نهاية الفترة"],
+"USD balance at period end":["USD balance at period end","رصيد USD في نهاية الفترة"],
+"Total (IQD)":["Total (IQD)","المجموع (IQD)"],
+"Total (USD)":["Total (USD)","المجموع (USD)"],
+"No buildings.":["No buildings.","لا توجد بنايات."],
+"Pages":["Pages","عدد الصفحات"],
+"Direct printing did not open":["Direct printing did not open","تعذّرت الطباعة المباشرة"],
+"A PDF will be prepared instead. Open it in a PDF viewer and print from there.":["A PDF will be prepared instead. Open it in a PDF viewer and print from there.","سيتم تجهيز ملف PDF بدلاً من ذلك. افتحه ببرنامج عرض PDF ثم اطبعه منه."],
+"Prepare PDF":["Prepare PDF","تجهيز PDF"],
+"Preparing PDF...":["Preparing PDF...","جارٍ تجهيز PDF..."],
+"Could not prepare the PDF":["Could not prepare the PDF","تعذّر تجهيز ملف PDF"],
+"An error occurred while preparing the file. Please try again.":["An error occurred while preparing the file. Please try again.","حدث خطأ أثناء تجهيز الملف. حاول مرة أخرى."],
+"An internet connection is required the first time, to download the PDF tools.":["An internet connection is required the first time, to download the PDF tools.","يلزم اتصال بالإنترنت في المرة الأولى لتحميل أدوات PDF."],
+"Expense Statement":["Expense Statement","كشف الصادر"],
+"Income Statement":["Income Statement","كشف الوارد"],
+"Advances Statement":["Advances Statement","كشف السلف"],
+"Buildings Summary":["Buildings Summary","ملخص البنايات"],
+"Cash Box Statement":["Cash Box Statement","كشف الصندوق"],
+"Printed on: {d}":["Printed on: {d}","طُبع في: {d}"],
+"Page {i} of {n}":["Page {i} of {n}","صفحة {i} من {n}"],
+"Date: {d}":["Date: {d}","التاريخ: {d}"],
+"No.":["No.","الرقم"],
+"Amount (IQD)":["Amount (IQD)","المبلغ (IQD)"],
+"Amount (USD)":["Amount (USD)","المبلغ (USD)"],
+"Invoices":["Invoices","الفواتير"],
+"Total Expenses (IQD)":["Total Expenses (IQD)","مجموع الصادر (IQD)"],
+"Total Expenses (USD)":["Total Expenses (USD)","مجموع الصادر (USD)"],
+"Income IQD":["Income IQD","الوارد IQD"],
+"Expense IQD":["Expense IQD","الصادر IQD"],
+"Balance IQD":["Balance IQD","الرصيد IQD"],
+"Income USD":["Income USD","الوارد USD"],
+"Expense USD":["Expense USD","الصادر USD"],
+"Balance USD":["Balance USD","الرصيد USD"],
+"Totals by Worker":["Totals by Worker","المجموع حسب العامل"],
+"Totals by Building":["Totals by Building","المجموع حسب البناية"],
+"Subtotal for {d}":["Subtotal for {d}","مجموع {d}"],
+"No {x} in this period":["No {x} in this period","لا يوجد {x} في هذه الفترة"],
+"Total {x}":["Total {x}","مجموع {x}"],
+"Period Totals":["Period Totals","مجموع الفترة"],
+"Closing Balance as of {d}":["Closing Balance as of {d}","الرصيد الختامي حتى {d}"],
+"Balance Brought Forward before {d}":["Balance Brought Forward before {d}","الرصيد المرحّل قبل {d}"],
+"No transactions in this period":["No transactions in this period","لا توجد حركات في هذه الفترة"],
+"💾 Backup":["💾 Backup","💾 نسخة احتياطية"],
+"{n} transactions · File: {name}":["{n} transactions · File: {name}","{n} حركة · الملف: {name}"],
+"📤 Share (WhatsApp, ...)":["📤 Share (WhatsApp, ...)","📤 مشاركة (واتساب، ...)"],
+"💾 Save to Downloads":["💾 Save to Downloads","💾 حفظ في التنزيلات"],
+"The share menu did not open. Try saving to Downloads.":["The share menu did not open. Try saving to Downloads.","لم تُفتح قائمة المشاركة. جرّب الحفظ في التنزيلات."],
+"Once sent, the backup is safe with you.":["Once sent, the backup is safe with you.","بعد الإرسال تكون النسخة محفوظة لديك."],
+"Sharing failed.":["Sharing failed.","فشلت المشاركة."],
+"✓ Saved to the Download folder as {name}":["✓ Saved to the Download folder as {name}","✓ تم الحفظ في مجلد التنزيلات باسم {name}"],
+"Could not save. Use Share instead.":["Could not save. Use Share instead.","تعذّر الحفظ. استخدم المشاركة."],
+"Cash Box backup":["Cash Box backup","نسخة احتياطية للصندوق"],
+"📥 Restore Backup":["📥 Restore Backup","📥 استرجاع نسخة احتياطية"],
+"Backup dated {d} from {src}":["Backup dated {d} from {src}","نسخة بتاريخ {d} من {src}"],
+"This file is from another app. Make sure you are restoring it to the right place.":["This file is from another app. Make sure you are restoring it to the right place.","هذا الملف من تطبيق آخر. تأكد أنك تسترجعه إلى المكان الصحيح."],
+"This file is from another site. Make sure you are restoring it to the right place.":["This file is from another site. Make sure you are restoring it to the right place.","هذا الملف من موقع آخر. تأكد أنك تسترجعه إلى المكان الصحيح."],
+"IQD balance":["IQD balance","رصيد IQD"],
+"USD balance":["USD balance","رصيد USD"],
+"Warning: the current data ({n} transactions, IQD {a}, USD {b}) will be replaced by this file.":["Warning: the current data ({n} transactions, IQD {a}, USD {b}) will be replaced by this file.","تنبيه: البيانات الحالية ({n} حركة، IQD {a}، USD {b}) ستُستبدل بهذا الملف."],
+"Restore":["Restore","استرجاع"],
+"Not a Cash Box backup":["Not a Cash Box backup","ملف ليس نسخة احتياطية للصندوق"],
+"Select a sandoq backup .json file.":["Select a sandoq backup .json file.","اختر ملف النسخة الاحتياطية بصيغة json."],
+"Settings":["Settings","الإعدادات"],
+"Backup":["Backup","النسخة الاحتياطية"],
+"From":["From","من"],
+"To":["To","إلى"],
+"Language":["Language","اللغة"],
+"Language of the screens and printed statements.":["Language of the screens and printed statements.","لغة الشاشات والكشوفات المطبوعة."],
+"Site name":["Site name","اسم الموقع"],
+"Shown at the top of the screen and on printed statements.":["Shown at the top of the screen and on printed statements.","يظهر أعلى الشاشة وفي الكشوفات المطبوعة."],
+"Buildings":["Buildings","البنايات"],
+"Daily View":["Daily View","العرض اليومي"],
+"Separate with commas or dots, e.g. D1, D2, D3. They appear as buttons when recording an expense.":["Separate with commas or dots, e.g. D1, D2, D3. They appear as buttons when recording an expense.","افصل بين الأسماء بفاصلة أو نقطة، مثل D1, D2, D3. تظهر كأزرار عند تسجيل الصادر."],
+"Opening Balance":["Opening Balance","الرصيد الافتتاحي"],
+"Cash held in the box before the first recorded transaction.":["Cash held in the box before the first recorded transaction.","النقد الموجود في الصندوق قبل أول حركة مسجلة."],
+"Invalid number.":["Invalid number.","رقم غير صحيح."],
+"Last backup: {d}":["Last backup: {d}","آخر نسخة: {d}"],
+"No backup yet":["No backup yet","لم تُعمل نسخة بعد"],
+"💾 Create Backup":["💾 Create Backup","💾 إنشاء نسخة احتياطية"],
+"📥 Restore from File":["📥 Restore from File","📥 استرجاع من ملف"],
+"🗑 Delete This Site":["🗑 Delete This Site","🗑 حذف هذا الموقع"],
+"Could not save. The device storage may be full.":["Could not save. The device storage may be full.","تعذّر الحفظ. قد تكون ذاكرة الجهاز ممتلئة."],
+"☁ Device Sync":["☁ Device Sync","☁ المزامنة بين الأجهزة"],
+"Sign in with the same account on the phone and the laptop to keep both in sync. The app works offline and syncs when the connection returns.":["Sign in with the same account on the phone and the laptop to keep both in sync. The app works offline and syncs when the connection returns.","سجّل الدخول بنفس الحساب على الهاتف واللابتوب لإبقائهما متطابقين. يعمل البرنامج بدون إنترنت ويتزامن عند عودة الاتصال."],
+"Email":["Email","البريد الإلكتروني"],
+"Password":["Password","كلمة المرور"],
+"Sign In and Connect":["Sign In and Connect","تسجيل الدخول والربط"],
+"☁ Sync":["☁ Sync","☁ المزامنة"],
+"Sign In":["Sign In","تسجيل الدخول"],
+"Account:":["Account:","الحساب:"],
+"🔄 Sync Now":["🔄 Sync Now","🔄 زامن الآن"],
+"Sign Out":["Sign Out","تسجيل الخروج"],
+"Enter the email and password.":["Enter the email and password.","أدخل البريد وكلمة المرور."],
+"Connecting...":["Connecting...","جارٍ الاتصال..."],
+"Data found on the server":["Data found on the server","توجد بيانات على الخادم"],
+"This device will load the server data, and <b>the data on this device ({n} transactions) will be replaced</b>.":["This device will load the server data, and <b>the data on this device ({n} transactions) will be replaced</b>.","سيتم تحميل بيانات الخادم على هذا الجهاز، و<b>ستُستبدل البيانات الموجودة عليه ({n} حركة)</b>."],
+"If this device holds anything not on the server, create a backup first.":["If this device holds anything not on the server, create a backup first.","إذا كان على هذا الجهاز شيء غير موجود على الخادم، فأنشئ نسخة احتياطية أولاً."],
+"💾 Create Backup First":["💾 Create Backup First","💾 إنشاء نسخة احتياطية أولاً"],
+"Continue and Load Server Data":["Continue and Load Server Data","متابعة وتحميل بيانات الخادم"],
+"Downloading data...":["Downloading data...","جارٍ تحميل البيانات..."],
+"✓ Connected":["✓ Connected","✓ تم الربط"],
+"Uploading this device's data ({n} items). Keep the app open and online until the indicator turns 🟢, then sign in on the other device.":["Uploading this device's data ({n} items). Keep the app open and online until the indicator turns 🟢, then sign in on the other device.","جارٍ رفع بيانات هذا الجهاز ({n} عنصر). أبقِ البرنامج مفتوحاً ومتصلاً حتى تصبح الإشارة 🟢، ثم سجّل الدخول على الجهاز الآخر."],
+"{n} site(s) downloaded. Anything recorded here will appear on the other device.":["{n} site(s) downloaded. Anything recorded here will appear on the other device.","تم تحميل {n} موقع. أي شيء يُسجَّل هنا سيظهر على الجهاز الآخر."],
+"Download failed":["Download failed","فشل التحميل"],
+"Sign out of sync?":["Sign out of sync?","تسجيل الخروج من المزامنة؟"],
+"Your data stays on this device but will no longer sync.":["Your data stays on this device but will no longer sync.","ستبقى بياناتك على هذا الجهاز لكنها لن تتزامن بعد الآن."],
+"{n} change(s) have not been uploaded yet and will not reach the server.":["{n} change(s) have not been uploaded yet and will not reach the server.","{n} تغيير لم يُرفع بعد ولن يصل إلى الخادم."],
+"⚪ Sync components are missing from this version. Install the latest APK.":["⚪ Sync components are missing from this version. Install the latest APK.","⚪ مكوّنات المزامنة غير موجودة في هذه النسخة. ثبّت آخر نسخة APK."],
+"🔴 Please sign in again.":["🔴 Please sign in again.","🔴 يرجى تسجيل الدخول مرة أخرى."],
+"🟠 Connecting...":["🟠 Connecting...","🟠 جارٍ الاتصال..."],
+"🟠 Offline. Changes will sync automatically when the connection returns.":["🟠 Offline. Changes will sync automatically when the connection returns.","🟠 غير متصل. ستتزامن التغييرات تلقائياً عند عودة الاتصال."],
+"🟢 Connected":["🟢 Connected","🟢 متصل"],
+"Pending upload: <b>{n}</b>":["Pending upload: <b>{n}</b>","بانتظار الرفع: <b>{n}</b>"],
+"All changes uploaded ✓":["All changes uploaded ✓","تم رفع كل التغييرات ✓"],
+"Last connection: {t}":["Last connection: {t}","آخر اتصال: {t}"],
+"Incorrect email or password.":["Incorrect email or password.","البريد أو كلمة المرور غير صحيحة."],
+"No internet connection, or the connection is weak. Please try again.":["No internet connection, or the connection is weak. Please try again.","لا يوجد اتصال بالإنترنت أو الاتصال ضعيف. حاول مرة أخرى."],
+"Too many attempts. Please wait a moment and try again.":["Too many attempts. Please wait a moment and try again.","محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى."],
+"Error: {c}":["Error: {c}","خطأ: {c}"],
+"A new version of the app is available":["A new version of the app is available","توجد نسخة جديدة من البرنامج"],
+"Update Now":["Update Now","تحديث الآن"]
+};
+/* t("English text", {name: value}) -> text in the chosen language; {name} is replaced by value */
+function t(k,v){var e=STR[k],s=(e&&e[isAr()?1:0])||k;if(v)for(var x in v)s=s.split("{"+x+"}").join(v[x]);return s}
+/* the one-word count labels: "1 invoice", "3 invoices" */
+function cnt(n,one,many){return t(n===1?one:many,{n:n})}
+var WD={en:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],ar:["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"]};
 /* All storage keys start with satcon_sandoq_ so this app never touches the
    daily report or attendance data (they share the same site in the browser). */
 /* ---------- sites: several separate boxes in one app ----------
@@ -125,7 +372,7 @@ button:active{transform:scale(.97)}
    every other site lives under its own key and shares nothing with the others */
 var BASEKEY="satcon_sandoq_v1",IDX_KEY="satcon_sandoq_sites";
 var COPY=1;try{var _id=window.AndroidBridge&&window.AndroidBridge.appId&&window.AndroidBridge.appId(),_m=/sandoq(\d+)$/.exec(_id||"");if(_m)COPY=+_m[1]}catch(e){}
-var APPNAME=COPY>1?"Cash Box "+COPY:"Cash Box";
+function appName(){var n=t("Cash Box");return COPY>1?n+" "+COPY:n}
 var SITE_COLORS=["#2b3a67","#0f6b5c","#7a2e5a","#6b4a12","#1f5f8b","#5b3a8a"];
 function siteKey(id){return id==="1"?BASEKEY:BASEKEY+"_s"+id}
 function loadSites(){var x=null;try{x=JSON.parse(localStorage.getItem(IDX_KEY))}catch(e){}
@@ -134,36 +381,36 @@ function loadSites(){var x=null;try{x=JSON.parse(localStorage.getItem(IDX_KEY))}
 function saveSites(){try{localStorage.setItem(IDX_KEY,JSON.stringify(SITES))}catch(e){}}
 var SITES=loadSites(),KEY=siteKey(SITES.cur);
 function siteState(id){if(id===SITES.cur)return S;var s=null;try{s=JSON.parse(localStorage.getItem(siteKey(id)))}catch(e){}return s||{project:"",open:{IQD:0,USD:0},tx:[]}}
-function siteName(id,st){st=st||siteState(id);return st.project||("Site "+(SITES.ids.indexOf(id)+1))}
+function siteName(id,st){st=st||siteState(id);return st.project||(t("Site ")+(SITES.ids.indexOf(id)+1))}
 function siteColor(id){return SITE_COLORS[SITES.ids.indexOf(id)%SITE_COLORS.length]}
 function balOf(st){var b={IQD:(st.open&&st.open.IQD)||0,USD:(st.open&&st.open.USD)||0};(st.tx||[]).forEach(function(t){b[t.cur]=r2(b[t.cur]+(t.type==="in"?t.amount:-t.amount))});return b}
 function resetViews(){TAB="out";LF={from:"",to:"",cur:"",q:"",bld:""};PF={from:"",to:"",kind:"out",daily:false,worker:"",bld:""};BF={from:"",to:""};WK="";DAY=""}
 function switchSite(id){SITES.cur=id;saveSites();KEY=siteKey(id);S=load();if(SY.on)shadowInit();resetViews();closeModal();if(location.hash&&location.hash!=="#")go("");else render();scrollTo(0,0)}
 function sitePicker(){
-  var h='<h3>Sites</h3>'+SITES.ids.map(function(id){var st=siteState(id),b=balOf(st),on=id===SITES.cur;
-    return'<div class="wk" data-site="'+id+'" style="border-left:6px solid '+siteColor(id)+';padding-left:10px'+(on?';background:#f3f6fb':'')+'"><div><b>'+(on?'✓ ':'')+esc(siteName(id,st))+'</b><br><span>'+(st.tx||[]).length+' transactions</span></div>'+
+  var h='<h3>'+t("Sites")+'</h3>'+SITES.ids.map(function(id){var st=siteState(id),b=balOf(st),on=id===SITES.cur;
+    return'<div class="wk" data-site="'+id+'" style="border-left:6px solid '+siteColor(id)+';padding-left:10px'+(on?';background:#f3f6fb':'')+'"><div><b>'+(on?'✓ ':'')+esc(siteName(id,st))+'</b><br><span>'+cnt((st.tx||[]).length,"{n} transaction","{n} transactions")+'</span></div>'+
       '<div class="t" style="color:#2b3a67"><span class="'+(b.IQD<0?'neg':'')+'" style="color:'+(b.IQD<0?'#c62828':'inherit')+'">'+fmtAmt(b.IQD,"IQD")+' IQD</span><br><span style="color:'+(b.USD<0?'#c62828':'inherit')+'">'+fmtAmt(b.USD,"USD")+' $</span></div></div>'}).join("")+
-    '<div class="row" style="margin-top:12px"><input type="text" id="nsName" placeholder="New site name" dir="auto"><button class="ok small" id="nsAdd">+ Add site</button></div><p class="err" id="nsErr"></p>'+
-    '<div class="acts"><button id="mN">Close</button></div>';
+    '<div class="row" style="margin-top:12px"><input type="text" id="nsName" placeholder="'+t("New site name")+'" dir="auto"><button class="ok small" id="nsAdd">'+t("+ Add site")+'</button></div><p class="err" id="nsErr"></p>'+
+    '<div class="acts"><button id="mN">'+t("Close")+'</button></div>';
   openModal(h);
   Array.prototype.forEach.call(modalIn.querySelectorAll("[data-site]"),function(el){el.onclick=function(){var id=el.getAttribute("data-site");if(id===SITES.cur)closeModal();else switchSite(id)}});
   document.getElementById("mN").onclick=closeModal;
   document.getElementById("nsAdd").onclick=function(){
     var nm=document.getElementById("nsName").value.trim().replace(/\s+/g," ");
-    if(!nm){document.getElementById("nsErr").textContent="Enter the site name.";return}
-    if(SITES.ids.some(function(id){return siteName(id)===nm})){document.getElementById("nsErr").textContent="A site with this name already exists.";return}
+    if(!nm){document.getElementById("nsErr").textContent=t("Enter the site name.");return}
+    if(SITES.ids.some(function(id){return siteName(id)===nm})){document.getElementById("nsErr").textContent=t("A site with this name already exists.");return}
     var id=newId("s"),st=blank();st.project=nm;
-    try{localStorage.setItem(siteKey(id),JSON.stringify(st))}catch(e){document.getElementById("nsErr").textContent="Could not save.";return}
+    try{localStorage.setItem(siteKey(id),JSON.stringify(st))}catch(e){document.getElementById("nsErr").textContent=t("Could not save.");return}
     SITES.ids.push(id);saveSites();syncSiteCreated(id);switchSite(id);go("settings")};
 }
 function deleteSite(){
   var id=SITES.cur,nm=siteName(id),n=S.tx.length,b=balances();
-  openModal('<h3>🗑 Delete site "'+esc(nm)+'"?</h3><p>All of its transactions ('+n+') and its balances (IQD '+fmtAmt(b.IQD,"IQD")+', USD '+fmtAmt(b.USD,"USD")+') will be deleted. They can only be recovered from a backup.</p>'+
-    '<p class="hint">Type the site name to confirm:</p><input type="text" id="dsN" style="width:100%"><p class="err" id="dsE"></p>'+
-    '<div class="acts"><button id="mY" class="dan">Delete</button><button id="mN">Cancel</button></div>');
+  openModal('<h3>🗑 '+esc(t('Delete site "{name}"?',{name:nm}))+'</h3><p>'+t("All of its transactions ({n}) and its balances (IQD {iqd}, USD {usd}) will be deleted. They can only be recovered from a backup.",{n:n,iqd:fmtAmt(b.IQD,"IQD"),usd:fmtAmt(b.USD,"USD")})+'</p>'+
+    '<p class="hint">'+t("Type the site name to confirm:")+'</p><input type="text" id="dsN" style="width:100%"><p class="err" id="dsE"></p>'+
+    '<div class="acts"><button id="mY" class="dan">'+t("Delete")+'</button><button id="mN">'+t("Cancel")+'</button></div>');
   document.getElementById("mN").onclick=closeModal;
   document.getElementById("mY").onclick=function(){
-    if(document.getElementById("dsN").value.trim().replace(/\s+/g," ")!==nm){document.getElementById("dsE").textContent="The name does not match.";return}
+    if(document.getElementById("dsN").value.trim().replace(/\s+/g," ")!==nm){document.getElementById("dsE").textContent=t("The name does not match.");return}
     syncSiteDeleting(id,S);try{localStorage.removeItem(siteKey(id))}catch(e){}
     SITES.ids=SITES.ids.filter(function(x){return x!==id});saveSites();switchSite(SITES.ids[0]);setTimeout(flush,300)};
 }
@@ -178,7 +425,7 @@ function load(){var s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){
   s.tx.forEach(function(t){if(typeof t.id!=="string")t.id=String(t.id)});
   if(s.blds&&s.blds.length)s.__fixB=1;
   return s}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Could not save. The device storage may be full.")}syncChanged()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert(t("Could not save. The device storage may be full."))}syncChanged()}
 
 /* ---------- helpers ---------- */
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
@@ -207,15 +454,15 @@ var TL={in:"Income",out:"Expense",adv:"Advance"};
 var GEN="عام";
 /* building list typed in settings: commas, Arabic commas, dots, semicolons or new lines all separate names */
 function splitBlds(txt){var bs=[];normDigits(txt).split(/[,،.؛;\n]+/).forEach(function(x){x=x.trim().replace(/\s+/g," ");if(x&&x!==GEN&&bs.indexOf(x)<0)bs.push(x)});return bs.sort(byName)}
-function byName(a,b){return a.localeCompare(b,"ar",{numeric:true})}
-function bldLabel(b){return!b||b===GEN?"General":(/^[0-9٠-٩]/.test(b)?"Building "+b:b)}
+function byName(a,b){return a.localeCompare(b,LANG,{numeric:true})}
+function bldLabel(b){return!b||b===GEN?t("General"):(/^[0-9٠-٩]/.test(b)?t("Building")+" "+b:b)}
 function bldList(){var m={};(S.blds||[]).forEach(function(b){m[b]=1});S.tx.forEach(function(t){if(t.type==="out"&&t.bld&&t.bld!==GEN)m[t.bld]=1});return Object.keys(m).sort(byName)}
 function bldSummary(from,to){var m={},keys=bldList().concat([GEN]);keys.forEach(function(k){m[k]={n:0,IQD:0,USD:0}});
   S.tx.forEach(function(t){if(t.type!=="out")return;if((from&&t.date<from)||(to&&t.date>to))return;var r=m[t.bld||GEN];r.n++;r[t.cur]=r2(r[t.cur]+t.amount)});
   return keys.filter(function(k){return k!==GEN||m[k].n}).map(function(k){return{b:k,n:m[k].n,IQD:m[k].IQD,USD:m[k].USD}})}
-function txDesc(t){return t.type==="adv"?"Advance - "+(t.worker||"")+(t.desc?" - "+t.desc:""):(t.type==="out"&&t.bld?bldLabel(t.bld)+(t.desc?" - ":""):"")+(t.desc||"")}
+function txDesc(tx){return tx.type==="adv"?t("Advance")+" - "+(tx.worker||"")+(tx.desc?" - "+tx.desc:""):(tx.type==="out"&&tx.bld?bldLabel(tx.bld)+(tx.desc?" - ":""):"")+(tx.desc||"")}
 function workers(){var m={};S.tx.forEach(function(t){if(t.type!=="adv"||!t.worker)return;var w=m[t.worker]||(m[t.worker]={name:t.worker,n:0,IQD:0,USD:0,last:""});w.n++;w[t.cur]=r2(w[t.cur]+t.amount);if(t.date>w.last)w.last=t.date});
-  return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return a.name.localeCompare(b.name,"ar")})}
+  return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return a.name.localeCompare(b.name,LANG)})}
 
 /* balance = opening + every in - every out, worked out from the movements each time */
 function balances(beforeDate){
@@ -235,7 +482,7 @@ function rcptUsed(r,exceptId){r=normRcpt(r);if(!r)return null;for(var i=0;i<S.tx
 var modal=document.getElementById("modal"),modalIn=document.getElementById("modalIn");
 function openModal(h){modalIn.innerHTML=h;modal.classList.add("show")}
 function closeModal(){modal.classList.remove("show");modalIn.innerHTML=""}
-function info(title,body){openModal('<h3>'+title+'</h3>'+(body?'<p>'+body+'</p>':'')+'<div class="acts"><button id="mN">OK</button></div>');document.getElementById("mN").onclick=closeModal}
+function info(title,body){openModal('<h3>'+title+'</h3>'+(body?'<p>'+body+'</p>':'')+'<div class="acts"><button id="mN">'+t("OK")+'</button></div>');document.getElementById("mN").onclick=closeModal}
 
 /* ---------- navigation: each screen is a #hash so the phone's back button works ---------- */
 function go(h){location.hash=h}
@@ -243,14 +490,14 @@ window.addEventListener("hashchange",function(){closeModal();render();scrollTo(0
 var app=document.getElementById("app");
 function render(){
   updBadge();document.getElementById("syncB").onclick=function(){go("settings")};
-  var hp=document.getElementById("hdP");hp.textContent=APPNAME+" - "+siteName(SITES.cur)+" ▾";hp.onclick=sitePicker;
+  var hp=document.getElementById("hdP");hp.textContent=appName()+" - "+siteName(SITES.cur)+" ▾";hp.onclick=sitePicker;
   var col=siteColor(SITES.cur);document.querySelector("header.top").style.background=col;var tc=document.querySelector('meta[name=theme-color]');if(tc)tc.content=col;
   document.getElementById("hdDate").textContent=fmtDate(today());
   var h=location.hash.replace(/^#/,"");
   if(h==="new-in")return formView(null,"in");
   if(h==="new-out")return formView(null,"out");
   if(h==="new-adv")return formView(null,"adv");
-  if(/^edit-.+$/.test(h)){var t=txById(h.slice(5));if(t)return formView(t);}
+  if(/^edit-.+$/.test(h)){var tx=txById(h.slice(5));if(tx)return formView(tx);}
   if(h==="day")return dayView();
   if(h==="blds")return bldsView();
   if(h==="worker")return workerView();
@@ -259,24 +506,26 @@ function render(){
   if(h==="settings")return settingsView();
   mainView();
 }
+/* switches the language at once: the screen, the print layout and the text direction */
+function setLang(l){if(l===LANG)return;LANG=l;try{localStorage.setItem(LANG_KEY,l)}catch(e){}setLangDir();closeModal();render();scrollTo(0,0)}
 function balBox(b){
   return'<div class="bal">'+["IQD","USD"].map(function(c){
-    return'<div class="'+(b[c]<0?"neg":"")+'"><span>'+CUR[c].n+' balance</span><b>'+fmtAmt(b[c],c)+' '+CUR[c].s+'</b></div>'}).join("")+'</div>'}
-function txRow(t){
-  var dup=t.rcpt&&rcptUsed(t.rcpt,t.id);
-  var title=t.type==="adv"?esc(t.worker)+(t.desc?' · '+esc(t.desc):''):esc(t.desc||TL[t.type]);
-  return'<div class="tx" data-id="'+t.id+'"'+(dup?' style="background:#fde2e2"':'')+'><div class="ic '+t.type+'">'+(t.type==="in"?"+":t.type==="adv"?"A":"−")+'</div>'+
-    '<div class="mid"><b dir="auto">'+title+'</b><span>'+fmtDate(t.date)+(t.type==="out"&&t.bld?' · '+esc(bldLabel(t.bld)):'')+(t.rcpt?' · Rcpt '+esc(t.rcpt)+(dup?' <b style="color:#c62828">⚠ Duplicate</b>':''):'')+(t.inv?' · Inv '+esc(t.inv):'')+'</span></div>'+
-    '<div class="am '+t.type+'">'+(t.type==="in"?"+":"-")+fmtAmt(t.amount,t.cur)+' '+CUR[t.cur].s+'</div></div>'}
+    return'<div class="'+(b[c]<0?"neg":"")+'"><span>'+t("{c} balance",{c:CUR[c].n})+'</span><b>'+fmtAmt(b[c],c)+' '+CUR[c].s+'</b></div>'}).join("")+'</div>'}
+function txRow(tx){
+  var dup=tx.rcpt&&rcptUsed(tx.rcpt,tx.id);
+  var title=tx.type==="adv"?esc(tx.worker)+(tx.desc?' · '+esc(tx.desc):''):esc(tx.desc||t(TL[tx.type]));
+  return'<div class="tx" data-id="'+tx.id+'"'+(dup?' style="background:#fde2e2"':'')+'><div class="ic '+tx.type+'">'+(tx.type==="in"?"+":tx.type==="adv"?"A":"−")+'</div>'+
+    '<div class="mid"><b dir="auto">'+title+'</b><span>'+fmtDate(tx.date)+(tx.type==="out"&&tx.bld?' · '+esc(bldLabel(tx.bld)):'')+(tx.rcpt?' · '+t("Rcpt")+' '+esc(tx.rcpt)+(dup?' <b style="color:#c62828">'+t("⚠ Duplicate")+'</b>':''):'')+(tx.inv?' · '+t("Inv")+' '+esc(tx.inv):'')+'</span></div>'+
+    '<div class="am '+tx.type+'">'+(tx.type==="in"?"+":"-")+fmtAmt(tx.amount,tx.cur)+' '+CUR[tx.cur].s+'</div></div>'}
 function bindRows(){Array.prototype.forEach.call(app.querySelectorAll(".tx"),function(el){el.onclick=function(){go("edit-"+el.getAttribute("data-id"))}})}
 
 /* in and out are always shown apart; TAB remembers which one is open */
 var TAB="out";
-function tabBar(id){return'<div class="seg" style="margin-bottom:10px;grid-template-columns:1fr 1fr 1fr"><button id="'+id+'Out" class="out'+(TAB==="out"?" on":"")+'">− Expenses</button><button id="'+id+'In" class="in'+(TAB==="in"?" on":"")+'">+ Income</button><button id="'+id+'Adv" class="adv'+(TAB==="adv"?" on":"")+'">Advances</button></div>'}
+function tabBar(id){return'<div class="seg" style="margin-bottom:10px;grid-template-columns:1fr 1fr 1fr"><button id="'+id+'Out" class="out'+(TAB==="out"?" on":"")+'">'+t("− Expenses")+'</button><button id="'+id+'In" class="in'+(TAB==="in"?" on":"")+'">'+t("+ Income")+'</button><button id="'+id+'Adv" class="adv'+(TAB==="adv"?" on":"")+'">'+t("Advances")+'</button></div>'}
 function bindTabs(id,cb){document.getElementById(id+"Out").onclick=function(){TAB="out";cb()};document.getElementById(id+"In").onclick=function(){TAB="in";cb()};document.getElementById(id+"Adv").onclick=function(){TAB="adv";cb()}}
 function workersBox(){var ws=workers();if(!ws.length)return'';
-  return'<h2 style="color:#b26a00">Advances by Worker</h2><input type="text" id="wkQ" dir="auto" placeholder="🔍 Search worker name" style="width:100%;margin-bottom:4px">'+ws.map(function(w){var a=[];if(w.IQD)a.push(fmtAmt(w.IQD,"IQD")+' IQD');if(w.USD)a.push(fmtAmt(w.USD,"USD")+' $');
-    return'<div class="wk" data-name="'+esc(w.name)+'"><div><b dir="auto">'+esc(w.name)+'</b><br><span>'+w.n+' advance'+(w.n>1?'s':'')+' · last on '+fmtDate(w.last)+'</span></div><div class="t">'+a.join('<br>')+'</div></div>'}).join("")+'<h2 style="margin-top:14px">Recent Advances</h2>'}
+  return'<h2 style="color:#b26a00">'+t("Advances by Worker")+'</h2><input type="text" id="wkQ" dir="auto" placeholder="'+t("🔍 Search worker name")+'" style="width:100%;margin-bottom:4px">'+ws.map(function(w){var a=[];if(w.IQD)a.push(fmtAmt(w.IQD,"IQD")+' IQD');if(w.USD)a.push(fmtAmt(w.USD,"USD")+' $');
+    return'<div class="wk" data-name="'+esc(w.name)+'"><div><b dir="auto">'+esc(w.name)+'</b><br><span>'+cnt(w.n,"{n} advance","{n} advances")+' · '+t("Last: {d}",{d:fmtDate(w.last)})+'</span></div><div class="t">'+a.join('<br>')+'</div></div>'}).join("")+'<h2 style="margin-top:14px">'+t("Recent Advances")+'</h2>'}
 function bindWorkers(){Array.prototype.forEach.call(app.querySelectorAll(".wk"),function(el){el.onclick=function(){WK=el.getAttribute("data-name");go("worker")}});
   var q=document.getElementById("wkQ");if(q)q.oninput=function(){var v=q.value.trim().replace(/\s+/g," ");
     Array.prototype.forEach.call(app.querySelectorAll(".wk"),function(el){el.style.display=!v||el.getAttribute("data-name").indexOf(v)>=0?"":"none"})}}
@@ -285,26 +534,27 @@ var WK="";
 function workerView(){
   var list=sorted().reverse().filter(function(t){return t.type==="adv"&&t.worker===WK}),s=curTotals(list);
   if(!WK||!list.length){go("");return}
-  app.innerHTML='<div class="box"><h2 style="color:#b26a00" dir="auto">Advances: '+esc(WK)+'</h2>'+
-    '<div class="bal"><div><span>Total advances (IQD)</span><b>'+fmtAmt(s.IQD,"IQD")+' IQD</b></div><div><span>Total advances (USD)</span><b>'+fmtAmt(s.USD,"USD")+' $</b></div></div>'+
-    '<p class="hint">'+list.length+' advance'+(list.length>1?'s':'')+' · first on '+fmtDate(list[list.length-1].date)+' · last on '+fmtDate(list[0].date)+'</p></div>'+
+  app.innerHTML='<div class="box"><h2 style="color:#b26a00" dir="auto">'+esc(t("Advances: {name}",{name:WK}))+'</h2>'+
+    '<div class="bal"><div><span>'+t("Total advances (IQD)")+'</span><b>'+fmtAmt(s.IQD,"IQD")+' IQD</b></div><div><span>'+t("Total advances (USD)")+'</span><b>'+fmtAmt(s.USD,"USD")+' $</b></div></div>'+
+    '<p class="hint">'+cnt(list.length,"{n} advance","{n} advances")+' · '+t("First: {d}",{d:fmtDate(list[list.length-1].date)})+' · '+t("Last: {d}",{d:fmtDate(list[0].date)})+'</p></div>'+
     '<div class="box">'+list.map(txRow).join("")+'</div>'+
-    '<button class="big pri" id="wPr">🖨 Print advances: '+esc(WK)+'</button><button class="big" id="wBack" style="margin-top:8px">Back</button>';
+    '<button class="big pri" id="wPr">'+esc(t("🖨 Print advances: {name}",{name:WK}))+'</button><button class="big" id="wBack" style="margin-top:8px">'+t("Back")+'</button>';
   bindRows();
   document.getElementById("wPr").onclick=function(){PF.kind="adv";PF.worker=WK;PF.from=list[list.length-1].date;PF.to=list[0].date>today()?list[0].date:today();go("print")};
   document.getElementById("wBack").onclick=function(){history.back()};
 }
+var NOREC={in:"No income recorded yet.",out:"No expenses recorded yet.",adv:"No advances recorded yet."};
 function mainView(){
   var b=balances(),h="";
   var last=sorted().reverse().filter(function(t){return t.type===TAB}).slice(0,15);
   var days=S.lastBackup?Math.floor((Date.now()-S.lastBackup)/864e5):null;
   if(S.tx.length&&(days===null||days>=7))
-    h+='<div class="warnbar"><span>'+(days===null?'No backup has been made yet.':'Last backup was '+days+' days ago.')+'</span><button class="small" id="bkNow">Back up now</button></div>';
+    h+='<div class="warnbar"><span>'+(days===null?t('No backup has been made yet.'):t('Last backup was {n} days ago.',{n:days}))+'</span><button class="small" id="bkNow">'+t("Back up now")+'</button></div>';
   h+='<div class="box">'+balBox(b)+'</div>'+
-    '<div class="three" style="margin-bottom:12px;white-space:nowrap"><button class="big ok" style="font-size:16px;padding:16px 4px" id="bIn">+ Income</button><button class="big dan" style="font-size:16px;padding:16px 4px" id="bOut">− Expense</button><button class="big adv-btn" style="font-size:16px;padding:16px 4px" id="bAdv">Advance</button></div>'+
-    '<div class="box">'+tabBar("mt")+(TAB==="adv"?workersBox():'')+(last.length?last.map(txRow).join(""):'<p class="muted">No '+({in:'income',out:'expenses',adv:'advances'})[TAB]+' recorded yet.</p>')+'</div>'+
-    '<div class="three" style="margin-bottom:8px"><button id="bDay">📅 Daily View</button><button id="bBl">🏢 Buildings</button><button id="bLog">📋 Records</button></div>'+
-    '<div class="two"><button id="bPr">🖨 Print</button><button id="bSet">⚙ Settings</button></div>';
+    '<div class="three" style="margin-bottom:12px;white-space:nowrap"><button class="big ok" style="font-size:16px;padding:16px 4px" id="bIn">'+t("+ Income")+'</button><button class="big dan" style="font-size:16px;padding:16px 4px" id="bOut">'+t("− Expense")+'</button><button class="big adv-btn" style="font-size:16px;padding:16px 4px" id="bAdv">'+t("Advance")+'</button></div>'+
+    '<div class="box">'+tabBar("mt")+(TAB==="adv"?workersBox():'')+(last.length?last.map(txRow).join(""):'<p class="muted">'+t(NOREC[TAB])+'</p>')+'</div>'+
+    '<div class="three" style="margin-bottom:8px"><button id="bDay">📅 '+t("Daily View")+'</button><button id="bBl">🏢 '+t("Buildings")+'</button><button id="bLog">📋 '+t("Records")+'</button></div>'+
+    '<div class="two"><button id="bPr">🖨 '+t("Print")+'</button><button id="bSet">⚙ '+t("Settings")+'</button></div>';
   app.innerHTML=h;bindRows();bindWorkers();bindTabs("mt",mainView);
   document.getElementById("bAdv").onclick=function(){go("new-adv")};
   document.getElementById("bIn").onclick=function(){go("new-in")};
@@ -327,16 +577,16 @@ function dayView(){
   var d=DAY,list=sorted().filter(function(t){return t.date===d}),ins=list.filter(function(t){return t.type==="in"}),outs=list.filter(function(t){return t.type==="out"}),advs=list.filter(function(t){return t.type==="adv"});
   var start=balances(d),end=balances(addDays(d,1)),prev=null,next=null;
   S.tx.forEach(function(t){if(t.date<d&&(!prev||t.date>prev))prev=t.date;if(t.date>d&&(!next||t.date<next))next=t.date});
-  var wd=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)).getDay()];
+  var wd=WD[LANG][new Date(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)).getDay()];
   function sec(title,cls,arr){return'<div class="box"><h2 style="color:'+({in:'#1f9d55',out:'#d64545',adv:'#b26a00'})[cls]+'">'+title+' ('+arr.length+')</h2>'+
-    (arr.length?arr.map(txRow).join(""):'<p class="muted">None.</p>')+
-    '<div class="kv" style="border:0;margin-top:6px"><span>Total</span><b>'+totLine(curTotals(arr))+'</b></div></div>'}
-  app.innerHTML='<div class="box"><div class="two" style="margin-bottom:8px"><button class="small" id="dPrev" '+(prev?'':'disabled style="opacity:.4"')+'>← Previous day</button><button class="small" id="dNext" '+(next?'':'disabled style="opacity:.4"')+'>Next day →</button></div>'+
-    '<div class="row" style="margin:0"><label style="min-width:0">'+wd+'</label><input type="date" id="dDate" value="'+d+'"><button class="small" id="dToday">Today</button></div></div>'+
-    '<div class="box"><h2>Opening Balance of the Day</h2>'+balBox(start)+'</div>'+
-    sec("+ Income","in",ins)+sec("− Expenses","out",outs)+(advs.length?sec("Advances","adv",advs):'')+
-    '<div class="box"><h2>Closing Balance of the Day</h2>'+balBox(end)+'</div>'+
-    '<button class="big pri" id="dPr">🖨 Print this day</button><button class="big" id="dBack" style="margin-top:8px">Back</button>';
+    (arr.length?arr.map(txRow).join(""):'<p class="muted">'+t("None.")+'</p>')+
+    '<div class="kv" style="border:0;margin-top:6px"><span>'+t("Total")+'</span><b>'+totLine(curTotals(arr))+'</b></div></div>'}
+  app.innerHTML='<div class="box"><div class="two" style="margin-bottom:8px"><button class="small" id="dPrev" '+(prev?'':'disabled style="opacity:.4"')+'>'+t("← Previous day")+'</button><button class="small" id="dNext" '+(next?'':'disabled style="opacity:.4"')+'>'+t("Next day →")+'</button></div>'+
+    '<div class="row" style="margin:0"><label style="min-width:0">'+wd+'</label><input type="date" id="dDate" value="'+d+'"><button class="small" id="dToday">'+t("Today")+'</button></div></div>'+
+    '<div class="box"><h2>'+t("Opening Balance of the Day")+'</h2>'+balBox(start)+'</div>'+
+    sec(t("+ Income"),"in",ins)+sec(t("− Expenses"),"out",outs)+(advs.length?sec(t("Advances"),"adv",advs):'')+
+    '<div class="box"><h2>'+t("Closing Balance of the Day")+'</h2>'+balBox(end)+'</div>'+
+    '<button class="big pri" id="dPr">'+t("🖨 Print this day")+'</button><button class="big" id="dBack" style="margin-top:8px">'+t("Back")+'</button>';
   bindRows();
   function to(x){DAY=x;dayView();scrollTo(0,0)}
   if(prev)document.getElementById("dPrev").onclick=function(){to(prev)};
@@ -348,33 +598,33 @@ function dayView(){
 }
 
 /* ---------- add / edit a movement ---------- */
-function formView(t,newType){
-  var ed=!!t,f=ed?{type:t.type,cur:t.cur,amount:String(t.amount),date:t.date,desc:t.desc,inv:t.inv,rcpt:t.rcpt,worker:t.worker||"",bld:t.bld||""}
+function formView(tx,newType){
+  var ed=!!tx,f=ed?{type:tx.type,cur:tx.cur,amount:String(tx.amount),date:tx.date,desc:tx.desc,inv:tx.inv,rcpt:tx.rcpt,worker:tx.worker||"",bld:tx.bld||""}
     :{worker:"",bld:"",type:newType,cur:S.lastCur||"IQD",amount:"",date:today(),desc:"",inv:"",rcpt:""};
   var descs={};sorted().reverse().forEach(function(x){if(x.desc&&Object.keys(descs).length<60)descs[x.desc]=1});
   var wks=workers().map(function(w){return'<option value="'+esc(w.name)+'">'}).join("");
   app.innerHTML='<div class="box"><h2 id="fTtl"></h2>'+
-    '<div class="row"><label>Type</label><div class="seg" style="grid-template-columns:1fr 1fr 1fr"><button id="tIn" class="in">+ Income</button><button id="tOut" class="out">− Expense</button><button id="tAdv" class="adv">Advance</button></div></div>'+
-    '<div class="row" id="wkRow"><label>Worker</label><input type="text" id="fWk" dir="auto" list="wl" autocomplete="off" value="'+esc(f.worker)+'"></div>'+
+    '<div class="row"><label>'+t("Type")+'</label><div class="seg" style="grid-template-columns:1fr 1fr 1fr"><button id="tIn" class="in">'+t("+ Income")+'</button><button id="tOut" class="out">'+t("− Expense")+'</button><button id="tAdv" class="adv">'+t("Advance")+'</button></div></div>'+
+    '<div class="row" id="wkRow"><label>'+t("Worker")+'</label><input type="text" id="fWk" dir="auto" list="wl" autocomplete="off" value="'+esc(f.worker)+'"></div>'+
     '<datalist id="wl">'+wks+'</datalist>'+
-    '<div class="row" id="bRow"><label>Building</label>'+(bldList().length?'<div class="bseg" id="fB">'+bldList().concat([GEN]).map(function(b){return'<button data-b="'+esc(b)+'">'+esc(b===GEN?"General":b)+'</button>'}).join("")+'</div>':'<span class="hint" style="flex:1">Add the building numbers under ⚙ Settings.</span>')+'</div>'+
-    '<div class="row"><label>Currency</label><div class="seg"><button id="cIQD" class="cur">IQD</button><button id="cUSD" class="cur">USD</button></div></div>'+
-    '<div class="row"><label>Amount</label><input type="text" id="fAmt" inputmode="decimal" autocomplete="off" value="'+esc(f.amount)+'"></div>'+
+    '<div class="row" id="bRow"><label>'+t("Building")+'</label>'+(bldList().length?'<div class="bseg" id="fB">'+bldList().concat([GEN]).map(function(b){return'<button data-b="'+esc(b)+'">'+esc(b===GEN?t("General"):b)+'</button>'}).join("")+'</div>':'<span class="hint" style="flex:1">'+t("Add the building numbers under ⚙ Settings.")+'</span>')+'</div>'+
+    '<div class="row"><label>'+t("Currency")+'</label><div class="seg"><button id="cIQD" class="cur">IQD</button><button id="cUSD" class="cur">USD</button></div></div>'+
+    '<div class="row"><label>'+t("Amount")+'</label><input type="text" id="fAmt" inputmode="decimal" autocomplete="off" value="'+esc(f.amount)+'"></div>'+
     '<div class="prev" id="fPrev"></div>'+
-    '<div class="row"><label>Date</label><input type="date" id="fDate" value="'+esc(f.date)+'"></div>'+
-    '<div class="row"><label>Description</label><input type="text" id="fDesc" dir="auto" list="dl" value="'+esc(f.desc)+'"></div>'+
+    '<div class="row"><label>'+t("Date")+'</label><input type="date" id="fDate" value="'+esc(f.date)+'"></div>'+
+    '<div class="row"><label>'+t("Description")+'</label><input type="text" id="fDesc" dir="auto" list="dl" value="'+esc(f.desc)+'"></div>'+
     '<datalist id="dl">'+Object.keys(descs).map(function(d){return'<option value="'+esc(d)+'">'}).join("")+'</datalist>'+
-    '<div class="row"><label>Receipt No.</label><input type="text" id="fRc" inputmode="numeric" autocomplete="off" placeholder="Optional" value="'+esc(f.rcpt)+'"></div>'+
-    '<div class="row"><label>Invoice No.</label><input type="text" id="fInv" autocomplete="off" placeholder="Optional" value="'+esc(f.inv)+'"></div>'+
+    '<div class="row"><label>'+t("Receipt No.")+'</label><input type="text" id="fRc" inputmode="numeric" autocomplete="off" placeholder="'+t("Optional")+'" value="'+esc(f.rcpt)+'"></div>'+
+    '<div class="row"><label>'+t("Invoice No.")+'</label><input type="text" id="fInv" autocomplete="off" placeholder="'+t("Optional")+'" value="'+esc(f.inv)+'"></div>'+
     '<p class="err" id="fErr"></p>'+
-    '<button class="big pri" id="fSave">Save</button>'+
-    '<div class="two" style="margin-top:8px"><button id="fCancel">Back</button>'+(ed?'<button class="dan" id="fDel">Delete</button>':'<span></span>')+'</div>'+
+    '<button class="big pri" id="fSave">'+t("Save")+'</button>'+
+    '<div class="two" style="margin-top:8px"><button id="fCancel">'+t("Back")+'</button>'+(ed?'<button class="dan" id="fDel">'+t("Delete")+'</button>':'<span></span>')+'</div>'+
     '</div>';
   function paint(){
     document.getElementById("tIn").className="in"+(f.type==="in"?" on":"");
     document.getElementById("tOut").className="out"+(f.type==="out"?" on":"");
     document.getElementById("tAdv").className="adv"+(f.type==="adv"?" on":"");
-    document.getElementById("fTtl").textContent=ed?'Edit Transaction':({in:'New Income',out:'New Expense',adv:'New Advance'})[f.type];
+    document.getElementById("fTtl").textContent=ed?t("Edit Transaction"):t({in:"New Income",out:"New Expense",adv:"New Advance"}[f.type]);
     document.getElementById("wkRow").style.display=f.type==="adv"?"":"none";
     document.getElementById("bRow").style.display=f.type==="out"?"":"none";
     Array.prototype.forEach.call(document.querySelectorAll("#fB button"),function(x){x.className=x.getAttribute("data-b")===f.bld?"on":""});
@@ -400,15 +650,15 @@ function formView(t,newType){
         rc=normRcpt(document.getElementById("fRc").value),inv=normDigits(document.getElementById("fInv").value).trim(),
         desc=document.getElementById("fDesc").value.trim();
     function bad(id,m){document.getElementById(id).classList.add("bad");err.textContent=m}
-    if(isNaN(amt)||amt<=0)return bad("fAmt","Enter the amount.");
-    if(f.cur==="IQD"&&amt!==Math.round(amt))return bad("fAmt","IQD amounts cannot have decimals.");
-    if(!date)return bad("fDate","Select the date.");
+    if(isNaN(amt)||amt<=0)return bad("fAmt",t("Enter the amount."));
+    if(f.cur==="IQD"&&amt!==Math.round(amt))return bad("fAmt",t("IQD amounts cannot have decimals."));
+    if(!date)return bad("fDate",t("Select the date."));
     var wk=document.getElementById("fWk").value.trim().replace(/\s+/g," ");
-    if(f.type==="adv"&&!wk)return bad("fWk","Enter the worker's name.");
-    if(f.type==="out"&&bldList().length&&!f.bld){err.textContent="Select the building (or General for site-wide expenses).";return}
-    var u=rc?rcptUsed(rc,ed?t.id:null):null;
-    if(u)return bad("fRc","Receipt No. "+rc+" is already used ("+fmtDate(u.date)+" · "+(u.desc||"")+" · "+fmtAmt(u.amount,u.cur)+" "+CUR[u.cur].s+").");
-    var o=ed?(txById(t.id)||t):{id:newId("t"),at:Date.now()};
+    if(f.type==="adv"&&!wk)return bad("fWk",t("Enter the worker's name."));
+    if(f.type==="out"&&bldList().length&&!f.bld){err.textContent=t("Select the building (or General for site-wide expenses).");return}
+    var u=rc?rcptUsed(rc,ed?tx.id:null):null;
+    if(u)return bad("fRc",t("Receipt No. {rc} is already used ({d} · {desc} · {amt} {sym}).",{rc:rc,d:fmtDate(u.date),desc:u.desc||"",amt:fmtAmt(u.amount,u.cur),sym:CUR[u.cur].s}));
+    var o=ed?(txById(tx.id)||tx):{id:newId("t"),at:Date.now()};
     o.type=f.type;o.cur=f.cur;o.amount=f.cur==="USD"?r2(amt):Math.round(amt);o.date=date;o.desc=desc;o.inv=inv;o.rcpt=rc;
     if(f.type==="adv")o.worker=wk;else delete o.worker;
     if(f.type==="out"&&f.bld)o.bld=f.bld;else delete o.bld;
@@ -416,41 +666,42 @@ function formView(t,newType){
     S.lastCur=f.cur;TAB=f.type;save();history.back();
   };
   if(ed)document.getElementById("fDel").onclick=function(){
-    openModal('<h3>Delete this transaction?</h3><div class="kv"><span>Receipt No.</span><b>'+esc(t.rcpt)+'</b></div><div class="kv"><span>Amount</span><b>'+fmtAmt(t.amount,t.cur)+' '+CUR[t.cur].s+'</b></div><div class="kv"><span>Description</span><span dir="auto">'+esc(t.desc)+'</span></div>'+
-      '<div class="acts"><button id="mY" class="dan">Delete</button><button id="mN">Cancel</button></div>');
+    openModal('<h3>'+t("Delete this transaction?")+'</h3><div class="kv"><span>'+t("Receipt No.")+'</span><b>'+esc(tx.rcpt)+'</b></div><div class="kv"><span>'+t("Amount")+'</span><b>'+fmtAmt(tx.amount,tx.cur)+' '+CUR[tx.cur].s+'</b></div><div class="kv"><span>'+t("Description")+'</span><span dir="auto">'+esc(tx.desc)+'</span></div>'+
+      '<div class="acts"><button id="mY" class="dan">'+t("Delete")+'</button><button id="mN">'+t("Cancel")+'</button></div>');
     document.getElementById("mN").onclick=closeModal;
-    document.getElementById("mY").onclick=function(){S.tx=S.tx.filter(function(x){return x.id!==t.id});save();closeModal();history.back()};
+    document.getElementById("mY").onclick=function(){S.tx=S.tx.filter(function(x){return x.id!==tx.id});save();closeModal();history.back()};
   };
 }
 
 /* ---------- log with filters ---------- */
 var LF={from:"",to:"",cur:"",q:"",bld:""};
+var WHAT={in:"income",out:"expenses",adv:"advances"};
 function logView(){
-  app.innerHTML='<div class="box"><h2>Records</h2>'+tabBar("lt")+
-    '<div class="row"><input type="text" id="lQ" dir="auto" placeholder="Search: receipt, invoice, description, worker" value="'+esc(LF.q)+'"></div>'+
+  app.innerHTML='<div class="box"><h2>'+t("Records")+'</h2>'+tabBar("lt")+
+    '<div class="row"><input type="text" id="lQ" dir="auto" placeholder="'+t("Search: receipt, invoice, description, worker")+'" value="'+esc(LF.q)+'"></div>'+
     '<div class="two" style="margin-bottom:8px"><input type="date" id="lF" value="'+LF.from+'"><input type="date" id="lT" value="'+LF.to+'"></div>'+
-    '<div class="'+(TAB==="out"?'two':'')+'"><select id="lC" style="width:100%"><option value="">All currencies</option><option value="IQD">IQD</option><option value="USD">USD</option></select>'+
-    (TAB==="out"?'<select id="lB" style="width:100%"><option value="">All buildings</option>'+bldList().concat([GEN]).map(function(b){return'<option value="'+esc(b)+'"'+(b===LF.bld?' selected':'')+'>'+esc(bldLabel(b))+'</option>'}).join("")+'</select>':'')+'</div>'+
-    '<div id="lSum"></div></div><div class="box" id="lList"></div><button class="big" id="lBack">Back</button>';
+    '<div class="'+(TAB==="out"?'two':'')+'"><select id="lC" style="width:100%"><option value="">'+t("All currencies")+'</option><option value="IQD">IQD</option><option value="USD">USD</option></select>'+
+    (TAB==="out"?'<select id="lB" style="width:100%"><option value="">'+t("All buildings")+'</option>'+bldList().concat([GEN]).map(function(b){return'<option value="'+esc(b)+'"'+(b===LF.bld?' selected':'')+'>'+esc(bldLabel(b))+'</option>'}).join("")+'</select>':'')+'</div>'+
+    '<div id="lSum"></div></div><div class="box" id="lList"></div><button class="big" id="lBack">'+t("Back")+'</button>';
   document.getElementById("lC").value=LF.cur;
   bindTabs("lt",logView);
   function upd(){
     LF.q=document.getElementById("lQ").value;LF.from=document.getElementById("lF").value;LF.to=document.getElementById("lT").value;
     LF.cur=document.getElementById("lC").value;var lb=document.getElementById("lB");LF.bld=lb?lb.value:"";
     var q=normDigits(LF.q).trim().toLowerCase();
-    var list=sorted().reverse().filter(function(t){
-      if(t.type!==TAB)return false;
-      if(LF.from&&t.date<LF.from)return false;if(LF.to&&t.date>LF.to)return false;
-      if(LF.cur&&t.cur!==LF.cur)return false;
-      if(TAB==="out"&&LF.bld&&(t.bld||GEN)!==LF.bld)return false;
-      if(q&&(normRcpt(t.rcpt)+" "+(t.inv||"")+" "+(t.desc||"")+" "+(t.worker||"")+" "+(t.bld||"")).toLowerCase().indexOf(q)<0)return false;
+    var list=sorted().reverse().filter(function(tx){
+      if(tx.type!==TAB)return false;
+      if(LF.from&&tx.date<LF.from)return false;if(LF.to&&tx.date>LF.to)return false;
+      if(LF.cur&&tx.cur!==LF.cur)return false;
+      if(TAB==="out"&&LF.bld&&(tx.bld||GEN)!==LF.bld)return false;
+      if(q&&(normRcpt(tx.rcpt)+" "+(tx.inv||"")+" "+(tx.desc||"")+" "+(tx.worker||"")+" "+(tx.bld||"")).toLowerCase().indexOf(q)<0)return false;
       return true});
     var tot=curTotals(list);
     document.getElementById("lSum").innerHTML='<div class="sum">'+["IQD","USD"].map(function(c){
-      return'<div>Total '+({in:'income',out:'expenses',adv:'advances'})[TAB]+' ('+CUR[c].n+'): <b>'+fmtAmt(tot[c],c)+'</b></div>'}).join("")+'</div>'+
-      '<p class="hint">'+list.length+' transaction'+(list.length===1?'':'s')+'</p>';
+      return'<div>'+t("Total {what} ({c})",{what:t(WHAT[TAB]),c:CUR[c].n})+': <b>'+fmtAmt(tot[c],c)+'</b></div>'}).join("")+'</div>'+
+      '<p class="hint">'+cnt(list.length,"{n} transaction","{n} transactions")+'</p>';
     var L=document.getElementById("lList");
-    L.innerHTML=list.length?list.slice(0,300).map(txRow).join("")+(list.length>300?'<p class="muted">Showing the first 300. Narrow the search.</p>':''):'<p class="muted">No results.</p>';
+    L.innerHTML=list.length?list.slice(0,300).map(txRow).join("")+(list.length>300?'<p class="muted">'+t("Showing the first 300. Narrow the search.")+'</p>':''):'<p class="muted">'+t("No results.")+'</p>';
     bindRows();
   }
   /* the search box redraws on typing only; redrawing on its "change" (fired when it loses focus)
@@ -464,17 +715,17 @@ function logView(){
 /* ---------- buildings: how much went out for each ---------- */
 var BF={from:"",to:""};
 function bldsView(){
-  var L=bldSummary(BF.from,BF.to),t={n:0,IQD:0,USD:0};
-  L.forEach(function(r){t.n+=r.n;t.IQD=r2(t.IQD+r.IQD);t.USD=r2(t.USD+r.USD)});
-  app.innerHTML='<div class="box"><h2>🏢 Expenses by Building</h2>'+
+  var L=bldSummary(BF.from,BF.to),tt={n:0,IQD:0,USD:0};
+  L.forEach(function(r){tt.n+=r.n;tt.IQD=r2(tt.IQD+r.IQD);tt.USD=r2(tt.USD+r.USD)});
+  app.innerHTML='<div class="box"><h2>'+t("🏢 Expenses by Building")+'</h2>'+
     '<div class="two" style="margin-bottom:8px"><input type="date" id="bF" value="'+BF.from+'"><input type="date" id="bT" value="'+BF.to+'"></div>'+
-    '<div class="three" style="margin-bottom:6px"><button class="small" id="b0">This month</button><button class="small" id="b1">Last month</button><button class="small" id="bA">All</button></div>'+
-    '<p class="hint">'+(BF.from||BF.to?'From '+(fmtDate(BF.from)||'the start')+' to '+(fmtDate(BF.to)||'today'):'All dates')+'</p></div>'+
+    '<div class="three" style="margin-bottom:6px"><button class="small" id="b0">'+t("This month")+'</button><button class="small" id="b1">'+t("Last month")+'</button><button class="small" id="bA">'+t("All")+'</button></div>'+
+    '<p class="hint">'+(BF.from||BF.to?t("From {a} to {b}",{a:fmtDate(BF.from)||t("the start"),b:fmtDate(BF.to)||t("today")}):t("All dates"))+'</p></div>'+
     '<div class="box">'+(L.length?L.map(function(r){var a=[];a.push(fmtAmt(r.IQD,"IQD")+' IQD');if(r.USD)a.push(fmtAmt(r.USD,"USD")+' $');
-      return'<div class="wk" data-b="'+esc(r.b)+'"><div><b>'+esc(bldLabel(r.b))+'</b><br><span>'+r.n+' invoice'+(r.n===1?'':'s')+'</span></div><div class="t" style="color:#4b2a8a">'+a.join('<br>')+'</div></div>'}).join("")+
-      '<div class="kv" style="border:0;margin-top:6px"><span><b>Total</b> ('+t.n+')</span><b>'+fmtAmt(t.IQD,"IQD")+' IQD'+(t.USD?' · '+fmtAmt(t.USD,"USD")+' $':'')+'</b></div>'
-      :'<p class="muted">Add the building numbers under ⚙ Settings, then select a building when recording an expense.</p>')+'</div>'+
-    '<button class="big pri" id="bPrint">🖨 Print Buildings Summary</button><button class="big" id="bBack" style="margin-top:8px">Back</button>';
+      return'<div class="wk" data-b="'+esc(r.b)+'"><div><b>'+esc(bldLabel(r.b))+'</b><br><span>'+cnt(r.n,"{n} invoice","{n} invoices")+'</span></div><div class="t" style="color:#4b2a8a">'+a.join('<br>')+'</div></div>'}).join("")+
+      '<div class="kv" style="border:0;margin-top:6px"><span><b>'+t("Total")+'</b> ('+tt.n+')</span><b>'+fmtAmt(tt.IQD,"IQD")+' IQD'+(tt.USD?' · '+fmtAmt(tt.USD,"USD")+' $':'')+'</b></div>'
+      :'<p class="muted">'+t("Add the building numbers under ⚙ Settings, then select a building when recording an expense.")+'</p>')+'</div>'+
+    '<button class="big pri" id="bPrint">'+t("🖨 Print Buildings Summary")+'</button><button class="big" id="bBack" style="margin-top:8px">'+t("Back")+'</button>';
   Array.prototype.forEach.call(app.querySelectorAll(".wk"),function(el){el.onclick=function(){TAB="out";LF={from:BF.from,to:BF.to,cur:"",q:"",bld:el.getAttribute("data-b")};go("log")}});
   function set(a,b){BF.from=a;BF.to=b;bldsView()}
   document.getElementById("bF").onchange=function(){set(this.value,BF.to)};
@@ -490,48 +741,49 @@ function bldsView(){
 var PAGE_W=1062,PAGE_H=733,TOP_H=74,TH_H=30,FT_H=22;
 var PF={from:"",to:"",kind:"out",daily:false,worker:"",bld:""};
 var KINDS={out:"Expense Statement",in:"Income Statement",adv:"Advances Statement",bld:"Buildings Summary",all:"Cash Box Statement"};
+function KT(k){return t(KINDS[k])}
 function monthRange(off){var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+off);var a=isoDate(d);d.setMonth(d.getMonth()+1);d.setDate(0);return[a,isoDate(d)]}
 function printView(){
   if(!PF.from){var m=monthRange(0);PF.from=m[0];PF.to=today()}
-  app.innerHTML='<div class="box"><h2>Print</h2>'+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px" id="pK"><button class="small" data-k="out">Expenses</button><button class="small" data-k="in">Income</button><button class="small" data-k="adv">Advances</button><button class="small" data-k="bld">Buildings Summary</button><button class="small" data-k="all" style="grid-column:span 2">Full Statement</button></div>'+
-    '<div class="row" id="pBr"><label>Building</label><select id="pB"><option value="">All buildings</option>'+bldList().concat([GEN]).map(function(b){return'<option value="'+esc(b)+'"'+(b===PF.bld?' selected':'')+'>'+esc(bldLabel(b))+'</option>'}).join("")+'</select></div>'+
-    '<div class="row" id="pWr"><label>Worker</label><select id="pW"><option value="">All workers</option>'+workers().map(function(w){return'<option value="'+esc(w.name)+'"'+(w.name===PF.worker?' selected':'')+'>'+esc(w.name)+'</option>'}).join("")+'</select></div>'+
-    '<div class="row"><label>From</label><input type="date" id="pF" value="'+PF.from+'"></div>'+
-    '<div class="row"><label>To</label><input type="date" id="pT" value="'+PF.to+'"></div>'+
-    '<div class="three" style="margin-bottom:10px"><button class="small" id="q0">This month</button><button class="small" id="q1">Last month</button><button class="small" id="qA">All</button></div>'+
-    '<label class="row" id="pDw" style="cursor:pointer"><input type="checkbox" id="pD" style="width:22px;height:22px"'+(PF.daily?' checked':'')+'> Daily subtotal under each day</label>'+
+  app.innerHTML='<div class="box"><h2>'+t("Print")+'</h2>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px" id="pK"><button class="small" data-k="out">'+t("Expenses")+'</button><button class="small" data-k="in">'+t("Income")+'</button><button class="small" data-k="adv">'+t("Advances")+'</button><button class="small" data-k="bld">'+t("Buildings Summary")+'</button><button class="small" data-k="all" style="grid-column:span 2">'+t("Full Statement")+'</button></div>'+
+    '<div class="row" id="pBr"><label>'+t("Building")+'</label><select id="pB"><option value="">'+t("All buildings")+'</option>'+bldList().concat([GEN]).map(function(b){return'<option value="'+esc(b)+'"'+(b===PF.bld?' selected':'')+'>'+esc(bldLabel(b))+'</option>'}).join("")+'</select></div>'+
+    '<div class="row" id="pWr"><label>'+t("Worker")+'</label><select id="pW"><option value="">'+t("All workers")+'</option>'+workers().map(function(w){return'<option value="'+esc(w.name)+'"'+(w.name===PF.worker?' selected':'')+'>'+esc(w.name)+'</option>'}).join("")+'</select></div>'+
+    '<div class="row"><label>'+t("From")+'</label><input type="date" id="pF" value="'+PF.from+'"></div>'+
+    '<div class="row"><label>'+t("To")+'</label><input type="date" id="pT" value="'+PF.to+'"></div>'+
+    '<div class="three" style="margin-bottom:10px"><button class="small" id="q0">'+t("This month")+'</button><button class="small" id="q1">'+t("Last month")+'</button><button class="small" id="qA">'+t("All")+'</button></div>'+
+    '<label class="row" id="pDw" style="cursor:pointer"><input type="checkbox" id="pD" style="width:22px;height:22px"'+(PF.daily?' checked':'')+'> '+t("Daily subtotal under each day")+'</label>'+
     '<div id="pInfo"></div>'+
-    '<div class="two" style="margin-top:10px"><button class="big pri" id="pPr">🖨 Print</button><button class="big ok" id="pPdf">📄 PDF</button></div>'+
-    '</div><button class="big" id="pBack">Back</button>';
+    '<div class="two" style="margin-top:10px"><button class="big pri" id="pPr">'+t("🖨 Print")+'</button><button class="big ok" id="pPdf">📄 PDF</button></div>'+
+    '</div><button class="big" id="pBack">'+t("Back")+'</button>';
   function paintK(){Array.prototype.forEach.call(document.querySelectorAll("#pK button"),function(b){var k=b.getAttribute("data-k");
     b.style.cssText=k===PF.kind?(k==="in"?"background:#d8f0e1;color:#14532d;border:2px solid #1f9d55":k==="out"?"background:#fde2e2;color:#8a1c1c;border:2px solid #d64545":k==="adv"?"background:#ffe9c7;color:#7a4b00;border:2px solid #e08a00":k==="bld"?"background:#e6dcfb;color:#4b2a8a;border:2px solid #7a4fd6":"background:#dce8fb;color:#1a3f8a;border:2px solid #2f6fd6"):"border:2px solid transparent";
     b.style.fontWeight="600"});document.getElementById("pDw").style.display=PF.kind==="all"||PF.kind==="bld"?"none":"";document.getElementById("pBr").style.display=PF.kind==="out"?"":"none";document.getElementById("pWr").style.display=PF.kind==="adv"?"":"none"}
   Array.prototype.forEach.call(document.querySelectorAll("#pK button"),function(b){b.onclick=function(){PF.kind=b.getAttribute("data-k");paintK();upd()}});
   function upd(){PF.worker=document.getElementById("pW").value;PF.bld=document.getElementById("pB").value;PF.from=document.getElementById("pF").value;PF.to=document.getElementById("pT").value;PF.daily=document.getElementById("pD").checked;
-    if(!PF.from||!PF.to||PF.from>PF.to){document.getElementById("pInfo").innerHTML='<p class="err">Invalid date range.</p>';return}
+    if(!PF.from||!PF.to||PF.from>PF.to){document.getElementById("pInfo").innerHTML='<p class="err">'+t("Invalid date range.")+'</p>';return}
     var n=makePages().length,h='';
     if(PF.kind==="all"){var L=ledger(PF.from,PF.to);
-      h='<div class="kv"><span>Transactions</span><b>'+L.rows.length+'</b></div><div class="kv"><span>IQD balance at period end</span><b>'+fmtAmt(L.end.IQD,"IQD")+'</b></div><div class="kv"><span>USD balance at period end</span><b>'+fmtAmt(L.end.USD,"USD")+'</b></div>'}
+      h='<div class="kv"><span>'+t("Transactions")+'</span><b>'+L.rows.length+'</b></div><div class="kv"><span>'+t("IQD balance at period end")+'</span><b>'+fmtAmt(L.end.IQD,"IQD")+'</b></div><div class="kv"><span>'+t("USD balance at period end")+'</span><b>'+fmtAmt(L.end.USD,"USD")+'</b></div>'}
     else if(PF.kind==="bld"){var bs=bldSummary(PF.from,PF.to);
-      h=bs.map(function(r){return'<div class="kv"><span>'+esc(bldLabel(r.b))+' ('+r.n+')</span><b>'+fmtAmt(r.IQD,"IQD")+(r.USD?' · '+fmtAmt(r.USD,"USD")+' $':'')+'</b></div>'}).join("")||'<p class="muted">No buildings.</p>'}
+      h=bs.map(function(r){return'<div class="kv"><span>'+esc(bldLabel(r.b))+' ('+r.n+')</span><b>'+fmtAmt(r.IQD,"IQD")+(r.USD?' · '+fmtAmt(r.USD,"USD")+' $':'')+'</b></div>'}).join("")||'<p class="muted">'+t("No buildings.")+'</p>'}
     else{var list=kindRows(PF.kind,PF.from,PF.to),s=curTotals(list);
-      h='<div class="kv"><span>Transactions</span><b>'+list.length+'</b></div><div class="kv"><span>Total (IQD)</span><b>'+fmtAmt(s.IQD,"IQD")+'</b></div><div class="kv"><span>Total (USD)</span><b>'+fmtAmt(s.USD,"USD")+'</b></div>'}
-    document.getElementById("pInfo").innerHTML=h+'<div class="kv"><span>Pages</span><b>'+n+'</b></div>'}
+      h='<div class="kv"><span>'+t("Transactions")+'</span><b>'+list.length+'</b></div><div class="kv"><span>'+t("Total (IQD)")+'</span><b>'+fmtAmt(s.IQD,"IQD")+'</b></div><div class="kv"><span>'+t("Total (USD)")+'</span><b>'+fmtAmt(s.USD,"USD")+'</b></div>'}
+    document.getElementById("pInfo").innerHTML=h+'<div class="kv"><span>'+t("Pages")+'</span><b>'+n+'</b></div>'}
   function set(a,b){document.getElementById("pF").value=a;document.getElementById("pT").value=b;upd()}
   document.getElementById("q0").onclick=function(){var m=monthRange(0);set(m[0],today())};
   document.getElementById("q1").onclick=function(){var m=monthRange(-1);set(m[0],m[1])};
   document.getElementById("qA").onclick=function(){var s=sorted();set(s.length?s[0].date:today(),s.length&&s[s.length-1].date>today()?s[s.length-1].date:today())};
   ["pF","pT","pD","pW","pB"].forEach(function(id){document.getElementById(id).onchange=upd});
-  document.getElementById("pPr").onclick=function(){if(PF.from>PF.to)return;printPages(makePages(),KINDS[PF.kind],function(){doPdf()})};
+  document.getElementById("pPr").onclick=function(){if(PF.from>PF.to)return;printPages(makePages(),KT(PF.kind),function(){doPdf()})};
   document.getElementById("pPdf").onclick=function(){if(PF.from>PF.to)return;doPdf()};
   document.getElementById("pBack").onclick=function(){history.back()};
   paintK();upd();
 }
 function makePages(){return PF.kind==="all"?ledgerPages(PF.from,PF.to):PF.kind==="bld"?bldPages(PF.from,PF.to):kindPages(PF.kind,PF.from,PF.to,PF.daily)}
-function doPdf(){var nm={out:"sadir",in:"warid",adv:"sulaf",bld:"binayat",all:"sandoq"}[PF.kind];pdfPages(makePages,nm+"_"+PF.from+(PF.to!==PF.from?"_"+PF.to:"")+".pdf",KINDS[PF.kind])}
+function doPdf(){var nm={out:"sadir",in:"warid",adv:"sulaf",bld:"binayat",all:"sandoq"}[PF.kind];pdfPages(makePages,nm+"_"+PF.from+(PF.to!==PF.from?"_"+PF.to:"")+".pdf",KT(PF.kind))}
 function nCell(v,cur,cls){if(v===""||v==null)return'<td class="n'+(cls?" "+cls:"")+'"></td>';return'<td class="n'+(cls?" "+cls:"")+(v<0?" neg":"")+'">'+fmtAmt(v,cur)+'</td>'}
-function descH(t,perLine){var n=(t.desc||"").length,lines=Math.max(1,Math.min(3,Math.ceil(n/perLine)));return 22+(lines-1)*15}
+function descH(tx,perLine){var n=(tx.desc||"").length,lines=Math.max(1,Math.min(3,Math.ceil(n/perLine)));return 22+(lines-1)*15}
 /* lays rows out on landscape pages: the column header repeats on every page,
    "first" rows open page 1 and "last" rows (totals) stay together on the last page */
 function paginate(o){
@@ -542,73 +794,73 @@ function paginate(o){
   if(used+lastH>cap&&cur.length){pages.push(cur);cur=[];used=0}
   o.last.forEach(function(r){cur.push(r)});pages.push(cur);
   var N=pages.length,printed=fmtDate(today());
-  var per=o.from===o.to?'Date: <b>'+fmtDate(o.from)+'</b>':'From <b>'+fmtDate(o.from)+'</b> to <b>'+fmtDate(o.to)+'</b>';
+  var per=o.from===o.to?t("Date: {d}",{d:'<b>'+fmtDate(o.from)+'</b>'}):t("From {a} to {b}",{a:'<b>'+fmtDate(o.from)+'</b>',b:'<b>'+fmtDate(o.to)+'</b>'});
   return pages.map(function(pg,pi){
     return'<div class="sheet page" style="width:'+PAGE_W+'px">'+
       '<div class="hdr" style="height:'+(TOP_H-8)+'px"><div class="logo">SATCON</div><div class="ttl"><b>'+o.title+'</b><span>'+esc(S.project||"")+'</span></div>'+
       '<div class="per"><div>'+per+'</div></div></div>'+
       '<table>'+o.colg+o.head+pg.map(function(r){return r.html}).join("")+'</table>'+
-      '<div class="ft"><span>Printed on: '+printed+'</span><span>Page '+(pi+1)+' of '+N+'</span></div></div>'});
+      '<div class="ft"><span>'+t("Printed on: {d}",{d:printed})+'</span><span>'+t("Page {i} of {n}",{i:pi+1,n:N})+'</span></div></div>'});
 }
-function kindRows(kind,from,to){var w=kind==="adv"?PF.worker:"",bl=kind==="out"?PF.bld:"";return sorted().filter(function(t){return t.type===kind&&t.date>=from&&t.date<=to&&(!w||t.worker===w)&&(!bl||(t.bld||GEN)===bl)})}
+function kindRows(kind,from,to){var w=kind==="adv"?PF.worker:"",bl=kind==="out"?PF.bld:"";return sorted().filter(function(tx){return tx.type===kind&&tx.date>=from&&tx.date<=to&&(!w||tx.worker===w)&&(!bl||(tx.bld||GEN)===bl)})}
 /* in-only or out-only sheet: amount columns per currency, optional total under each day */
 function kindPages(kind,from,to,daily){
-  var list=kindRows(kind,from,to),rows=[],tot={IQD:0,USD:0},day={IQD:0,USD:0},isAdv=kind==="adv",name={in:"income",out:"expenses",adv:"advances"}[kind];
+  var list=kindRows(kind,from,to),rows=[],tot={IQD:0,USD:0},day={IQD:0,USD:0},isAdv=kind==="adv",name=t(WHAT[kind]);
   var showB=kind==="out"&&!PF.bld,nc=showB?6:5;
   /* advances: the worker's name takes the invoice column's place; expenses for all buildings get a building column */
-  list.forEach(function(t,i){
-    var h=descH(t,showB?62:72);
-    rows.push({h:h,html:'<tr style="height:'+h+'px"><td>'+(i+1)+'</td><td>'+fmtDate(t.date)+'</td>'+(isAdv?'<td dir="auto"><b>'+esc(t.worker)+'</b></td>':'')+(showB?'<td><b>'+esc(t.bld&&t.bld!==GEN?t.bld:"General")+'</b></td>':'')+'<td class="ds"><div dir="auto">'+esc(t.desc)+'</div></td>'+(isAdv?'':'<td>'+esc(t.inv)+'</td>')+'<td>'+esc(t.rcpt)+'</td>'+
-      nCell(t.cur==="IQD"?t.amount:"","IQD")+nCell(t.cur==="USD"?t.amount:"","USD")+'</tr>'});
-    tot[t.cur]=r2(tot[t.cur]+t.amount);day[t.cur]=r2(day[t.cur]+t.amount);
+  list.forEach(function(tx,i){
+    var h=descH(tx,showB?62:72);
+    rows.push({h:h,html:'<tr style="height:'+h+'px"><td>'+(i+1)+'</td><td>'+fmtDate(tx.date)+'</td>'+(isAdv?'<td dir="auto"><b>'+esc(tx.worker)+'</b></td>':'')+(showB?'<td><b>'+esc(tx.bld&&tx.bld!==GEN?tx.bld:t("General"))+'</b></td>':'')+'<td class="ds"><div dir="auto">'+esc(tx.desc)+'</div></td>'+(isAdv?'':'<td>'+esc(tx.inv)+'</td>')+'<td>'+esc(tx.rcpt)+'</td>'+
+      nCell(tx.cur==="IQD"?tx.amount:"","IQD")+nCell(tx.cur==="USD"?tx.amount:"","USD")+'</tr>'});
+    tot[tx.cur]=r2(tot[tx.cur]+tx.amount);day[tx.cur]=r2(day[tx.cur]+tx.amount);
     var nx=list[i+1];
-    if(daily&&(!nx||nx.date!==t.date)){
-      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="'+nc+'">Subtotal for '+fmtDate(t.date)+'</td>'+nCell(day.IQD||"","IQD")+nCell(day.USD||"","USD")+'</tr>'});
+    if(daily&&(!nx||nx.date!==tx.date)){
+      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="'+nc+'">'+t("Subtotal for {d}",{d:fmtDate(tx.date)})+'</td>'+nCell(day.IQD||"","IQD")+nCell(day.USD||"","USD")+'</tr>'});
       day={IQD:0,USD:0}}
   });
-  function groupRows(title,keyOf,label,disp){
-    var m={};list.forEach(function(t){var k=keyOf(t),w=m[k]||(m[k]={n:0,IQD:0,USD:0});w.n++;w[t.cur]=r2(w[t.cur]+t.amount)});
-    rows.push({h:26,html:'<tr class="tot"><td colspan="'+(nc+2)+'">'+title+'</td></tr>'});
+  function groupRows(title,keyOf,one,many,disp){
+    var m={};list.forEach(function(tx){var k=keyOf(tx),w=m[k]||(m[k]={n:0,IQD:0,USD:0});w.n++;w[tx.cur]=r2(w[tx.cur]+tx.amount)});
+    rows.push({h:26,html:'<tr class="tot"><td colspan="'+(nc+2)+'">'+t(title)+'</td></tr>'});
     Object.keys(m).sort(byName).forEach(function(k){
-      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="2">'+m[k].n+' '+label+(m[k].n===1?'':'s')+'</td><td colspan="'+(nc-2)+'"><b>'+esc(disp?disp(k):k)+'</b></td>'+nCell(m[k].IQD||"","IQD")+nCell(m[k].USD||"","USD")+'</tr>'})});
+      rows.push({h:22,html:'<tr class="cf" style="height:22px"><td colspan="2">'+cnt(m[k].n,one,many)+'</td><td colspan="'+(nc-2)+'"><b>'+esc(disp?disp(k):k)+'</b></td>'+nCell(m[k].IQD||"","IQD")+nCell(m[k].USD||"","USD")+'</tr>'})});
   }
-  if(isAdv&&list.length&&!PF.worker)groupRows("Totals by Worker",function(t){return t.worker},"advance");
-  if(showB&&list.length)groupRows("Totals by Building",function(t){return t.bld||GEN},"invoice",bldLabel);
+  if(isAdv&&list.length&&!PF.worker)groupRows("Totals by Worker",function(tx){return tx.worker},"{n} advance","{n} advances");
+  if(showB&&list.length)groupRows("Totals by Building",function(tx){return tx.bld||GEN},"{n} invoice","{n} invoices",bldLabel);
   var last=[],who=isAdv&&PF.worker?' '+esc(PF.worker):kind==="out"&&PF.bld?' '+esc(bldLabel(PF.bld)):'';
-  if(!list.length)last.push({h:30,html:'<tr><td colspan="'+(nc+2)+'" style="height:30px">No '+name+' in this period</td></tr>'});
-  last.push({h:28,html:'<tr class="tot"><td colspan="'+nc+'">Total '+name+who+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'});
+  if(!list.length)last.push({h:30,html:'<tr><td colspan="'+(nc+2)+'" style="height:30px">'+t("No {x} in this period",{x:name})+'</td></tr>'});
+  last.push({h:28,html:'<tr class="tot"><td colspan="'+nc+'">'+t("Total {x}",{x:name})+who+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'});
   var c=' style="background:'+({in:"#a9d18e",out:"#f4b183",adv:"#ffd966"})[kind]+'"';
-  return paginate({title:KINDS[kind]+(who?' -'+who:''),from:from,to:to,first:[],rows:rows,last:last,
+  return paginate({title:KT(kind)+(who?' -'+who:''),from:from,to:to,first:[],rows:rows,last:last,
     colg:'<colgroup><col style="width:40px"><col style="width:90px">'+(isAdv?'<col style="width:170px"><col>':(showB?'<col style="width:90px">':'')+'<col><col style="width:110px">')+'<col style="width:100px"><col style="width:150px"><col style="width:130px"></colgroup>',
-    head:'<tr><th'+c+'>No.</th><th'+c+'>Date</th>'+(isAdv?'<th'+c+'>Worker</th><th'+c+'>Description</th>':(showB?'<th'+c+'>Building</th>':'')+'<th'+c+'>Description</th><th'+c+'>Invoice No.</th>')+'<th'+c+'>Receipt No.</th><th class="iq">Amount (IQD)</th><th class="us">Amount (USD)</th></tr>'});
+    head:'<tr><th'+c+'>'+t("No.")+'</th><th'+c+'>'+t("Date")+'</th>'+(isAdv?'<th'+c+'>'+t("Worker")+'</th><th'+c+'>'+t("Description")+'</th>':(showB?'<th'+c+'>'+t("Building")+'</th>':'')+'<th'+c+'>'+t("Description")+'</th><th'+c+'>'+t("Invoice No.")+'</th>')+'<th'+c+'>'+t("Receipt No.")+'</th><th class="iq">'+t("Amount (IQD)")+'</th><th class="us">'+t("Amount (USD)")+'</th></tr>'});
 }
 /* one line per building: how much went out for it */
 function bldPages(from,to){
   var L=bldSummary(from,to),rows=[],tot={n:0,IQD:0,USD:0},c=' style="background:#c9b8f0"';
   L.forEach(function(r,i){tot.n+=r.n;tot.IQD=r2(tot.IQD+r.IQD);tot.USD=r2(tot.USD+r.USD);
     rows.push({h:30,html:'<tr style="height:30px"><td>'+(i+1)+'</td><td style="font-size:15px"><b>'+esc(bldLabel(r.b))+'</b></td><td>'+r.n+'</td>'+nCell(r.IQD,"IQD")+nCell(r.USD,"USD")+'</tr>'})});
-  return paginate({title:KINDS.bld,from:from,to:to,first:[],rows:rows,
-    last:[{h:32,html:'<tr class="tot" style="height:32px"><td colspan="2">Total</td><td>'+tot.n+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'}],
+  return paginate({title:KT("bld"),from:from,to:to,first:[],rows:rows,
+    last:[{h:32,html:'<tr class="tot" style="height:32px"><td colspan="2">'+t("Total")+'</td><td>'+tot.n+'</td>'+nCell(tot.IQD,"IQD")+nCell(tot.USD,"USD")+'</tr>'}],
     colg:'<colgroup><col style="width:50px"><col><col style="width:150px"><col style="width:230px"><col style="width:230px"></colgroup>',
-    head:'<tr><th'+c+'>No.</th><th'+c+'>Building</th><th'+c+'>Invoices</th><th class="iq">Total Expenses (IQD)</th><th class="us">Total Expenses (USD)</th></tr>'});
+    head:'<tr><th'+c+'>'+t("No.")+'</th><th'+c+'>'+t("Building")+'</th><th'+c+'>'+t("Invoices")+'</th><th class="iq">'+t("Total Expenses (IQD)")+'</th><th class="us">'+t("Total Expenses (USD)")+'</th></tr>'});
 }
 /* full statement: in and out side by side with the running balance of each currency */
 function ledgerPages(from,to){
   var L=ledger(from,to),rows=[];
-  L.rows.forEach(function(r,i){var t=r.t,iq=t.cur==="IQD",h=descH({desc:txDesc(t)},44);
-    rows.push({h:h,html:'<tr style="height:'+h+'px"><td>'+(i+1)+'</td><td>'+fmtDate(t.date)+'</td><td class="ds"><div dir="auto">'+esc(txDesc(t))+'</div></td><td>'+esc(t.inv)+'</td><td>'+esc(t.rcpt)+'</td>'+
-      nCell(iq&&t.type==="in"?t.amount:"","IQD")+nCell(iq&&t.type!=="in"?t.amount:"","IQD")+nCell(iq?r.bal:"","IQD","bl")+
-      nCell(!iq&&t.type==="in"?t.amount:"","USD")+nCell(!iq&&t.type!=="in"?t.amount:"","USD")+nCell(!iq?r.bal:"","USD","bl")+'</tr>'})});
+  L.rows.forEach(function(r,i){var tx=r.t,iq=tx.cur==="IQD",h=descH({desc:txDesc(tx)},44);
+    rows.push({h:h,html:'<tr style="height:'+h+'px"><td>'+(i+1)+'</td><td>'+fmtDate(tx.date)+'</td><td class="ds"><div dir="auto">'+esc(txDesc(tx))+'</div></td><td>'+esc(tx.inv)+'</td><td>'+esc(tx.rcpt)+'</td>'+
+      nCell(iq&&tx.type==="in"?tx.amount:"","IQD")+nCell(iq&&tx.type!=="in"?tx.amount:"","IQD")+nCell(iq?r.bal:"","IQD","bl")+
+      nCell(!iq&&tx.type==="in"?tx.amount:"","USD")+nCell(!iq&&tx.type!=="in"?tx.amount:"","USD")+nCell(!iq?r.bal:"","USD","bl")+'</tr>'})});
   var last=[];
-  if(!L.rows.length)last.push({h:30,html:'<tr><td colspan="11" style="height:30px">No transactions in this period</td></tr>'});
-  last.push({h:27,html:'<tr class="tot"><td colspan="5">Period Totals</td>'+nCell(L.tot.IQD.in,"IQD")+nCell(L.tot.IQD.out,"IQD")+'<td></td>'+nCell(L.tot.USD.in,"USD")+nCell(L.tot.USD.out,"USD")+'<td></td></tr>'});
-  last.push({h:27,html:'<tr class="tot"><td colspan="5">Closing Balance as of '+fmtDate(to)+'</td><td></td><td></td>'+nCell(L.end.IQD,"IQD")+'<td></td><td></td>'+nCell(L.end.USD,"USD")+'</tr>'});
-  return paginate({title:KINDS.all,from:from,to:to,rows:rows,last:last,
-    first:[{h:24,html:'<tr class="cf" style="height:24px"><td colspan="5">Balance Brought Forward before '+fmtDate(from)+'</td><td></td><td></td>'+nCell(L.cf.IQD,"IQD")+'<td></td><td></td>'+nCell(L.cf.USD,"USD")+'</tr>'}],
+  if(!L.rows.length)last.push({h:30,html:'<tr><td colspan="11" style="height:30px">'+t("No transactions in this period")+'</td></tr>'});
+  last.push({h:27,html:'<tr class="tot"><td colspan="5">'+t("Period Totals")+'</td>'+nCell(L.tot.IQD.in,"IQD")+nCell(L.tot.IQD.out,"IQD")+'<td></td>'+nCell(L.tot.USD.in,"USD")+nCell(L.tot.USD.out,"USD")+'<td></td></tr>'});
+  last.push({h:27,html:'<tr class="tot"><td colspan="5">'+t("Closing Balance as of {d}",{d:fmtDate(to)})+'</td><td></td><td></td>'+nCell(L.end.IQD,"IQD")+'<td></td><td></td>'+nCell(L.end.USD,"USD")+'</tr>'});
+  return paginate({title:KT("all"),from:from,to:to,rows:rows,last:last,
+    first:[{h:24,html:'<tr class="cf" style="height:24px"><td colspan="5">'+t("Balance Brought Forward before {d}",{d:fmtDate(from)})+'</td><td></td><td></td>'+nCell(L.cf.IQD,"IQD")+'<td></td><td></td>'+nCell(L.cf.USD,"USD")+'</tr>'}],
     colg:'<colgroup><col style="width:34px"><col style="width:78px"><col><col style="width:80px"><col style="width:72px">'+
       '<col style="width:82px"><col style="width:82px"><col style="width:86px"><col style="width:76px"><col style="width:76px"><col style="width:80px"></colgroup>',
-    head:'<tr><th>No.</th><th>Date</th><th>Description</th><th>Invoice No.</th><th>Receipt No.</th>'+
-      '<th class="iq">Income IQD</th><th class="iq">Expense IQD</th><th class="iq">Balance IQD</th><th class="us">Income USD</th><th class="us">Expense USD</th><th class="us">Balance USD</th></tr>'});
+    head:'<tr><th>'+t("No.")+'</th><th>'+t("Date")+'</th><th>'+t("Description")+'</th><th>'+t("Invoice No.")+'</th><th>'+t("Receipt No.")+'</th>'+
+      '<th class="iq">'+t("Income IQD")+'</th><th class="iq">'+t("Expense IQD")+'</th><th class="iq">'+t("Balance IQD")+'</th><th class="us">'+t("Income USD")+'</th><th class="us">'+t("Expense USD")+'</th><th class="us">'+t("Balance USD")+'</th></tr>'});
 }
 var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
 if(NATIVE){var st=document.createElement("style");st.textContent="@page{size:A4 landscape;margin:8mm}";document.head.appendChild(st)}
@@ -619,13 +871,13 @@ function printPages(pages,title,fallback){
   window.addEventListener("beforeprint",mark,{once:true});
   try{window.print()}catch(e){}
   setTimeout(function(){window.removeEventListener("beforeprint",mark);if(opened)return;
-    openModal('<h3>Direct printing did not open</h3><p>A PDF will be prepared instead. Open it in a PDF viewer and print from there.</p><div class="acts"><button id="mS" class="pri">Prepare PDF</button><button id="mN">Cancel</button></div>');
+    openModal('<h3>'+t("Direct printing did not open")+'</h3><p>'+t("A PDF will be prepared instead. Open it in a PDF viewer and print from there.")+'</p><div class="acts"><button id="mS" class="pri">'+t("Prepare PDF")+'</button><button id="mN">'+t("Cancel")+'</button></div>');
     document.getElementById("mS").onclick=function(){closeModal();fallback()};document.getElementById("mN").onclick=closeModal},1500);
 }
 var LIBS=["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js","https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
 function loadScript(u){return new Promise(function(res,rej){var s=document.createElement("script");s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 function pdfPages(makePages,name,title){
-  openModal('<h3 style="text-align:center">Preparing PDF...</h3>');
+  openModal('<h3 style="text-align:center">'+t("Preparing PDF...")+'</h3>');
   var p=window.jspdf&&window.html2canvas?Promise.resolve():Promise.all(LIBS.map(loadScript));
   p.then(function(){
     var pages=makePages(),pdf=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"}),chain=Promise.resolve();
@@ -642,7 +894,7 @@ function pdfPages(makePages,name,title){
       if(navigator.canShare&&navigator.canShare({files:[file]}))return navigator.share({files:[file],title:title}).catch(function(){});
       var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()});
   }).catch(function(){
-    openModal('<h3>Could not prepare the PDF</h3><p>'+(window.jspdf?'An error occurred while preparing the file. Please try again.':'An internet connection is required the first time, to download the PDF tools.')+'</p><div class="acts"><button id="mN">OK</button></div>');
+    openModal('<h3>'+t("Could not prepare the PDF")+'</h3><p>'+(window.jspdf?t("An error occurred while preparing the file. Please try again."):t("An internet connection is required the first time, to download the PDF tools."))+'</p><div class="acts"><button id="mN">'+t("OK")+'</button></div>');
     document.getElementById("mN").onclick=closeModal});
 }
 
@@ -662,48 +914,54 @@ function saveText(text,name,mime){
 function backup(){
   var text=JSON.stringify({app:"satcon-sandoq",v:1,copy:COPY,at:Date.now(),state:S}),name="sandoq"+(COPY>1?COPY:"")+"_"+siteName(SITES.cur).replace(/[\\\/:*?"<>|\s]+/g,"_")+"_"+today()+".json";
   var canSave=!NATIVE||!!(window.AndroidBridge&&window.AndroidBridge.saveDownload);
-  openModal('<h3>💾 Backup</h3><p class="muted" style="margin-top:0">'+S.tx.length+' transactions · File: '+esc(name)+'</p>'+
-    '<div class="acts" style="flex-direction:column"><button id="bS" class="pri">📤 Share (WhatsApp, ...)</button>'+(canSave?'<button id="bD">💾 Save to Downloads</button>':'')+'<button id="mN">Close</button></div><p class="hint" id="bMsg"></p>');
-  function msg(t,c){var m=document.getElementById("bMsg");if(m){m.textContent=t;m.style.color=c||""}}
+  openModal('<h3>'+t("💾 Backup")+'</h3><p class="muted" style="margin-top:0">'+t("{n} transactions · File: {name}",{n:S.tx.length,name:esc(name)})+'</p>'+
+    '<div class="acts" style="flex-direction:column"><button id="bS" class="pri">'+t("📤 Share (WhatsApp, ...)")+'</button>'+(canSave?'<button id="bD">'+t("💾 Save to Downloads")+'</button>':'')+'<button id="mN">'+t("Close")+'</button></div><p class="hint" id="bMsg"></p>');
+  function msg(tx,c){var m=document.getElementById("bMsg");if(m){m.textContent=tx;m.style.color=c||""}}
   function done(){S.lastBackup=Date.now();save()}
-  window.__shareFailed=function(){msg("The share menu did not open. Try saving to Downloads.","#d64545")};
-  document.getElementById("bS").onclick=function(){if(shareText(text,name,"application/json","Cash Box backup")){done();msg("✓ Once sent, the backup is safe with you.","#1f9d55")}else msg("Sharing failed.","#d64545")};
-  var d=document.getElementById("bD");if(d)d.onclick=function(){if(saveText(text,name,"application/json")){done();msg("✓ Saved to the Download folder as "+name,"#1f9d55")}else msg("Could not save. Use Share instead.","#d64545")};
+  window.__shareFailed=function(){msg(t("The share menu did not open. Try saving to Downloads."),"#d64545")};
+  document.getElementById("bS").onclick=function(){if(shareText(text,name,"application/json",t("Cash Box backup"))){done();msg("✓ "+t("Once sent, the backup is safe with you."),"#1f9d55")}else msg(t("Sharing failed."),"#d64545")};
+  var d=document.getElementById("bD");if(d)d.onclick=function(){if(saveText(text,name,"application/json")){done();msg(t("✓ Saved to the Download folder as {name}",{name:name}),"#1f9d55")}else msg(t("Could not save. Use Share instead."),"#d64545")};
   document.getElementById("mN").onclick=function(){closeModal();render()};
 }
 function restore(file){
-  file.text().then(function(t){var d=JSON.parse(t);if(!d||d.app!=="satcon-sandoq"||!d.state||!Array.isArray(d.state.tx))throw 0;return d}).then(function(d){
+  file.text().then(function(tx){var d=JSON.parse(tx);if(!d||d.app!=="satcon-sandoq"||!d.state||!Array.isArray(d.state.tx))throw 0;return d}).then(function(d){
     var inc=d.state,b0=blank(),k;for(k in b0)if(inc[k]===undefined)inc[k]=b0[k];
     var mine=S;S=inc;var bi=balances(),ni=inc.tx.length;S=mine;var bm=balances();
     var fromCopy=d.copy||1,other=fromCopy!==COPY||((inc.project||"")!==(S.project||"")&&S.tx.length);
-    openModal('<h3>📥 Restore Backup</h3><p style="margin:0 0 8px">Backup dated <b>'+fmtDate(isoDate(new Date(d.at)))+'</b> from <b>'+(fromCopy>1?"Cash Box "+fromCopy:"Cash Box")+(inc.project?' - '+esc(inc.project):'')+'</b></p>'+
-      (other?'<p class="hint" style="color:#d64545;font-weight:700">⚠ This file is from '+(fromCopy!==COPY?'another app':'another site')+'. Make sure you are restoring it to the right place.</p>':'')+
-      '<div class="kv"><span>Transactions</span><b>'+ni+'</b></div><div class="kv"><span>IQD balance</span><b>'+fmtAmt(bi.IQD,"IQD")+'</b></div><div class="kv"><span>USD balance</span><b>'+fmtAmt(bi.USD,"USD")+'</b></div>'+
-      (S.tx.length?'<p class="hint" style="color:#a15c00">Warning: the current data ('+S.tx.length+' transactions, IQD '+fmtAmt(bm.IQD,"IQD")+', USD '+fmtAmt(bm.USD,"USD")+') will be replaced by this file.</p>':'')+
-      '<div class="acts"><button id="mY" class="dan">Restore</button><button id="mN">Cancel</button></div>');
+    var srcName=t("Cash Box")+(fromCopy>1?" "+fromCopy:"")+(inc.project?' - '+esc(inc.project):'');
+    openModal('<h3>'+t("📥 Restore Backup")+'</h3><p style="margin:0 0 8px">'+t("Backup dated {d} from {src}",{d:fmtDate(isoDate(new Date(d.at))),src:'<b>'+srcName+'</b>'})+'</p>'+
+      (other?'<p class="hint" style="color:#d64545;font-weight:700">'+(fromCopy!==COPY?t("This file is from another app. Make sure you are restoring it to the right place."):t("This file is from another site. Make sure you are restoring it to the right place."))+'</p>':'')+
+      '<div class="kv"><span>'+t("Transactions")+'</span><b>'+ni+'</b></div><div class="kv"><span>'+t("IQD balance")+'</span><b>'+fmtAmt(bi.IQD,"IQD")+'</b></div><div class="kv"><span>'+t("USD balance")+'</span><b>'+fmtAmt(bi.USD,"USD")+'</b></div>'+
+      (S.tx.length?'<p class="hint" style="color:#a15c00">'+t("Warning: the current data ({n} transactions, IQD {a}, USD {b}) will be replaced by this file.",{n:S.tx.length,a:fmtAmt(bm.IQD,"IQD"),b:fmtAmt(bm.USD,"USD")})+'</p>':'')+
+      '<div class="acts"><button id="mY" class="dan">'+t("Restore")+'</button><button id="mN">'+t("Cancel")+'</button></div>');
     document.getElementById("mN").onclick=closeModal;
     document.getElementById("mY").onclick=function(){S=inc;S.lastBackup=Date.now();save();closeModal();go("")};
-  }).catch(function(){info("Not a Cash Box backup","Select a sandoq_..._backup .json file.")});
+  }).catch(function(){info(t("Not a Cash Box backup"),t("Select a sandoq backup .json file."))});
 }
 function settingsView(){
-  app.innerHTML=syncBox()+'<div class="box"><h2>Settings</h2>'+
-    '<div class="row"><label>Site name</label><input type="text" id="sP" dir="auto" value="'+esc(S.project)+'"></div>'+
-    '<p class="hint" style="margin:-4px 0 10px">Shown at the top of the screen and on printed statements.</p>'+
-    '<div class="row"><label>Buildings</label><input type="text" id="sB" placeholder="e.g. 1, 2, 3, 4, 5" value="'+esc((S.blds||[]).join(", "))+'"></div>'+
-    '<p class="hint" style="margin:-4px 0 10px">Separate with commas or dots, e.g. D1, D2, D3. They appear as buttons when recording an expense.</p>'+
-    '<h2 style="margin-top:14px">Opening Balance</h2><p class="hint" style="margin:-6px 0 10px">Cash held in the box before the first recorded transaction.</p>'+
+  app.innerHTML=syncBox()+'<div class="box"><h2>'+t("Settings")+'</h2>'+
+    '<div class="row"><label>'+t("Language")+'</label><div class="seg" style="grid-template-columns:1fr 1fr">'+
+      '<button id="lgEn" class="lg'+(LANG==="en"?" on":"")+'">English</button><button id="lgAr" class="lg'+(LANG==="ar"?" on":"")+'">العربية</button></div></div>'+
+    '<p class="hint" style="margin:-4px 0 10px">'+t("Language of the screens and printed statements.")+'</p>'+
+    '<div class="row"><label>'+t("Site name")+'</label><input type="text" id="sP" dir="auto" value="'+esc(S.project)+'"></div>'+
+    '<p class="hint" style="margin:-4px 0 10px">'+t("Shown at the top of the screen and on printed statements.")+'</p>'+
+    '<div class="row"><label>'+t("Buildings")+'</label><input type="text" id="sB" placeholder="e.g. 1, 2, 3, 4, 5" value="'+esc((S.blds||[]).join(", "))+'"></div>'+
+    '<p class="hint" style="margin:-4px 0 10px">'+t("Separate with commas or dots, e.g. D1, D2, D3. They appear as buttons when recording an expense.")+'</p>'+
+    '<h2 style="margin-top:14px">'+t("Opening Balance")+'</h2><p class="hint" style="margin:-6px 0 10px">'+t("Cash held in the box before the first recorded transaction.")+'</p>'+
     '<div class="row"><label>IQD</label><input type="text" id="sOI" inputmode="decimal" value="'+(S.open.IQD||"")+'"></div>'+
     '<div class="row"><label>USD</label><input type="text" id="sOU" inputmode="decimal" value="'+(S.open.USD||"")+'"></div>'+
-    '<p class="err" id="sErr"></p><button class="big pri" id="sSave">Save</button></div>'+
-    '<div class="box"><h2>Backup</h2><p class="muted" style="margin-top:0">'+(S.lastBackup?'Last backup: '+fmtDate(isoDate(new Date(S.lastBackup))):'No backup yet')+'</p>'+
-    '<button class="big ok" id="sBk">💾 Create Backup</button>'+
-    '<label class="big" style="display:block;text-align:center;border-radius:10px;padding:16px;background:#dfe5f0;cursor:pointer;font-weight:600;margin-top:8px">📥 Restore from File<input type="file" id="sIn" accept=".json,application/json,*/*" style="display:none"></label></div>'+
-    (SITES.ids.length>1?'<button class="big" id="sDel" style="background:#fff;color:#d64545;border:2px solid #d64545;margin-bottom:8px">🗑 Delete This Site</button>':'')+
-    '<button class="big" id="sBack">Back</button>';
+    '<p class="err" id="sErr"></p><button class="big pri" id="sSave">'+t("Save")+'</button></div>'+
+    '<div class="box"><h2>'+t("Backup")+'</h2><p class="muted" style="margin-top:0">'+(S.lastBackup?t("Last backup: {d}",{d:fmtDate(isoDate(new Date(S.lastBackup)))}):t("No backup yet"))+'</p>'+
+    '<button class="big ok" id="sBk">'+t("💾 Create Backup")+'</button>'+
+    '<label class="big" style="display:block;text-align:center;border-radius:10px;padding:16px;background:#dfe5f0;cursor:pointer;font-weight:600;margin-top:8px">'+t("📥 Restore from File")+'<input type="file" id="sIn" accept=".json,application/json,*/*" style="display:none"></label></div>'+
+    (SITES.ids.length>1?'<button class="big" id="sDel" style="background:#fff;color:#d64545;border:2px solid #d64545;margin-bottom:8px">'+t("🗑 Delete This Site")+'</button>':'')+
+    '<button class="big" id="sBack">'+t("Back")+'</button>';
+  document.getElementById("lgEn").onclick=function(){setLang("en")};
+  document.getElementById("lgAr").onclick=function(){setLang("ar")};
   document.getElementById("sSave").onclick=function(){
     var e=document.getElementById("sErr"),a=document.getElementById("sOI").value.trim(),b=document.getElementById("sOU").value.trim();
     var ai=a?parseAmt(a):0,bu=b?parseAmt(b):0;
-    if(isNaN(ai)||isNaN(bu)){e.textContent="Invalid number.";return}
+    if(isNaN(ai)||isNaN(bu)){e.textContent=t("Invalid number.");return}
     S.blds=splitBlds(document.getElementById("sB").value);
     S.project=document.getElementById("sP").value.trim();S.open={IQD:Math.round(ai),USD:r2(bu)};save();history.back()};
   document.getElementById("sBk").onclick=backup;
@@ -731,24 +989,24 @@ function savePend(){try{localStorage.setItem(PEND_KEY,JSON.stringify(PEND))}catc
 function pendN(){var n=0;for(var s in PEND)n+=Object.keys(PEND[s]).length;return n}
 function mark(sid,key){(PEND[sid]||(PEND[sid]={}))[key]=Date.now()+Math.random()}
 var TXF=["id","type","cur","amount","date","desc","inv","rcpt","worker","bld","at","edited"];
-function canonTx(t){var o={};TXF.forEach(function(k){if(t[k]!==undefined&&t[k]!==null)o[k]=t[k]});o.id=String(o.id);return o}
+function canonTx(tx){var o={};TXF.forEach(function(k){if(tx[k]!==undefined&&tx[k]!==null)o[k]=tx[k]});o.id=String(o.id);return o}
 function canonMeta(st){return{project:st.project||"",open:{IQD:+((st.open&&st.open.IQD)||0),USD:+((st.open&&st.open.USD)||0)},blds:(st.blds||[]).slice()}}
 function readSite(sid){if(sid===SITES.cur)return S;var s=null;try{s=JSON.parse(localStorage.getItem(siteKey(sid)))}catch(e){}
   if(!s)s=blank();var b=blank(),k;for(k in b)if(s[k]===undefined)s[k]=b[k];return s}
 function writeSite(sid,st){try{localStorage.setItem(siteKey(sid),JSON.stringify(st))}catch(e){}}
 /* what this device last sent or received for the open site; save() compares against it */
-function shadowInit(){var m={};S.tx.forEach(function(t){m[t.id]=JSON.stringify(canonTx(t))});SHADOW={sid:SITES.cur,meta:JSON.stringify(canonMeta(S)),tx:m}}
+function shadowInit(){var m={};S.tx.forEach(function(tx){m[tx.id]=JSON.stringify(canonTx(tx))});SHADOW={sid:SITES.cur,meta:JSON.stringify(canonMeta(S)),tx:m}}
 function syncChanged(){
   if(typeof SY==="undefined"||!SY||!SY.on)return;
   if(!SHADOW||SHADOW.sid!==SITES.cur){shadowInit();return}
   var sid=SITES.cur,ch=false,meta=JSON.stringify(canonMeta(S)),seen={};
   if(meta!==SHADOW.meta){mark(sid,"__site");SHADOW.meta=meta;ch=true}
-  S.tx.forEach(function(t){var j=JSON.stringify(canonTx(t));seen[t.id]=1;if(SHADOW.tx[t.id]!==j){mark(sid,t.id);SHADOW.tx[t.id]=j;ch=true}});
+  S.tx.forEach(function(tx){var j=JSON.stringify(canonTx(tx));seen[tx.id]=1;if(SHADOW.tx[tx.id]!==j){mark(sid,tx.id);SHADOW.tx[tx.id]=j;ch=true}});
   for(var id in SHADOW.tx)if(!seen[id]){mark(sid,id);delete SHADOW.tx[id];ch=true}
   if(ch){savePend();updBadge();setTimeout(flush,300)}
 }
 function syncSiteCreated(sid){if(!SY.on)return;mark(sid,"__site");savePend();setTimeout(flush,300)}
-function syncSiteDeleting(sid,st){if(!SY.on)return;mark(sid,"__site");st.tx.forEach(function(t){mark(sid,t.id)});savePend()}
+function syncSiteDeleting(sid,st){if(!SY.on)return;mark(sid,"__site");st.tx.forEach(function(tx){mark(sid,tx.id)});savePend()}
 function withNet(p){return Promise.race([p,new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},25000)})])}
 function ensureFb(){if(fbP)return fbP;
   fbP=(window.FBS?Promise.resolve():loadScript("fb.js")).then(function(){fbx=window.FBS;
@@ -796,14 +1054,14 @@ function listenTx(sid){
   txSubs[sid]=fbx.onSnapshot(fbx.collection(fdb,"s",sid,"t"),{includeMetadataChanges:true},function(snap){
     if(SITES.ids.indexOf(sid)<0)return;
     var st=readSite(sid),pend=PEND[sid]||{},byId={},ch=false,cur=sid===SITES.cur&&SHADOW&&SHADOW.sid===sid,gone={};
-    st.tx.forEach(function(t,i){byId[t.id]=i});
+    st.tx.forEach(function(tx,i){byId[tx.id]=i});
     snap.docs.forEach(function(d){var id=d.id,data=d.data()||{};if(pend[id])return;
       if(data.deleted){if(byId[id]!==undefined){gone[id]=1;ch=true;if(cur)delete SHADOW.tx[id]}return}
       var nt=canonTx(Object.assign({},data,{id:id})),j=JSON.stringify(nt);
       if(byId[id]===undefined){st.tx.push(nt);byId[id]=st.tx.length-1;ch=true}
       else if(JSON.stringify(canonTx(st.tx[byId[id]]))!==j){st.tx[byId[id]]=nt;ch=true}else return;
       if(cur)SHADOW.tx[id]=j});
-    if(Object.keys(gone).length){var keep=st.tx.filter(function(t){return!gone[t.id]});st.tx.length=0;Array.prototype.push.apply(st.tx,keep)}
+    if(Object.keys(gone).length){var keep=st.tx.filter(function(tx){return!gone[tx.id]});st.tx.length=0;Array.prototype.push.apply(st.tx,keep)}
     if(ch){writeSite(sid,st);if(sid===SITES.cur)needRender=true}
   },function(e){SST.err=String(e&&e.code||e);updBadge()});
 }
@@ -814,7 +1072,7 @@ function flush(){
   var b=fbx.writeBatch(fdb),taken=[],n=0;
   for(var sid in PEND){if(n>=400)break;
     var exists=SITES.ids.indexOf(sid)>=0,st=exists?readSite(sid):null,map={};
-    if(st)st.tx.forEach(function(t){map[t.id]=t});
+    if(st)st.tx.forEach(function(tx){map[tx.id]=tx});
     for(var key in PEND[sid]){if(n>=400)break;
       if(key==="__site"){if(exists)b.set(fbx.doc(fdb,"s",sid),canonMeta(st));else b.set(fbx.doc(fdb,"s",sid),{deleted:true,at:Date.now()})}
       else if(map[key])b.set(fbx.doc(fdb,"s",sid,"t",key),canonTx(map[key]));
@@ -838,30 +1096,30 @@ function badgeTxt(){if(!SY.on)return"";var n=pendN();
 function updBadge(){var b=document.getElementById("syncB");if(b)b.textContent=badgeTxt();var x=document.getElementById("syS");if(x)x.innerHTML=syncStatus()}
 function hm(ts){var d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())+" "+fmtDate(isoDate(d))}
 function syncStatus(){var n=pendN();
-  if(SST.err==="nofb")return"⚪ Sync components are missing from this version. Install the latest APK.";
-  if(SST.err==="out")return"🔴 Please sign in again.";
-  if(!SST.ready)return"🟠 Connecting...";
-  return(SST.cache?"🟠 Offline. Changes will sync automatically when the connection returns.":"🟢 Connected")+
-    (n?"<br>Pending upload: <b>"+n+"</b>":"<br>All changes uploaded ✓")+(SST.lastOk?"<br><span class='muted'>Last connection: "+hm(SST.lastOk)+"</span>":"")}
+  if(SST.err==="nofb")return t("⚪ Sync components are missing from this version. Install the latest APK.");
+  if(SST.err==="out")return t("🔴 Please sign in again.");
+  if(!SST.ready)return t("🟠 Connecting...");
+  return(SST.cache?t("🟠 Offline. Changes will sync automatically when the connection returns."):t("🟢 Connected"))+
+    (n?"<br>"+t("Pending upload: <b>{n}</b>",{n:n}):"<br>"+t("All changes uploaded ✓"))+(SST.lastOk?"<br><span class='muted'>"+t("Last connection: {t}",{t:hm(SST.lastOk)})+"</span>":"")}
 function authMsg(e){var c=String(e&&e.code||e&&e.message||e);
-  if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c))return"Incorrect email or password.";
-  if(/network|timeout|unavailable/.test(c))return"No internet connection, or the connection is weak. Please try again.";
-  if(/too-many/.test(c))return"Too many attempts. Please wait a moment and try again.";
-  return"Error: "+c}
+  if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c))return t("Incorrect email or password.");
+  if(/network|timeout|unavailable/.test(c))return t("No internet connection, or the connection is weak. Please try again.");
+  if(/too-many/.test(c))return t("Too many attempts. Please wait a moment and try again.");
+  return t("Error: {c}",{c:c})}
 function syncBox(){
-  var form='<div class="row"><input type="email" id="syE" dir="ltr" autocomplete="username" placeholder="Email" value="'+esc(SY.email||"")+'"></div>'+
-    '<div class="row"><input type="password" id="syP" dir="ltr" autocomplete="current-password" placeholder="Password"></div><p class="err" id="syErr"></p>';
-  if(!SY.on)return'<div class="box"><h2>☁ Device Sync</h2><p class="muted" style="margin-top:0">Sign in with the same account on the phone and the laptop to keep both in sync. The app works offline and syncs when the connection returns.</p>'+
-    form+'<button class="big pri" id="syIn">Sign In and Connect</button></div>';
-  if(SST.err==="out")return'<div class="box"><h2>☁ Sync</h2><p id="syS">'+syncStatus()+'</p>'+form+'<button class="big pri" id="syIn">Sign In</button></div>';
-  return'<div class="box"><h2>☁ Sync</h2><p style="margin-top:0">Account: <b dir="ltr">'+esc(SY.email||"")+'</b></p><p id="syS">'+syncStatus()+'</p>'+
-    '<div class="two"><button id="syNow">🔄 Sync Now</button><button class="dan" id="syOut">Sign Out</button></div></div>'}
+  var form='<div class="row"><input type="email" id="syE" dir="ltr" autocomplete="username" placeholder="'+t("Email")+'" value="'+esc(SY.email||"")+'"></div>'+
+    '<div class="row"><input type="password" id="syP" dir="ltr" autocomplete="current-password" placeholder="'+t("Password")+'"></div><p class="err" id="syErr"></p>';
+  if(!SY.on)return'<div class="box"><h2>'+t("☁ Device Sync")+'</h2><p class="muted" style="margin-top:0">'+t("Sign in with the same account on the phone and the laptop to keep both in sync. The app works offline and syncs when the connection returns.")+'</p>'+
+    form+'<button class="big pri" id="syIn">'+t("Sign In and Connect")+'</button></div>';
+  if(SST.err==="out")return'<div class="box"><h2>'+t("☁ Sync")+'</h2><p id="syS">'+syncStatus()+'</p>'+form+'<button class="big pri" id="syIn">'+t("Sign In")+'</button></div>';
+  return'<div class="box"><h2>'+t("☁ Sync")+'</h2><p style="margin-top:0">'+t("Account:")+' <b dir="ltr">'+esc(SY.email||"")+'</b></p><p id="syS">'+syncStatus()+'</p>'+
+    '<div class="two"><button id="syNow">'+t("🔄 Sync Now")+'</button><button class="dan" id="syOut">'+t("Sign Out")+'</button></div></div>'}
 function bindSyncBox(){
   var bIn=document.getElementById("syIn");
   if(bIn)bIn.onclick=function(){
     var em=document.getElementById("syE").value.trim(),pw=document.getElementById("syP").value,er=document.getElementById("syErr");
-    if(!em||!pw){er.textContent="Enter the email and password.";return}
-    bIn.disabled=true;er.style.color="#555";er.textContent="Connecting...";
+    if(!em||!pw){er.textContent=t("Enter the email and password.");return}
+    bIn.disabled=true;er.style.color="#555";er.textContent=t("Connecting...");
     withNet(ensureFb().then(function(){return fbx.signInWithEmailAndPassword(fauth,em,pw)})).then(function(cred){
       SY.email=em;SY.uid=cred.user.uid;saveSY();
       if(SY.on){SST.err="";SST.ready=true;shadowInit();listen();flush();render();return}
@@ -869,8 +1127,8 @@ function bindSyncBox(){
         if(q.empty)return firstUpload();
         var local=SITES.ids.reduce(function(a,id){return a+readSite(id).tx.length},0);
         if(!local)return download();
-        openModal('<h3>Data found on the server</h3><p>This device will load the server data, and <b>the data on this device ('+local+' transactions) will be replaced</b>.</p><p class="hint">If this device holds anything not on the server, create a backup first.</p>'+
-          '<div class="acts" style="flex-direction:column"><button id="mBk">💾 Create Backup First</button><button id="mY" class="dan">Continue and Load Server Data</button><button id="mN">Cancel</button></div>');
+        openModal('<h3>'+t("Data found on the server")+'</h3><p>'+t("This device will load the server data, and <b>the data on this device ({n} transactions) will be replaced</b>.",{n:local})+'</p><p class="hint">'+t("If this device holds anything not on the server, create a backup first.")+'</p>'+
+          '<div class="acts" style="flex-direction:column"><button id="mBk">'+t("💾 Create Backup First")+'</button><button id="mY" class="dan">'+t("Continue and Load Server Data")+'</button><button id="mN">'+t("Cancel")+'</button></div>');
         document.getElementById("mBk").onclick=backup;
         document.getElementById("mN").onclick=function(){closeModal();fbx.signOut(fauth);render()};
         document.getElementById("mY").onclick=function(){closeModal();download()};
@@ -879,19 +1137,19 @@ function bindSyncBox(){
   };
   var bNow=document.getElementById("syNow");if(bNow)bNow.onclick=function(){if(!SST.ready)startSync();else flush();updBadge()};
   var bOut=document.getElementById("syOut");if(bOut)bOut.onclick=function(){var n=pendN();
-    openModal('<h3>Sign out of sync?</h3><p>Your data stays on this device but will no longer sync.</p>'+(n?'<p class="err">'+n+' change(s) have not been uploaded yet and will not reach the server.</p>':'')+
-      '<div class="acts"><button id="mY" class="dan">Sign Out</button><button id="mN">Cancel</button></div>');
+    openModal('<h3>'+t("Sign out of sync?")+'</h3><p>'+t("Your data stays on this device but will no longer sync.")+'</p>'+(n?'<p class="err">'+t("{n} change(s) have not been uploaded yet and will not reach the server.",{n:n})+'</p>':'')+
+      '<div class="acts"><button id="mY" class="dan">'+t("Sign Out")+'</button><button id="mN">'+t("Cancel")+'</button></div>');
     document.getElementById("mN").onclick=closeModal;
     document.getElementById("mY").onclick=function(){stopListen();try{fbx.signOut(fauth)}catch(e){}SY.on=false;saveSY();PEND={};savePend();SST.ready=false;closeModal();render()}};
 }
 /* first device: send every site and movement on this device */
 function firstUpload(){
-  SITES.ids.forEach(function(sid){mark(sid,"__site");readSite(sid).tx.forEach(function(t){mark(sid,t.id)})});
+  SITES.ids.forEach(function(sid){mark(sid,"__site");readSite(sid).tx.forEach(function(tx){mark(sid,tx.id)})});
   savePend();SY.on=true;saveSY();SST.ready=true;shadowInit();listen();flush();
-  info("✓ Connected","Uploading this device's data ("+pendN()+" items). Keep the app open and online until the indicator turns 🟢, then sign in on the other device.");render()}
+  info(t("✓ Connected"),t("Uploading this device's data ({n} items). Keep the app open and online until the indicator turns 🟢, then sign in on the other device.",{n:pendN()}));render()}
 /* other devices: take the server's data in place of this device's */
 function download(){
-  openModal('<h3 style="text-align:center">Downloading data...</h3>');
+  openModal('<h3 style="text-align:center">'+t("Downloading data...")+'</h3>');
   withNet(fbx.getDocsFromServer(fbx.collection(fdb,"s"))).then(function(q){
     var sites=q.docs.filter(function(d){return!(d.data()||{}).deleted}).map(function(d){return{id:d.id,data:d.data()}});
     if(!sites.length)throw{code:"empty"};
@@ -903,15 +1161,15 @@ function download(){
     SITES={cur:sites[0].id,ids:sites.map(function(s){return s.id}),next:2};saveSites();
     KEY=siteKey(SITES.cur);S=load();resetViews();PEND={};savePend();SY.on=true;saveSY();SST.ready=true;shadowInit();listen();
     closeModal();go("");render();
-    setTimeout(function(){info("✓ Connected",sites.length+" site(s) downloaded. Anything recorded here will appear on the other device.")},150);
-  }).catch(function(e){closeModal();info("Download failed",authMsg(e));try{fbx.signOut(fauth)}catch(x){}});
+    setTimeout(function(){info(t("✓ Connected"),t("{n} site(s) downloaded. Anything recorded here will appear on the other device.",{n:sites.length}))},150);
+  }).catch(function(e){closeModal();info(t("Download failed"),authMsg(e));try{fbx.signOut(fauth)}catch(x){}});
 }
 
 window.__updateReady=function(){
   if(document.getElementById("updBar"))return;
   var b=document.createElement("div");b.id="updBar";
   b.style.cssText="position:fixed;bottom:0;left:0;right:0;background:#1f9d55;color:#fff;padding:12px;display:flex;align-items:center;justify-content:space-between;z-index:60;font-size:15px";
-  b.innerHTML='<span>A new version of the app is available</span><button style="background:#fff;color:#1f9d55;font-weight:700">Update Now</button>';
+  b.innerHTML='<span>'+t("A new version of the app is available")+'</span><button style="background:#fff;color:#1f9d55;font-weight:700">'+t("Update Now")+'</button>';
   b.querySelector("button").onclick=function(){location.reload()};document.body.appendChild(b);
 };
 if(SY.on)shadowInit();
