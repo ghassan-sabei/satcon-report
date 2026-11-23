@@ -205,7 +205,6 @@ var STR={
 "Optional":["Optional","اختياري"],
 "Add the building numbers under ⚙ Settings.":["Add the building numbers under ⚙ Settings.","أضف أرقام البنايات من ⚙ الإعدادات."],
 "Enter the amount.":["Enter the amount.","أدخل المبلغ."],
-"IQD amounts cannot have decimals.":["IQD amounts cannot have decimals.","لا يمكن أن يحتوي مبلغ الدينار على كسور."],
 "Select the date.":["Select the date.","اختر التاريخ."],
 "Enter the worker's name.":["Enter the worker's name.","أدخل اسم العامل."],
 "Select the building (or General for site-wide expenses).":["Select the building (or General for site-wide expenses).","اختر البناية (أو عام للمصاريف العامة)."],
@@ -439,7 +438,7 @@ function normDigits(s){return String(s||"").replace(/[٠-٩]/g,function(c){retur
 function parseAmt(s){s=normDigits(s).replace(/[,\s]/g,"");if(!/^\d*\.?\d*$/.test(s)||s===""||s===".")return NaN;return parseFloat(s)}
 function fmtAmt(n,cur){
   var neg=n<0;n=Math.abs(n);
-  var t=cur==="USD"?n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2}):Math.round(n).toLocaleString("en-US");
+  var t=n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2});
   return(neg?"-":"")+t}
 function normRcpt(s){return normDigits(s).trim().replace(/\s+/g," ")}
 /* ids are text and unique across devices (a phone and a laptop never pick the same one) */
@@ -651,7 +650,6 @@ function formView(tx,newType){
         desc=document.getElementById("fDesc").value.trim();
     function bad(id,m){document.getElementById(id).classList.add("bad");err.textContent=m}
     if(isNaN(amt)||amt<=0)return bad("fAmt",t("Enter the amount."));
-    if(f.cur==="IQD"&&amt!==Math.round(amt))return bad("fAmt",t("IQD amounts cannot have decimals."));
     if(!date)return bad("fDate",t("Select the date."));
     var wk=document.getElementById("fWk").value.trim().replace(/\s+/g," ");
     if(f.type==="adv"&&!wk)return bad("fWk",t("Enter the worker's name."));
@@ -659,7 +657,7 @@ function formView(tx,newType){
     var u=rc?rcptUsed(rc,ed?tx.id:null):null;
     if(u)return bad("fRc",t("Receipt No. {rc} is already used ({d} · {desc} · {amt} {sym}).",{rc:rc,d:fmtDate(u.date),desc:u.desc||"",amt:fmtAmt(u.amount,u.cur),sym:CUR[u.cur].s}));
     var o=ed?(txById(tx.id)||tx):{id:newId("t"),at:Date.now()};
-    o.type=f.type;o.cur=f.cur;o.amount=f.cur==="USD"?r2(amt):Math.round(amt);o.date=date;o.desc=desc;o.inv=inv;o.rcpt=rc;
+    o.type=f.type;o.cur=f.cur;o.amount=r2(amt);o.date=date;o.desc=desc;o.inv=inv;o.rcpt=rc;
     if(f.type==="adv")o.worker=wk;else delete o.worker;
     if(f.type==="out"&&f.bld)o.bld=f.bld;else delete o.bld;
     if(ed){o.edited=Date.now();if(!txById(o.id))S.tx.push(o)}else S.tx.push(o);
@@ -963,7 +961,7 @@ function settingsView(){
     var ai=a?parseAmt(a):0,bu=b?parseAmt(b):0;
     if(isNaN(ai)||isNaN(bu)){e.textContent=t("Invalid number.");return}
     S.blds=splitBlds(document.getElementById("sB").value);
-    S.project=document.getElementById("sP").value.trim();S.open={IQD:Math.round(ai),USD:r2(bu)};save();history.back()};
+    S.project=document.getElementById("sP").value.trim();S.open={IQD:r2(ai),USD:r2(bu)};save();history.back()};
   document.getElementById("sBk").onclick=backup;
   document.getElementById("sIn").onchange=function(e){var f=e.target.files[0];if(f)restore(f);e.target.value=""};
   document.getElementById("sBack").onclick=function(){history.back()};
