@@ -1,0 +1,26 @@
+{
+  "name": "satcon-cashbox",
+  "productName": "Cash Box",
+  "version": "1.0.0",
+  "description": "SATCON Cash Box desktop app",
+  "main": "main.js",
+  "author": "Satcon",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.satcon.cashbox",
+    "productName": "Cash Box",
+    "artifactName": "CashBox-Setup.${ext}",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "package.json", "build/**"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Cash Box", "createDesktopShortcut": true }
+  }
+}

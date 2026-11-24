@@ -1,0 +1,38 @@
+name: cashbox-desktop
+
+# Windows installer for the cash box. Runs only when the desktop wrapper itself changes
+# (or by hand); edits to the cash box pages reach the installed app without a new installer.
+on:
+  push:
+    branches: [main]
+    paths: ['sandoq/desktop/**', '.github/workflows/sandoq-desktop.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        working-directory: sandoq/desktop
+        run: npm install
+      - name: Build
+        working-directory: sandoq/desktop
+        run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cashbox-windows
+          path: sandoq/desktop/dist/CashBox-Setup.exe
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: cashbox-win-${{ github.run_number }}
+          name: Cash Box for Windows ${{ github.run_number }}
+          make_latest: false
+          files: sandoq/desktop/dist/CashBox-Setup.exe
