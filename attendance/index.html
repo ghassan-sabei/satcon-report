@@ -776,13 +776,19 @@ function paginate(rows,head,cols,totalRow,tail,rowH){
   return pages;
 }
 function dayPages(date){
-  var ws=dayWorkers(date),pres=0,abs=0,tmin=0,tpay={};
+  var ws=dayWorkers(date),pres=0,abs=0,tmin=0,tpay={},tadv={};
   var rows=ws.map(function(w){var r=rec(date,w.id,false)||{};if(r.absent)abs++;else if(r.in)pres++;var wk=worked(r);if(wk)tmin+=wk;
+    /* wage of the day (hours x hourly rate) and advances given that day */
+    var wr=wageOn(w,date),pay={},adv={};
+    if(wk!=null&&wr){pay[wr.cur]=Math.round(wk)/60*wr.rate;tpay[wr.cur]=(tpay[wr.cur]||0)+pay[wr.cur]}
+    (w.adv||[]).forEach(function(a){if(a.date!==date)return;adv[a.cur]=(adv[a.cur]||0)+a.amount;tadv[a.cur]=(tadv[a.cur]||0)+a.amount});
     return function(n){
-      return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(w.name)+'</td><td>'+esc(w.job||"")+'</td><td>'+(r.absent?'':hm(r.in))+'</td><td>'+(r.absent?'':hm(r.out))+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td class="nt">'+[r.absent?'غائب':'',r.note||''].filter(function(x){return x}).join(' - ')+'</td>'}});
+      return '<td>'+n+'</td><td style="text-align:right;padding-right:8px">'+esc(w.name)+'</td><td>'+esc(w.job||"")+'</td><td>'+(r.absent?'':hm(r.in))+'</td><td>'+(r.absent?'':hm(r.out))+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td class="nt">'+[r.absent?'غائب':'',r.note||''].filter(function(x){return x}).join(' - ')+'</td>'+
+        '<td>'+(payTxt(pay)==="—"?'':payTxt(pay))+'</td><td>'+(payTxt(adv)==="—"?'':payTxt(adv))+'</td>'}});
   var head=headTable("دوام يومي","Daily Attendance",dayName(date)+' &nbsp; '+fmtDate(date))+
     '<table dir="rtl" style="margin-top:-1px"><tr><td class="blue">رقم البلوك</td><td><b>'+esc(blockFor(date))+'</b></td><td class="blue">الحاضرين</td><td>'+pres+'</td><td class="blue">الغائبين</td><td>'+abs+'</td><td class="blue">مجموع الساعات</td><td>'+dur(tmin)+'</td></tr></table>';
-  var cols='<th style="width:5%">العدد</th><th style="width:24%">الاسم</th><th style="width:13%">المهنة</th><th>الدخول</th><th>الخروج</th><th>الساعات</th><th style="width:22%">الملاحظات</th>';
+  var cols='<th style="width:4%">العدد</th><th style="width:20%">الاسم</th><th style="width:11%">المهنة</th><th>الدخول</th><th>الخروج</th><th>الساعات</th><th style="width:16%">الملاحظات</th><th style="width:12%">المعاش</th><th style="width:12%">السلف</th>';
+  var totalRow='<tr style="height:'+ROW_H+'px;font-weight:700;background:#dde8f6"><td colspan="5">المجموع</td><td>'+dur(tmin)+'</td><td></td><td>'+payTxt(tpay)+'</td><td>'+payTxt(tadv)+'</td></tr>';
   var ms=dayMachines(date),tail='',MROW=44;
   if(ms.length){
     tail='<table class="grid" dir="rtl" style="margin-top:10px"><tr><th style="width:13%">الآلية</th><th style="width:18%">اسم السائق</th><th>البداية</th><th>النهاية</th><th>الساعات</th><th>المازوت (لتر)</th><th style="width:24%">التوقيع</th></tr>';
@@ -790,9 +796,9 @@ function dayPages(date){
       tail+='<tr style="height:'+MROW+'px"><td><b>'+esc(m.name)+'</b></td><td>'+esc(r.driver||'')+'</td><td>'+hm(r.in)+'</td><td>'+hm(r.out)+'</td><td>'+(wk!=null?dur(wk):'')+'</td><td>'+esc(r.diesel||'')+'</td><td style="padding:1px">'+sigSvg(r.sig,MROW-6)+'</td></tr>'});
     tail+='</table>';
   }
-  var used=150+(ms.length?36+ms.length*MROW:0)+22;
+  var used=150+(ms.length?36+ms.length*MROW:0)+22+ROW_H;
   var rh=Math.max(24,Math.min(ROW_H,Math.floor((PAGE_H-used)/PER)));
-  return paginate(rows,head,cols,null,tail,rh);
+  return paginate(rows,head,cols,totalRow,tail,rh);
 }
 function rangePages(from,to){
   if(from>to){var t=from;from=to;to=t}
