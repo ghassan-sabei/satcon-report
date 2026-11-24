@@ -235,6 +235,8 @@ var STR={
 "All workers":["All workers","كل العمال"],
 "Daily subtotal under each day":["Daily subtotal under each day","مجموع يومي تحت كل يوم"],
 "🖨 Print":["🖨 Print","🖨 طباعة"],
+"👁 Preview":["👁 Preview","👁 معاينة"],
+"Print Preview":["Print Preview","معاينة الطباعة"],
 "Invalid date range.":["Invalid date range.","نطاق التاريخ غير صحيح."],
 "Transactions":["Transactions","عدد الحركات"],
 "IQD balance at period end":["IQD balance at period end","رصيد IQD في نهاية الفترة"],
@@ -488,7 +490,7 @@ function go(h){location.hash=h}
 window.addEventListener("hashchange",function(){closeModal();render();scrollTo(0,0)});
 var app=document.getElementById("app");
 function render(){
-  updBadge();document.getElementById("syncB").onclick=function(){go("settings")};
+  app.style.maxWidth="";window.onresize=null;updBadge();document.getElementById("syncB").onclick=function(){go("settings")};
   var hp=document.getElementById("hdP");hp.textContent=appName()+" - "+siteName(SITES.cur)+" ▾";hp.onclick=sitePicker;
   var col=siteColor(SITES.cur);document.querySelector("header.top").style.background=col;var tc=document.querySelector('meta[name=theme-color]');if(tc)tc.content=col;
   document.getElementById("hdDate").textContent=fmtDate(today());
@@ -502,6 +504,7 @@ function render(){
   if(h==="worker")return workerView();
   if(h==="log")return logView();
   if(h==="print")return printView();
+  if(h==="preview")return previewView();
   if(h==="settings")return settingsView();
   mainView();
 }
@@ -752,7 +755,8 @@ function printView(){
     '<div class="three" style="margin-bottom:10px"><button class="small" id="q0">'+t("This month")+'</button><button class="small" id="q1">'+t("Last month")+'</button><button class="small" id="qA">'+t("All")+'</button></div>'+
     '<label class="row" id="pDw" style="cursor:pointer"><input type="checkbox" id="pD" style="width:22px;height:22px"'+(PF.daily?' checked':'')+'> '+t("Daily subtotal under each day")+'</label>'+
     '<div id="pInfo"></div>'+
-    '<div class="two" style="margin-top:10px"><button class="big pri" id="pPr">'+t("🖨 Print")+'</button><button class="big ok" id="pPdf">📄 PDF</button></div>'+
+    '<button class="big" id="pPv" style="margin-top:10px;background:#5b3a8a;color:#fff">'+t("👁 Preview")+'</button>'+
+    '<div class="two" style="margin-top:8px"><button class="big pri" id="pPr">'+t("🖨 Print")+'</button><button class="big ok" id="pPdf">📄 PDF</button></div>'+
     '</div><button class="big" id="pBack">'+t("Back")+'</button>';
   function paintK(){Array.prototype.forEach.call(document.querySelectorAll("#pK button"),function(b){var k=b.getAttribute("data-k");
     b.style.cssText=k===PF.kind?(k==="in"?"background:#d8f0e1;color:#14532d;border:2px solid #1f9d55":k==="out"?"background:#fde2e2;color:#8a1c1c;border:2px solid #d64545":k==="adv"?"background:#ffe9c7;color:#7a4b00;border:2px solid #e08a00":k==="bld"?"background:#e6dcfb;color:#4b2a8a;border:2px solid #7a4fd6":"background:#dce8fb;color:#1a3f8a;border:2px solid #2f6fd6"):"border:2px solid transparent";
@@ -775,8 +779,26 @@ function printView(){
   ["pF","pT","pD","pW","pB"].forEach(function(id){document.getElementById(id).onchange=upd});
   document.getElementById("pPr").onclick=function(){if(PF.from>PF.to)return;printPages(makePages(),KT(PF.kind),function(){doPdf()})};
   document.getElementById("pPdf").onclick=function(){if(PF.from>PF.to)return;doPdf()};
+  document.getElementById("pPv").onclick=function(){if(!PF.from||!PF.to||PF.from>PF.to)return;go("preview")};
   document.getElementById("pBack").onclick=function(){history.back()};
   paintK();upd();
+}
+/* the same pages that print and go into the PDF, shrunk to the screen width, one under the other */
+function previewView(){
+  if(!PF.from||!PF.to||PF.from>PF.to){go("print");return}
+  var pages=makePages(),n=pages.length,bar=function(id){return'<div class="three" style="margin:0 0 10px"><button class="pri" id="'+id+'Pr">'+t("🖨 Print")+'</button><button class="ok" id="'+id+'Pdf">📄 PDF</button><button id="'+id+'Bk">'+t("Back")+'</button></div>'};
+  app.style.maxWidth="1120px";
+  app.innerHTML='<div class="box" style="margin-bottom:10px"><h2 style="margin:0">'+t("Print Preview")+' · '+KT(PF.kind)+'</h2><p class="hint">'+t("Pages")+': '+n+'</p></div>'+bar("v1")+
+    pages.map(function(pg,i){return'<p class="muted" style="text-align:center;margin:6px 0">'+t("Page {i} of {n}",{i:i+1,n:n})+'</p>'+
+      '<div class="pvw" style="position:relative;direction:ltr;overflow:hidden;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.25);margin-bottom:14px">'+
+      '<div class="pvi" dir="'+(isAr()?"rtl":"ltr")+'" style="position:absolute;left:0;top:0;width:'+PAGE_W+'px;height:'+PAGE_H+'px;padding:0;transform-origin:top left;background:#fff">'+pg+'</div></div>'}).join("")+bar("v2");
+  function fit(){var w=app.clientWidth-24,k=Math.min(1,w/PAGE_W);
+    Array.prototype.forEach.call(app.querySelectorAll(".pvw"),function(el){el.style.width=Math.floor(PAGE_W*k)+"px";el.style.height=Math.ceil(PAGE_H*k)+"px";el.style.margin="0 auto 14px";el.firstChild.style.transform="scale("+k+")"})}
+  fit();window.onresize=function(){if(location.hash==="#preview")fit()};
+  ["v1","v2"].forEach(function(id){
+    document.getElementById(id+"Pr").onclick=function(){printPages(makePages(),KT(PF.kind),function(){doPdf()})};
+    document.getElementById(id+"Pdf").onclick=function(){doPdf()};
+    document.getElementById(id+"Bk").onclick=function(){history.back()}});
 }
 function makePages(){return PF.kind==="all"?ledgerPages(PF.from,PF.to):PF.kind==="bld"?bldPages(PF.from,PF.to):kindPages(PF.kind,PF.from,PF.to,PF.daily)}
 function doPdf(){var nm={out:"sadir",in:"warid",adv:"sulaf",bld:"binayat",all:"sandoq"}[PF.kind];pdfPages(makePages,nm+"_"+PF.from+(PF.to!==PF.from?"_"+PF.to:"")+".pdf",KT(PF.kind))}
