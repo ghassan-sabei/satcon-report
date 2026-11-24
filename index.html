@@ -107,7 +107,7 @@ var REG={cur:"",slots:[]};
 try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
 var SUF=REG.cur?"_"+REG.cur:"";
 var KEY=KEYBASE+SUF;
-var APP_VER="2026.11.24-b";
+var APP_VER="2026.11.24-c";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -337,6 +337,10 @@ var DICT=[
 ["كمّلت يوم","Continued the day of","Journée continuée :"],
 ["بنفس الحفر المفتوحة.","with the same open piles.","avec les mêmes pieux ouverts."],
 ["خود الإشراف","Take supervision","Prendre la supervision"]
+,
+["👁 معاينة الورقة قبل الطباعة","👁 Preview the sheet before printing","👁 Aperçu de la feuille avant impression"],
+["👁 معاينة","👁 Preview","👁 Aperçu"],
+["صفحة · كبّر بإصبعين أو بالأزرار","page(s) · zoom with two fingers or the buttons","page(s) · zoomez avec deux doigts ou les boutons"]
 ].sort(function(a,b){return b[0].length-a[0].length});
 /* translate Arabic phrases in an html string for en/fr (Arabic is the source text) */
 function trs(html,l){if(!html||l==="ar")return html;var i=l==="en"?1:2;
@@ -561,7 +565,7 @@ h+='<div class="box"><h2>ملخص اليوم</h2><div class="stat">'+
   }
   h+='</div>';
 
-  h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>'+
+  h+='<button class="big" id="pview" style="margin-bottom:8px">👁 معاينة الورقة قبل الطباعة</button><div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>'+
      '<div class="two" style="margin-bottom:8px"><button class="big" id="goBlk">📊 ملخص البلوكات</button><button class="big" id="goPlan">🗺️ المخطط</button></div>'+
      '<div class="two" style="margin-bottom:24px"><button id="goArch">الأيام السابقة</button><button id="goSet">الإعدادات</button></div>'+
      (ro?'<div style="margin-bottom:30px"></div>':S.editing?'<button class="big ok" id="edDone2" style="margin-bottom:30px">✓ خلّصت التعديل</button>':'<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>');
@@ -659,6 +663,7 @@ function wire(app){
   }});
 
   document.getElementById("print").onclick=function(){doPrint(printDay||S.cur)};
+  document.getElementById("pview").onclick=function(){previewDay(printDay||S.cur)};
   document.getElementById("pdf").onclick=function(){sharePdf(printDay||S.cur)};
   document.getElementById("goPlan").onclick=function(){planSel=normBlock(S.cur.block)||planSel;view="plan";render();scrollTo(0,0)};
   document.getElementById("goBlk").onclick=function(){view="blocks";render();scrollTo(0,0)};
@@ -899,7 +904,7 @@ function renderArchive(app){
     if(!hasContent(d))return; /* another phone's day that has nothing yet */
     var t=totals(d);
     h+='<div class="done-list" data-row="'+i+'"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' بايل · '+t.v+' m3</span></span>'+
-       '<span>'+(isMon()?'':'<button class="small" data-ed="'+i+'">✏️ تعديل</button> <button class="small" data-dt="'+i+'">📅 التاريخ</button> ')+'<button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button>'+(isMon()?'':' <button class="small dan" data-da="'+i+'">حذف</button>')+'</span></div></div>';
+       '<span>'+(isMon()?'':'<button class="small" data-ed="'+i+'">✏️ تعديل</button> <button class="small" data-dt="'+i+'">📅 التاريخ</button> ')+'<button class="small" data-pv="'+i+'">👁 معاينة</button> <button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button>'+(isMon()?'':' <button class="small dan" data-da="'+i+'">حذف</button>')+'</span></div></div>';
   });
   h+='</div>';
   app.innerHTML=h;
@@ -918,6 +923,7 @@ function renderArchive(app){
       S.archive.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0});closeModal();save();render()};
     document.getElementById("mN").onclick=closeModal}});
   app.querySelectorAll("[data-pr]").forEach(function(b){b.onclick=function(){doPrint(S.archive[+b.getAttribute("data-pr")])}});
+  app.querySelectorAll("[data-pv]").forEach(function(b){b.onclick=function(){previewDay(S.archive[+b.getAttribute("data-pv")])}});
   app.querySelectorAll("[data-da]").forEach(function(b){b.onclick=function(){
     confirmBox("حذف هذا اليوم نهائياً؟","حذف",function(){S.archive.splice(+b.getAttribute("data-da"),1);save();render()});
   }});
@@ -1150,6 +1156,44 @@ function printPages(pages,title,fallback,a3,rotate){
     document.getElementById("mS").onclick=function(){closeModal();fallback()};
     document.getElementById("mN").onclick=closeModal;
   },1500);
+}
+/* ---------- preview before printing: the same pages as print/PDF, zoom with buttons or two fingers ---------- */
+function previewDay(day){previewPages(sheetPages(day),function(){doPrint(day)},function(){sharePdf(day)})}
+function previewPages(pages,onPrint,onPdf){
+  pages=pages.map(function(x){return trs(x,PLANG)});
+  var old=document.getElementById("pvOv");if(old)old.remove();
+  var ov=document.createElement("div");ov.id="pvOv";
+  ov.style.cssText="position:fixed;inset:0;z-index:80;background:#5b6274;display:flex;flex-direction:column";
+  var bs="flex:1;padding:10px 4px;font-size:17px;border-radius:8px;border:0;font-weight:700";
+  ov.innerHTML='<div style="display:flex;gap:6px;padding:8px;background:#1f2b4d">'+
+    '<button id="pvX" style="'+bs+'">→ رجوع</button><button id="pvM" style="'+bs+'">－</button><button id="pvF" style="'+bs+'">⤢</button><button id="pvP" style="'+bs+'">＋</button>'+
+    '<button id="pvPr" class="ok" style="'+bs+'">🖨</button><button id="pvPdf" class="pri" style="'+bs+'">📄</button></div>'+
+    '<div id="pvS" dir="ltr" style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y"><div id="pvZ" style="position:relative"><div id="pvG" style="position:absolute;left:0;top:0;transform-origin:0 0;padding:8px">'+
+    pages.map(function(x){return'<div style="background:#fff;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.4);width:'+PAGE_W+'px">'+x+'</div>'}).join("")+
+    '</div></div></div>'+
+    '<div style="text-align:center;color:#fff;font-size:13px;padding:4px">'+pages.length+' صفحة · كبّر بإصبعين أو بالأزرار</div>';
+  document.body.appendChild(ov);applyLang(ov);
+  var sc=document.getElementById("pvS"),zw=document.getElementById("pvZ"),g=document.getElementById("pvG"),z=1;
+  function fit(){return Math.max(0.1,(sc.clientWidth-4)/(PAGE_W+16))}
+  function set(nz,cx,cy){var f=fit();nz=Math.max(f,Math.min(f*6,nz));
+    if(cx==null){cx=sc.clientWidth/2;cy=sc.clientHeight/2}
+    var px=(sc.scrollLeft+cx)/z,py=(sc.scrollTop+cy)/z;z=nz;
+    g.style.transform="scale("+z+")";zw.style.width=(g.offsetWidth*z)+"px";zw.style.height=(g.offsetHeight*z)+"px";
+    sc.scrollLeft=px*z-cx;sc.scrollTop=py*z-cy}
+  set(fit(),0,0);
+  document.getElementById("pvX").onclick=function(){ov.remove()};
+  document.getElementById("pvP").onclick=function(){set(z*1.4)};
+  document.getElementById("pvM").onclick=function(){set(z/1.4)};
+  document.getElementById("pvF").onclick=function(){set(fit(),0,0)};
+  document.getElementById("pvPr").onclick=function(){ov.remove();onPrint()};
+  document.getElementById("pvPdf").onclick=function(){ov.remove();onPdf()};
+  var d0=0,z0=1;
+  function dist(t){var a=t[0],b=t[1];return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
+  function mid(t){var r=sc.getBoundingClientRect();return[(t[0].clientX+t[1].clientX)/2-r.left,(t[0].clientY+t[1].clientY)/2-r.top]}
+  sc.addEventListener("touchstart",function(e){if(e.touches.length===2){d0=dist(e.touches);z0=z}},{passive:true});
+  sc.addEventListener("touchmove",function(e){if(e.touches.length===2&&d0){e.preventDefault();var m=mid(e.touches);set(z0*dist(e.touches)/d0,m[0],m[1])}},{passive:false});
+  sc.addEventListener("touchend",function(e){if(e.touches.length<2)d0=0});
+  window.addEventListener("resize",function(){if(document.getElementById("pvOv"))set(z)});
 }
 function doPrint(day){printPages(sheetPages(day),"report_"+day.date,function(){sharePdf(day)})}
 function sharePdf(day){
