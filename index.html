@@ -107,7 +107,7 @@ var REG={cur:"",slots:[]};
 try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
 var SUF=REG.cur?"_"+REG.cur:"";
 var KEY=KEYBASE+SUF;
-var APP_VER="2026.11.24-a";
+var APP_VER="2026.11.24-b";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -1363,8 +1363,10 @@ function monBar(){var x=supInfo();
   return '<div class="box" style="background:#eef3fb;border:2px solid #9aa6c4"><b>👁 هالهاتف مراقب</b> — '+
     (x.dev?'المشرف: <b>'+esc(x.name||"—")+'</b>':'ما في مشرف هلق، المشرف <b>'+esc(x.name||"—")+'</b> سلّم')+
     '<br><span class="muted">بتشوف الشغل مباشر بس ما فيك تسجّل. تغيير المشرف من الإعدادات.</span></div>'}
-function readSup(){return withNet(fb.getDocsFromServer(fb.query(col,fb.where(fb.documentId(),"==",did("c~sup"))))).then(function(q){
-  var v=null;q.docs.forEach(function(d){if(decodeURIComponent(d.id)!=="c~sup")return;var x=d.data();if(x.v!=null)try{v=JSON.parse(x.v)}catch(e){}});return v})}
+/* who is supervisor now: from the live connection (the listener keeps it current); needs internet */
+function readSup(){return new Promise(function(res,rej){
+  if(!ready||st.cache||!base)return rej(new Error("off"));
+  var k="c~sup",v=(k in inbox)?inbox[k]:base[k],x=null;try{x=v?JSON.parse(v):null}catch(e){}res(x)})}
 function putSup(val){var j=JSON.stringify(val),b=fb.writeBatch(db);
   b.set(fb.doc(col,did("c~sup")),{v:j,t:fb.serverTimestamp(),by:SY.dev});
   return withNet(b.commit()).then(function(){S.settings.sup=val;base["c~sup"]=j;delete PEND["c~sup"];savePend();save()})}
