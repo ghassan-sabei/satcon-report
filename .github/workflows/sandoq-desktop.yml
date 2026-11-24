@@ -36,3 +36,10 @@ jobs:
           name: Cash Box for Windows ${{ github.run_number }}
           make_latest: false
           files: sandoq/desktop/dist/CashBox-Setup.exe
+      - name: Keep installer on a branch
+        shell: bash
+        run: |
+          mkdir -p /tmp/out && cp sandoq/desktop/dist/CashBox-Setup.exe /tmp/out/
+          cd /tmp/out && git init -q && git checkout -q -b cashbox-win
+          git -c user.name=ci -c user.email=ci@local add -A && git -c user.name=ci -c user.email=ci@local commit -qm "build ${{ github.run_number }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" cashbox-win
