@@ -272,7 +272,7 @@ function renderDay(app){
       });
       h+='</div>';
     }
-    h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>';
+    h+='<button class="big" data-pvid="print" style="margin-bottom:8px">👁 معاينة قبل الطباعة</button><div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>';
   h+='<div class="two" style="margin-bottom:8px"><button class="big" id="goM">📊 الملخص</button><button class="big" id="goF">⛽ المازوت</button></div>'+
      '<div class="two" style="margin-bottom:30px"><button id="goW">العمال</button><button id="goS">الإعدادات</button></div>';
   app.innerHTML=h;
@@ -440,7 +440,7 @@ function renderFuel(app){
     '<div class="box"><div class="navd"><button id="prev">→</button><input type="date" id="dPick" value="'+curDate+'"><button id="next">←</button></div>'+
     '<div class="tm" style="font-size:15px;margin-top:8px"><b>'+dayName(curDate)+'</b> '+fmtDate(curDate)+(curDate===today?' (اليوم)':'')+'</div>'+
     '<div class="stat" style="margin-top:8px"><div><b>'+lit(dIn)+'</b><span>وارد اليوم</span></div><div><b>'+lit(dOut)+'</b><span>صرف اليوم</span></div><div><b>'+lit(balanceAt(curDate))+'</b><span>الباقي آخر اليوم</span></div></div>'+
-    '<div class="two" style="margin-top:10px"><button class="ok" id="fdPrint">🖨 ورقة اليوم</button><button class="pri" id="fdPdf">📄 PDF اليوم</button></div></div>'+lockBar();
+    '<button class="big" data-pvid="fdPrint" style="margin:10px 0 0">👁 معاينة قبل الطباعة</button><div class="two" style="margin-top:8px"><button class="ok" id="fdPrint">🖨 ورقة اليوم</button><button class="pri" id="fdPdf">📄 PDF اليوم</button></div></div>'+lockBar();
   /* deliveries */
   var ins=S.fuel.ins.filter(function(x){return x.date===curDate});
   h+='<div class="box"><h2>الوارد (حمولة جديدة)</h2>'+
@@ -469,7 +469,7 @@ function renderFuel(app){
   if(!fFrom){fTo=today;fFrom=today.slice(0,8)+"01"}
   h+='<div class="box"><h2>تقرير المازوت</h2><div class="row"><label>من تاريخ</label><input type="date" id="fFrom" value="'+fFrom+'"></div>'+
     '<div class="row"><label>إلى تاريخ</label><input type="date" id="fTo" value="'+fTo+'"></div>'+
-    '<div class="two"><button class="big ok" id="fPrint">🖨 طباعة</button><button class="big pri" id="fPdf">📄 إرسال PDF</button></div></div>';
+    '<button class="big" data-pvid="fPrint" style="margin-bottom:8px">👁 معاينة قبل الطباعة</button><div class="two"><button class="big ok" id="fPrint">🖨 طباعة</button><button class="big pri" id="fPdf">📄 إرسال PDF</button></div></div>';
   h+='<div class="box"><h2>الرصيد الافتتاحي</h2><div class="row"><label>المازوت بالخزان قبل أول تسجيل (لتر)</label><input type="number" inputmode="decimal" step="any" id="fOpen" value="'+esc(S.fuel.opening||"")+'"></div>'+
     '<p class="hint">بتحطه مرة وحدة لما تبلّش تستعمل الصفحة.</p></div>'+
     '<div class="box"><h2>مسح سجل المازوت القديم 🔒</h2><p class="muted" style="margin-top:0">بيمسح الوارد وصرف المعدات قبل التاريخ اللي بتختاره. الباقي بالخزان ما بيتغيّر.</p>'+
@@ -717,22 +717,22 @@ function renderMonth(app){
     '<div class="row"><label>إلى تاريخ</label><input type="date" id="rTo" value="'+mTo+'"></div></div>'+
     '<div class="box"><h2>العمال</h2>'+
     '<div class="stat"><div><b>'+list.length+'</b><span>عمال</span></div><div><b>'+dur(tm)+'</b><span>مجموع الساعات</span></div><div><b>'+list.reduce(function(a,x){return a+x.pres},0)+'</b><span>أيام حضور</span></div></div>'+
-    (list.length?'<div class="two" style="margin-top:10px"><button class="big ok" id="mPrint">🖨 طباعة</button><button class="big pri" id="mPdf">📄 إرسال PDF</button></div>':'')+
+    (list.length?'<div class="two" style="margin-top:10px"><button class="big" data-pvid="mPrint" style="grid-column:1/-1">👁 معاينة قبل الطباعة</button><button class="big ok" id="mPrint">🖨 طباعة</button><button class="big pri" id="mPdf">📄 إرسال PDF</button></div>':'')+
     (list.length?(payOn()?'<div style="background:#fff7e0;border:2px solid #f0b429;border-radius:10px;padding:8px;margin-top:10px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>💰 المعاشات ظاهرة <b data-lkt="pay" dir="ltr">'+left("pay")+'</b></span><button class="small dan" id="payOff">إخفاء</button></div>'+
       '<div style="margin-top:6px;font-size:17px"><b>المجموع: '+payTxt(list.reduce(function(a,x){for(var c in x.pay)a[c]=(a[c]||0)+x.pay[c];return a},{}))+'</b></div><p class="hint" style="margin:4px 0 0">الطباعة والـ PDF هلق مع المعاشات.</p>'+
-      '<div class="two" style="margin-top:8px"><button class="ok" id="stAll">🖨 كشوفات كل العمال</button><button class="pri" id="stAllPdf">📄 PDF كل العمال</button></div></div>'
-      :'<button class="big" id="payOn" style="margin-top:10px">💰 إظهار المعاشات على الشاشة 🔒</button><p class="hint" style="margin:4px 0 0">الطباعة والـ PDF بتطلع فيها المعاشات والسلف بدون قفل.</p><div class="two" style="margin-top:8px"><button class="ok" id="stAll">🖨 كشوفات كل العمال</button><button class="pri" id="stAllPdf">📄 PDF كل العمال</button></div>'):'')+'</div>';
+      '<button class="big" data-pvid="stAll" style="margin-top:8px">👁 معاينة كشوفات كل العمال</button><div class="two" style="margin-top:8px"><button class="ok" id="stAll">🖨 كشوفات كل العمال</button><button class="pri" id="stAllPdf">📄 PDF كل العمال</button></div></div>'
+      :'<button class="big" id="payOn" style="margin-top:10px">💰 إظهار المعاشات على الشاشة 🔒</button><p class="hint" style="margin:4px 0 0">الطباعة والـ PDF بتطلع فيها المعاشات والسلف بدون قفل.</p><button class="big" data-pvid="stAll" style="margin-top:8px">👁 معاينة كشوفات كل العمال</button><div class="two" style="margin-top:8px"><button class="ok" id="stAll">🖨 كشوفات كل العمال</button><button class="pri" id="stAllPdf">📄 PDF كل العمال</button></div>'):'')+'</div>';
   h+='<div class="box"><div class="done-list">';
   if(!list.length)h+='<p class="muted">ما في دوام مسجّل بهالفترة</p>';
   list.forEach(function(x){h+='<div class="it"><span><b>'+esc(x.w.name)+'</b><br><span class="muted">حضور '+x.pres+' · غياب '+x.abs+' · ساعات '+dur(x.min)+(x.open?' · '+x.open+' يوم بلا خروج':'')+'</span>'+
     (payOn()?'<br><b style="color:#16a34a">💰 '+payTxt(x.pay)+'</b>'+(x.nopay?' <span style="color:#d64545">(في ساعات بدون أجر)</span>':''):'')+'</span>'+
-    '<span style="display:flex;gap:6px"><button class="small ok" data-stpr="'+x.w.id+'">🖨 كشف</button><button class="small pri" data-stpdf="'+x.w.id+'">📄 PDF</button></span></div>'});
+    '<span style="display:flex;gap:6px"><button class="small" data-pvst="'+x.w.id+'">👁</button><button class="small ok" data-stpr="'+x.w.id+'">🖨 كشف</button><button class="small pri" data-stpdf="'+x.w.id+'">📄 PDF</button></span></div>'});
   h+='</div></div>';
   S.machines.forEach(function(m){var R=mRange(m.id),st=machineRange(m.id,R.f,R.t);if(!st.days&&m.active===false)return;
     h+='<div class="box"><h2>'+esc(m.name)+'</h2>'+
       '<div class="two" style="margin-bottom:8px"><div><label class="muted" style="font-size:13px">من تاريخ</label><input type="date" data-mrf="'+m.id+'" value="'+R.f+'" style="width:100%"></div><div><label class="muted" style="font-size:13px">إلى تاريخ</label><input type="date" data-mrt="'+m.id+'" value="'+R.t+'" style="width:100%"></div></div>'+
       '<div class="stat"><div><b>'+st.days+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div></div>'+
-      (st.days?'<div class="two" style="margin-top:10px"><button class="ok" data-mpr="'+m.id+'">🖨 طباعة</button><button class="pri" data-mpdf="'+m.id+'">📄 PDF</button></div>':'')+'</div>'});
+      (st.days?'<button class="big" data-pvm="'+m.id+'" style="margin-top:10px">👁 معاينة قبل الطباعة</button><div class="two" style="margin-top:8px"><button class="ok" data-mpr="'+m.id+'">🖨 طباعة</button><button class="pri" data-mpdf="'+m.id+'">📄 PDF</button></div>':'')+'</div>'});
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
   app.querySelectorAll("[data-mpr]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-mpr"),R=mRange(id);printPages(machinePages(id,R.f,R.t),"machine_"+R.f+"_"+R.t,function(){machinePdf(id,R.f,R.t)})}});
@@ -870,7 +870,48 @@ function stmtPdf(wid,from,to){var w=workerById(wid);pdfPages(function(){return s
 /* ---------- print / pdf (same as report app) ---------- */
 var NATIVE=!!(window.AndroidBridge&&window.AndroidBridge.isNative);
 var pageStyle=document.createElement("style");pageStyle.textContent=NATIVE?"@page{size:A4 landscape;margin:8mm}":"";document.head.appendChild(pageStyle);
+/* ---------- preview before printing: a 👁 button runs its print button in preview mode ---------- */
+var PVQ=false;
+document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest("[data-pvid],[data-pvst],[data-pvm]");if(!b)return;
+  var t=b.hasAttribute("data-pvid")?document.getElementById(b.getAttribute("data-pvid")):
+        b.hasAttribute("data-pvst")?document.querySelector('[data-stpr="'+b.getAttribute("data-pvst")+'"]'):document.querySelector('[data-mpr="'+b.getAttribute("data-pvm")+'"]');
+  if(!t)return;PVQ=true;try{t.click()}finally{PVQ=false}});
+function previewPages(pages,onPrint,onPdf){
+  var old=document.getElementById("pvOv");if(old)old.remove();
+  var ov=document.createElement("div");ov.id="pvOv";
+  ov.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;z-index:80;background:#5b6274;display:flex;flex-direction:column";
+  var bs="flex:1;padding:10px 4px;font-size:17px;border-radius:8px;border:0;font-weight:700";
+  ov.innerHTML='<div style="display:flex;gap:6px;padding:8px;background:#1f2b4d">'+
+    '<button id="pvX" style="'+bs+'">→ رجوع</button><button id="pvM" style="'+bs+'">－</button><button id="pvF" style="'+bs+'">⤢</button><button id="pvP" style="'+bs+'">＋</button>'+
+    '<button id="pvPr" class="ok" style="'+bs+'">🖨</button><button id="pvPdf" class="pri" style="'+bs+'">📄</button></div>'+
+    '<div id="pvS" dir="ltr" style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y"><div id="pvZ" style="position:relative"><div id="pvG" style="position:absolute;left:0;top:0;transform-origin:0 0;padding:8px;width:max-content">'+
+    pages.map(function(x){return'<div dir="rtl" style="background:#fff;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.4);width:max-content">'+x+'</div>'}).join("")+
+    '</div></div></div>'+
+    '<div style="text-align:center;color:#fff;font-size:13px;padding:4px">'+pages.length+' صفحة · كبّر بإصبعين أو بالأزرار</div>';
+  document.body.appendChild(ov);
+  var sc=document.getElementById("pvS"),zw=document.getElementById("pvZ"),g=document.getElementById("pvG"),z=1;
+  function fit(){return Math.max(0.05,(sc.clientWidth-4)/g.offsetWidth)}
+  function set(nz,cx,cy){var f=fit();nz=Math.max(f,Math.min(f*6,nz));
+    if(cx==null){cx=sc.clientWidth/2;cy=sc.clientHeight/2}
+    var px=(sc.scrollLeft+cx)/z,py=(sc.scrollTop+cy)/z;z=nz;
+    g.style.transform="scale("+z+")";zw.style.width=(g.offsetWidth*z)+"px";zw.style.height=(g.offsetHeight*z)+"px";
+    sc.scrollLeft=px*z-cx;sc.scrollTop=py*z-cy}
+  set(fit(),0,0);
+  document.getElementById("pvX").onclick=function(){ov.remove()};
+  document.getElementById("pvP").onclick=function(){set(z*1.4)};
+  document.getElementById("pvM").onclick=function(){set(z/1.4)};
+  document.getElementById("pvF").onclick=function(){set(fit(),0,0)};
+  document.getElementById("pvPr").onclick=function(){ov.remove();onPrint()};
+  document.getElementById("pvPdf").onclick=function(){ov.remove();onPdf()};
+  var d0=0,z0=1;
+  function dist(t){var a=t[0],b=t[1];return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
+  function mid(t){var r=sc.getBoundingClientRect();return[(t[0].clientX+t[1].clientX)/2-r.left,(t[0].clientY+t[1].clientY)/2-r.top]}
+  sc.addEventListener("touchstart",function(e){if(e.touches.length===2){d0=dist(e.touches);z0=z}},{passive:true});
+  sc.addEventListener("touchmove",function(e){if(e.touches.length===2&&d0){e.preventDefault();var m=mid(e.touches);set(z0*dist(e.touches)/d0,m[0],m[1])}},{passive:false});
+  sc.addEventListener("touchend",function(e){if(e.touches.length<2)d0=0});
+}
 function printPages(pages,title,fallback,portrait){
+  if(PVQ){PVQ=false;previewPages(pages,function(){printPages(pages,title,fallback,portrait)},fallback);return}
   if(NATIVE){pageStyle.textContent="@page{size:A4 "+(portrait?"portrait":"landscape")+";margin:8mm}";document.getElementById("printArea").innerHTML=pages.join("");
     setTimeout(function(){if(portrait&&window.AndroidBridge.printSized)window.AndroidBridge.printSized(title,"A4P");else window.AndroidBridge.print(title)},150);return}
   document.getElementById("printArea").innerHTML=pages.map(function(x){return'<div class="pp'+(portrait?' pt':'')+'">'+x+'</div>'}).join("");
