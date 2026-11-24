@@ -107,7 +107,7 @@ var REG={cur:"",slots:[]};
 try{var rg=JSON.parse(localStorage.getItem(REGK));if(rg&&typeof rg==="object")REG={cur:rg.cur||"",slots:Array.isArray(rg.slots)?rg.slots:[]}}catch(e){}
 var SUF=REG.cur?"_"+REG.cur:"";
 var KEY=KEYBASE+SUF;
-var APP_VER="2026.11.21-i";
+var APP_VER="2026.11.24-a";
 var STEPS=[
  {k:"drillStart",n:"بدء الحفر"},
  {k:"drillEnd",n:"انتهاء الحفر"},
@@ -296,6 +296,47 @@ var DICT=[
 ["جاري فحص التحديثات...","Checking for updates...","Recherche de mises à jour..."],
 ["مش محطوط","not on the plan","absent du plan"],
 ["ما في إنترنت","No internet","Pas d'internet"]
+,
+["👷 المشرف والمراقب","👷 Supervisor and monitors","👷 Superviseur et observateurs"],
+["بيشتغل بعد الانضمام لرمز المشروع (فوق).","Works after joining the project code (above).","Fonctionne après avoir rejoint le code du projet (ci-dessus)."],
+["ما في مشرف مسجّل. كل هاتف بيسجّل يومه مثل قبل.","No supervisor registered. Each phone records its own day as before.","Aucun superviseur enregistré. Chaque téléphone enregistre sa journée comme avant."],
+["✅ هالهاتف هو","✅ This phone is the","✅ Ce téléphone est le"],
+["المشرف","supervisor","superviseur"],
+[". الهواتف التانية مراقب.",". The other phones are monitors.",". Les autres téléphones sont observateurs."],
+["👁 هالهاتف مراقب","👁 This phone is a monitor","👁 Ce téléphone est observateur"],
+["👁 هالهاتف","👁 This phone is a","👁 Ce téléphone est"],
+["مراقب","monitor","observateur"],
+["⚠️ ما في مشرف هلق.","⚠️ No supervisor now.","⚠️ Pas de superviseur pour l'instant."],
+["سلّم الإشراف.","handed over supervision.","a remis la supervision."],
+["📤 سلّم الإشراف (هالهاتف بيصير مراقب) 🔒","📤 Hand over supervision (this phone becomes a monitor) 🔒","📤 Remettre la supervision (ce téléphone devient observateur) 🔒"],
+["👷 سجّل هالهاتف مشرف 🔒","👷 Register this phone as supervisor 🔒","👷 Enregistrer ce téléphone comme superviseur 🔒"],
+["تغيير المشرف: المشرف القديم بيسلّم من هاتفه أول، بعدين الهاتف الجديد بيتسجّل مشرف وبيكمّل نفس اليوم. بدو إنترنت على الهاتفين.","Changing supervisor: the old supervisor hands over from his phone first, then the new phone registers as supervisor and continues the same day. Both phones need internet.","Changement de superviseur : l'ancien superviseur remet d'abord depuis son téléphone, puis le nouveau téléphone s'enregistre comme superviseur et continue la même journée. Les deux téléphones ont besoin d'internet."],
+["بتشوف الشغل مباشر بس ما فيك تسجّل. تغيير المشرف من الإعدادات.","You see the work live but cannot record. Change the supervisor in Settings.","Vous voyez le travail en direct mais ne pouvez pas enregistrer. Changez le superviseur dans les Paramètres."],
+["ما في مشرف هلق، المشرف","No supervisor now, supervisor","Pas de superviseur, le superviseur"],
+["سلّم","handed over","a remis"],
+["ما في شغل مسجّل اليوم بعد.","No work recorded today yet.","Aucun travail enregistré aujourd'hui."],
+["👷 اسم المشرف","👷 Supervisor name","👷 Nom du superviseur"],
+["متابعة","Continue","Continuer"],
+["صرت المشرف ✓","You are the supervisor ✓","Vous êtes le superviseur ✓"],
+["باقي الهواتف صارت مراقب.","The other phones are now monitors.","Les autres téléphones sont maintenant observateurs."],
+["في مشرف مسجّل:","A supervisor is registered:","Un superviseur est enregistré :"],
+["لازم يسلّم الإشراف من هاتفه أول: الإعدادات ← سلّم الإشراف.","He must hand over from his phone first: Settings ← Hand over supervision.","Il doit d'abord remettre depuis son téléphone : Paramètres ← Remettre la supervision."],
+["إذا هاتفه ضايع أو خربان بس، فيك تاخد الإشراف من هون.","Only if his phone is lost or broken, you can take supervision from here.","Seulement si son téléphone est perdu ou en panne, vous pouvez prendre la supervision ici."],
+["هاتفه ضايع: خود الإشراف","His phone is lost: take supervision","Téléphone perdu : prendre la supervision"],
+["سلّمت ✓","Handed over ✓","Remis ✓"],
+["هالهاتف صار مراقب. هلق على هاتف المشرف الجديد: الإعدادات ← سجّل هالهاتف مشرف.","This phone is now a monitor. Now on the new supervisor's phone: Settings ← Register this phone as supervisor.","Ce téléphone est maintenant observateur. Sur le téléphone du nouveau superviseur : Paramètres ← Enregistrer ce téléphone comme superviseur."],
+["هالهاتف صار مراقب","This phone is now a monitor","Ce téléphone est maintenant observateur"],
+["ما قدر يتصل بالسيرفر","Could not reach the server","Impossible de joindre le serveur"],
+["ما قدر يسجّل","Could not register","Impossible d'enregistrer"],
+["ما قدر يسلّم","Could not hand over","Impossible de remettre"],
+["عم يتأكد من السيرفر...","Checking the server...","Vérification du serveur..."],
+["عم يسجّل...","Registering...","Enregistrement..."],
+["عم يسلّم...","Handing over...","Remise..."],
+["تأكد إنو في إنترنت وجرّب مرة تانية.","Make sure there is internet and try again.","Vérifiez la connexion internet et réessayez."],
+["خلّص التعديل أول","Finish editing first","Terminez d'abord la modification"],
+["كمّلت يوم","Continued the day of","Journée continuée :"],
+["بنفس الحفر المفتوحة.","with the same open piles.","avec les mêmes pieux ouverts."],
+["خود الإشراف","Take supervision","Prendre la supervision"]
 ].sort(function(a,b){return b[0].length-a[0].length});
 /* translate Arabic phrases in an html string for en/fr (Arabic is the source text) */
 function trs(html,l){if(!html||l==="ar")return html;var i=l==="en"?1:2;
@@ -401,8 +442,10 @@ function bindPress(el,tap,long){
 }
 
 /* ---------- render ---------- */
-var view="main";
+var view="main",printDay=null;
 function render(){
+  /* a monitor phone never keeps a day of its own: it goes to the previous days (still shared) */
+  if(isMon()&&!S.editing&&hasContent(S.cur)){S.archive.push(S.cur);S.archive=sortArch(S.archive);S.cur=blankDay();save()}
   var day=S.cur;
   document.getElementById("hdDate").innerHTML=esc(dayName(day.date)+" "+fmtDate(day.date))+(typeof syncBadge==="function"?syncBadge():"");
   var app=document.getElementById("app");
@@ -416,8 +459,10 @@ function render(){
   var done=day.piles.filter(isDone);
   var h="";
   var todayIso0=isoDate(new Date()),otherToday=(S.archive||[]).filter(function(d){return d&&d.date===todayIso0&&d.uid!==(S.cur&&S.cur.uid)&&hasContent(d)});
-  var ro=!hasContent(day)&&otherToday.length>0;
-  if(ro){h+=watchBox(otherToday[0]);}else{
+  var MON=isMon(),ro=MON||(!isSup()&&!hasContent(day)&&otherToday.length>0);
+  printDay=ro&&otherToday.length?otherToday[0]:S.cur;
+  if(ro){if(MON)h+=monBar();
+    if(otherToday.length)h+=watchBox(otherToday[0]);else h+='<div class="box"><p class="tm" style="margin:0">ما في شغل مسجّل اليوم بعد.</p></div>';}else{
   if(S.editing)h+='<div class="box" style="background:#fff4e0;border:2px solid #e08a00"><b>✏️ عم تعدّل يوم '+dayName(day.date)+' '+fmtDate(day.date)+'</b><br><span class="muted">اليوم الحالي محفوظ على جنب. لما تخلص اكبس "خلّصت التعديل".</span>'+
     '<div class="two" style="margin-top:8px"><button class="ok" id="edDone">✓ خلّصت التعديل</button><button id="edCancel">↩ إلغاء التعديل</button></div></div>';
 
@@ -505,7 +550,7 @@ h+='<div class="box"><h2>ملخص اليوم</h2><div class="stat">'+
      '<div><b>'+sumN+'</b><span>بايلات منفذة</span></div>'+
      '<div><b>'+sumV+'</b><span>كونكريت m3</span></div>'+
      '<div><b>'+delayTxtMs(sumMs)+'</b><span>التأخير</span></div></div>'+
-     '<div class="row" style="margin-top:10px"><label>المورتر m3</label><input type="number" inputmode="decimal" step="0.1" id="mortar" value="'+esc(day.mortar)+'"></div>';
+     (ro?'':'<div class="row" style="margin-top:10px"><label>المورتر m3</label><input type="number" inputmode="decimal" step="0.1" id="mortar" value="'+esc(day.mortar)+'"></div>');
   if(done.length){
     h+='<div class="done-list">';
     done.forEach(function(p){
@@ -519,7 +564,7 @@ h+='<div class="box"><h2>ملخص اليوم</h2><div class="stat">'+
   h+='<div class="two" style="margin-bottom:8px"><button class="big ok" id="print">🖨 طباعة</button><button class="big pri" id="pdf">📄 إرسال PDF</button></div>'+
      '<div class="two" style="margin-bottom:8px"><button class="big" id="goBlk">📊 ملخص البلوكات</button><button class="big" id="goPlan">🗺️ المخطط</button></div>'+
      '<div class="two" style="margin-bottom:24px"><button id="goArch">الأيام السابقة</button><button id="goSet">الإعدادات</button></div>'+
-     (S.editing?'<button class="big ok" id="edDone2" style="margin-bottom:30px">✓ خلّصت التعديل</button>':'<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>');
+     (ro?'<div style="margin-bottom:30px"></div>':S.editing?'<button class="big ok" id="edDone2" style="margin-bottom:30px">✓ خلّصت التعديل</button>':'<button class="big" id="newDay" style="margin-bottom:30px">بدء يوم جديد</button>');
 
   app.innerHTML=h;
   var hx=document.getElementById("hoX");if(hx)hx.onclick=function(){delete S.handedOver;save();render()};
@@ -613,8 +658,8 @@ function wire(app){
     var p=findPile(b.getAttribute("data-reopen"));p.vol="";save();render();
   }});
 
-  document.getElementById("print").onclick=function(){doPrint(S.cur)};
-  document.getElementById("pdf").onclick=function(){sharePdf(S.cur)};
+  document.getElementById("print").onclick=function(){doPrint(printDay||S.cur)};
+  document.getElementById("pdf").onclick=function(){sharePdf(printDay||S.cur)};
   document.getElementById("goPlan").onclick=function(){planSel=normBlock(S.cur.block)||planSel;view="plan";render();scrollTo(0,0)};
   document.getElementById("goBlk").onclick=function(){view="blocks";render();scrollTo(0,0)};
   document.getElementById("goArch").onclick=function(){view="archive";render();scrollTo(0,0)};
@@ -854,7 +899,7 @@ function renderArchive(app){
     if(!hasContent(d))return; /* another phone's day that has nothing yet */
     var t=totals(d);
     h+='<div class="done-list" data-row="'+i+'"><div class="it"><span><b>'+dayName(d.date)+' '+fmtDate(d.date)+'</b><br><span class="muted">بلوك '+esc(d.block||"-")+' · '+t.n+' بايل · '+t.v+' m3</span></span>'+
-       '<span><button class="small" data-ed="'+i+'">✏️ تعديل</button> <button class="small" data-dt="'+i+'">📅 التاريخ</button> <button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button> <button class="small dan" data-da="'+i+'">حذف</button></span></div></div>';
+       '<span>'+(isMon()?'':'<button class="small" data-ed="'+i+'">✏️ تعديل</button> <button class="small" data-dt="'+i+'">📅 التاريخ</button> ')+'<button class="small ok" data-pr="'+i+'">طباعة</button> <button class="small pri" data-pdf="'+i+'">PDF</button>'+(isMon()?'':' <button class="small dan" data-da="'+i+'">حذف</button>')+'</span></div></div>';
   });
   h+='</div>';
   app.innerHTML=h;
@@ -888,7 +933,7 @@ function renderSettings(app){
    '<div class="row"><label>طول الحديد (m)</label><input type="number" inputmode="decimal" id="sS" value="'+esc(s.steel)+'"></div>'+
    '<div class="row"><label>تاريخ اليوم الحالي</label><input type="date" id="sT" value="'+esc(S.cur.date)+'"></div>'+
    '</div>'+
-   syncBox()+'<div class="box"><h2>🔒 كلمة سر الإدارة</h2><p class="muted" style="margin-top:0">لحذف مخطط وفصل الهاتف عن المشاركة.</p><button class="big" id="pwBtn">'+(S.settings.adminPw?'تغيير':'تعيين')+' كلمة السر</button></div>'+
+   syncBox()+roleBox()+'<div class="box"><h2>🔒 كلمة سر الإدارة</h2><p class="muted" style="margin-top:0">لحذف مخطط وفصل الهاتف عن المشاركة.</p><button class="big" id="pwBtn">'+(S.settings.adminPw?'تغيير':'تعيين')+' كلمة السر</button></div>'+
    '<div class="box"><h2>التحديثات</h2><p class="muted" style="margin-top:0">نسخة الصفحة: <b dir="ltr">'+APP_VER+'</b>. التطبيق بينزّل التحديث لحاله كل ما ينفتح وفي نت.</p><button class="big" id="updBtn">🔄 فحص التحديثات</button></div>'+
    '<div class="box"><h2>تسليم واستلام بين المشرفين</h2><p class="muted" style="margin-top:0">التسليم بيطلّع ملف فيه كل شي: اليوم الحالي، الأيام السابقة، المخططات، والإعدادات. المشرف الجديد بيستلمه وبيكمّل من مكانك.</p>'+
    '<button class="big pri" id="hoOut" style="margin-bottom:8px">📤 تسليم البيانات</button>'+
@@ -903,7 +948,7 @@ function renderSettings(app){
   document.getElementById("sS").oninput=function(e){s.steel=e.target.value;S.cur.steel=e.target.value;save()};
   document.getElementById("sT").onchange=function(e){if(e.target.value){S.cur.date=e.target.value;save();render()}};
   document.getElementById("hoOut").onclick=handOver;
-  document.getElementById("pwBtn").onclick=pwEditor;bindSyncBox();
+  document.getElementById("pwBtn").onclick=pwEditor;bindSyncBox();bindRoleBox();
   document.getElementById("updBtn").onclick=function(){
     if(!navigator.onLine){openModal('<h3>ما في إنترنت</h3><p>شغّل النت وجرّب مرة تانية.</p><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
     openModal('<h3 style="text-align:center">جاري فحص التحديثات...</h3>');
@@ -1306,6 +1351,75 @@ function savePend(){try{localStorage.setItem(PKEY,JSON.stringify(PEND))}catch(e)
 var fb=null,db=null,col=null,auth=null,ready=false,unsub=null,base=null,inbox={},inboxLast=0,inflight={},needRender=false,fbP=null;
 var st={cache:true,err:"",lastOk:0};
 function hasContent(d){return!!(d&&(d.piles.length||d.workStart||d.mortar||(d.pauses&&d.pauses.length)))}
+/* ---------- supervisor and monitors ----------
+   The shared setting "sup" = {dev, name, day, t}. dev = the phone that records (the supervisor).
+   Every other phone of the project is a monitor: it sees the work live and cannot record.
+   dev:null = the old supervisor handed over; nobody records until a new phone becomes supervisor.
+   No "sup" at all (old projects) = the earlier behaviour. */
+function supInfo(){return typeof SY!=="undefined"&&SY&&SY.code&&S.settings&&S.settings.sup||null}
+function isSup(){var x=supInfo();return!!x&&!!x.dev&&x.dev===SY.dev}
+function isMon(){var x=supInfo();return!!x&&x.dev!==SY.dev}
+function monBar(){var x=supInfo();
+  return '<div class="box" style="background:#eef3fb;border:2px solid #9aa6c4"><b>👁 هالهاتف مراقب</b> — '+
+    (x.dev?'المشرف: <b>'+esc(x.name||"—")+'</b>':'ما في مشرف هلق، المشرف <b>'+esc(x.name||"—")+'</b> سلّم')+
+    '<br><span class="muted">بتشوف الشغل مباشر بس ما فيك تسجّل. تغيير المشرف من الإعدادات.</span></div>'}
+function readSup(){return withNet(fb.getDocsFromServer(fb.query(col,fb.where(fb.documentId(),"==",did("c~sup"))))).then(function(q){
+  var v=null;q.docs.forEach(function(d){if(decodeURIComponent(d.id)!=="c~sup")return;var x=d.data();if(x.v!=null)try{v=JSON.parse(x.v)}catch(e){}});return v})}
+function putSup(val){var j=JSON.stringify(val),b=fb.writeBatch(db);
+  b.set(fb.doc(col,did("c~sup")),{v:j,t:fb.serverTimestamp(),by:SY.dev});
+  return withNet(b.commit()).then(function(){S.settings.sup=val;base["c~sup"]=j;delete PEND["c~sup"];savePend();save()})}
+/* the new supervisor carries on the day the old one handed over (or today's day on the site) */
+function adoptDay(prev){var t=null,today=isoDate(new Date());
+  if(prev&&prev.day)(S.archive||[]).forEach(function(d){if(d&&d.uid===prev.day&&hasContent(d))t=d});
+  if(!t&&!hasContent(S.cur))(S.archive||[]).forEach(function(d){if(!t&&d&&d.date===today&&hasContent(d))t=d});
+  if(!t||t.uid===S.cur.uid)return null;
+  if(hasContent(S.cur))S.archive.push(S.cur);
+  S.archive=sortArch(S.archive.filter(function(d){return d.uid!==t.uid}));S.cur=t;return t}
+function roleBox(){
+  var h='<div class="box"><h2>👷 المشرف والمراقب</h2>';
+  if(!SY.code)return h+'<p class="muted" style="margin:0">بيشتغل بعد الانضمام لرمز المشروع (فوق).</p></div>';
+  var x=supInfo();
+  if(!x)h+='<p style="margin-top:0">ما في مشرف مسجّل. كل هاتف بيسجّل يومه مثل قبل.</p>';
+  else if(isSup())h+='<p style="margin-top:0">✅ هالهاتف هو <b>المشرف</b>'+(x.name?' ('+esc(x.name)+')':'')+'. الهواتف التانية مراقب.</p>';
+  else if(x.dev)h+='<p style="margin-top:0">👁 هالهاتف <b>مراقب</b>. المشرف: <b>'+esc(x.name||"—")+'</b></p>';
+  else h+='<p style="margin-top:0">⚠️ ما في مشرف هلق. <b>'+esc(x.name||"—")+'</b> سلّم الإشراف.</p>';
+  h+=isSup()?'<button class="big dan" id="rlRel">📤 سلّم الإشراف (هالهاتف بيصير مراقب) 🔒</button>'
+            :'<button class="big pri" id="rlSet">👷 سجّل هالهاتف مشرف 🔒</button>';
+  return h+'<p class="hint">تغيير المشرف: المشرف القديم بيسلّم من هاتفه أول، بعدين الهاتف الجديد بيتسجّل مشرف وبيكمّل نفس اليوم. بدو إنترنت على الهاتفين.</p></div>'}
+function bindRoleBox(){
+  function msg(h){openModal(h+'<div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal}
+  function net(){if(!ready){msg('<h3>ما في إنترنت</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>');return false}return true}
+  var a=document.getElementById("rlSet"),b=document.getElementById("rlRel");
+  if(a)a.onclick=function(){if(!net())return;requireAdmin(function(){
+    openModal('<h3>👷 اسم المشرف</h3><input type="text" id="rlN" style="width:100%;font-size:20px"><div class="acts"><button id="mS" class="pri">متابعة</button><button id="mX">إلغاء</button></div>');
+    var n=document.getElementById("rlN");setTimeout(function(){n.focus()},50);document.getElementById("mX").onclick=closeModal;
+    document.getElementById("mS").onclick=function(){var nm=n.value.trim();if(!nm){n.focus();return}
+      if(S.editing)return msg('<h3>خلّص التعديل أول</h3>');
+      openModal('<h3 style="text-align:center">عم يتأكد من السيرفر...</h3>');
+      function go(prev){openModal('<h3 style="text-align:center">عم يسجّل...</h3>');
+        putSup({dev:SY.dev,name:nm,t:Date.now()}).then(function(){var t=adoptDay(prev);save();view="main";render();
+          msg('<h3>صرت المشرف ✓</h3><p>'+(t?'كمّلت يوم '+fmtDate(t.date)+' — بلوك <b>'+esc(t.block||"—")+'</b>، بنفس الحفر المفتوحة.':'باقي الهواتف صارت مراقب.')+'</p>')})
+        .catch(function(){msg('<h3>ما قدر يسجّل</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})}
+      readSup().then(function(cur){
+        if(cur&&cur.dev&&cur.dev!==SY.dev){
+          openModal('<h3>في مشرف مسجّل: '+esc(cur.name||"—")+'</h3><p>لازم يسلّم الإشراف من هاتفه أول: الإعدادات ← سلّم الإشراف.</p>'+
+            '<p class="hint">إذا هاتفه ضايع أو خربان بس، فيك تاخد الإشراف من هون.</p><div class="acts"><button id="mN">تمام</button><button id="mF" class="dan">هاتفه ضايع: خود الإشراف</button></div>');
+          document.getElementById("mN").onclick=closeModal;
+          document.getElementById("mF").onclick=function(){confirmBox("تاخد الإشراف من "+(cur.name||"—")+" بدون تسليم؟","خود الإشراف",function(){go(cur)})};
+          return}
+        go(cur)})
+      .catch(function(){msg('<h3>ما قدر يتصل بالسيرفر</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})}})};
+  if(b)b.onclick=function(){if(!net())return;requireAdmin(function(){
+    if(S.editing)return msg('<h3>خلّص التعديل أول</h3>');
+    confirmBox("تسلّم الإشراف؟ هالهاتف بيصير مراقب، والمشرف الجديد بيكمّل نفس اليوم.","سلّم",function(){
+      openModal('<h3 style="text-align:center">عم يسلّم...</h3>');
+      readSup().then(function(cur){
+        if(cur&&cur.dev!==SY.dev){S.settings.sup=cur;base["c~sup"]=JSON.stringify(cur);save();view="main";render();return msg('<h3>هالهاتف صار مراقب</h3>')}
+        var me=S.settings.sup||{};
+        return putSup({dev:null,name:me.name||"",day:S.cur.uid,t:Date.now()}).then(function(){view="main";render();
+          msg('<h3>سلّمت ✓</h3><p>هالهاتف صار مراقب. هلق على هاتف المشرف الجديد: الإعدادات ← سجّل هالهاتف مشرف.</p>')})})
+      .catch(function(){msg('<h3>ما قدر يسلّم</h3><p>تأكد إنو في إنترنت وجرّب مرة تانية.</p>')})})})};
+}
 function dayList(s){var o=[],seen={};[s.cur].concat(s.editing&&s.editing.held?[s.editing.held]:[],s.archive||[]).forEach(function(d){if(d&&d.uid&&!seen[d.uid]){seen[d.uid]=1;o.push(d)}});return o}
 function flat(s){var o={},k;
   for(k in s.settings)if(s.settings[k]!=null)o["c~"+k]=JSON.stringify(s.settings[k]);
