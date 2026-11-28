@@ -431,8 +431,48 @@ function consumers(from,to,beforeOnly){var m={},e={};
   return{m:m,e:e}}
 function sumOut(from,to,beforeOnly){var c=consumers(from,to,beforeOnly),t=0;for(var k in c.m)t+=c.m[k];for(var j in c.e)t+=c.e[j];return t}
 function balanceAt(date){return num2(S.fuel.opening)+sumIn(null,date,false)-sumOut(null,date,false)}
+
+/* ---------- diesel cost: oldest first (FIFO) ----------
+   The tank is a queue of layers {q: liters, p: price per liter}. The opening stock is the first
+   layer (or the layers left by an earlier "clear old records"), each delivery is added at the end,
+   and each day's consumption takes liters from the front. A day can take from two layers when the
+   older one runs out; both parts are kept so the sheet can show them. Within a day deliveries come
+   first, then machines, then equipment. Liters taken when the records show an empty tank are
+   priced at the last known price. Liters from a delivery with no price are counted as "no price". */
+function fifoRun(stopBefore){
+  var L=[],by={},seq=[],lastP=null,op=num2(S.fuel.opening),opP=S.fuel.openPrice>0?num2(S.fuel.openPrice):null;
+  (S.fuel.openLayers||[]).forEach(function(x){if(num2(x.q)>0)L.push({q:num2(x.q),p:x.p>0?num2(x.p):null})});
+  var sum=L.reduce(function(a,x){return a+x.q},0);
+  if(op>sum+1e-6)L.unshift({q:op-sum,p:opP});else if(op<sum-1e-6){var cut=sum-op;while(cut>1e-6&&L.length){var t=Math.min(cut,L[0].q);L[0].q-=t;cut-=t;if(L[0].q<=1e-6)L.shift()}}
+  L.forEach(function(x){if(x.p)lastP=x.p});
+  var ds={};Object.keys(S.days).forEach(function(d){ds[d]=1});S.fuel.ins.forEach(function(x){if(x.date)ds[x.date]=1});
+  function take(key,q,date){var parts=[],cost=0,miss=0;
+    while(q>1e-6&&L.length){var l=L[0],t=Math.min(q,l.q);parts.push([t,l.p]);l.q-=t;q-=t;if(l.q<=1e-6)L.shift()}
+    if(q>1e-6)parts.push([q,lastP]);
+    parts.forEach(function(x){if(x[1])cost+=x[0]*x[1];else miss+=x[0]});
+    by[key]={parts:parts,cost:Math.round(cost),miss:miss};seq.push({key:key,date:date})}
+  Object.keys(ds).sort().some(function(d){if(stopBefore&&d>=stopBefore)return true;
+    S.fuel.ins.filter(function(x){return x.date===d}).sort(function(a,b){return a.id-b.id}).forEach(function(x){var pr=x.price>0?num2(x.price):null;if(num2(x.qty)>0)L.push({q:num2(x.qty),p:pr});if(pr)lastP=pr});
+    var D=S.days[d];if(!D)return false;
+    [["mrecs","m"],["erecs","e"]].forEach(function(f){var R=D[f[0]];if(!R)return;
+      Object.keys(R).sort(function(a,b){return a-b}).forEach(function(id){var q=num2(R[id].diesel);if(q>0)take(f[1]+":"+id+"@"+d,q,d)})});
+    return false});
+  return{by:by,seq:seq,left:L}}
+function costOf(F,kind,id,date){return F.by[kind+":"+id+"@"+date]||null}
+function iqd(v){return lit(Math.round(v))}
+/* cost cell text: "12,500" or "12,500*" when part of it has no price */
+function costTxt(c){if(!c)return"";return(c.cost?iqd(c.cost):(c.miss?"—":"0"))+(c.miss?"*":"")}
+function partsTxt(c){if(!c||c.parts.length<2)return"";return c.parts.map(function(x){return lit(Math.round(x[0]*100)/100)+"×"+(x[1]?lit(x[1]):"؟")}).join(" + ")}
+function sumCost(F,from,to,kind,id){var t={cost:0,miss:0};for(var k in F.by){var m=/^(\w):(\d+)@(.+)$/.exec(k);if(!m)continue;
+  if(kind&&m[1]!==kind)continue;if(id!=null&&+m[2]!==+id)continue;if((from&&m[3]<from)||(to&&m[3]>to))continue;t.cost+=F.by[k].cost;t.miss+=F.by[k].miss}return t}
+/* when old records are cleared: the liters still kept before the date keep their layers, followed by what was left in the tank */
+function layersAt(d,keepKind){var F=fifoRun(d),out=[];
+  if(keepKind)F.seq.forEach(function(e){if(e.key.charAt(0)===keepKind)F.by[e.key].parts.forEach(function(x){out.push({q:x[0],p:x[1]})})});
+  F.left.forEach(function(x){out.push({q:x.q,p:x.p})});
+  return out.filter(function(x){return x.q>1e-6})}
 var fFrom=null,fTo=null;
 function renderFuel(app){
+  var FF=fifoRun();
   var today=isoDate(new Date()),bal=num2(S.fuel.opening)+sumIn()-sumOut();
   var dIn=sumIn(curDate,curDate),dOut=sumOut(curDate,curDate);
   var h='<button id="back" style="margin-bottom:12px">→ رجوع</button>'+
@@ -456,9 +496,11 @@ function renderFuel(app){
   /* consumption of the day */
   h+='<div class="box"><h2>الصرف</h2>';
   dayMachines(curDate).forEach(function(m){var r=mrec(curDate,m.id,false);
-    h+='<div class="wk"><div class="nm"><b>'+esc(m.name)+'</b><span>من شاشة الدوام</span></div><b>'+(r&&r.diesel?lit(num2(r.diesel))+' لتر':'—')+'</b>'+(r&&r.sig?'<span style="margin-right:8px">'+sigSvg(r.sig,26)+'</span>':'')+'</div>'});
+    var cm=costOf(FF,"m",m.id,curDate);
+    h+='<div class="wk"><div class="nm"><b>'+esc(m.name)+'</b><span>من شاشة الدوام</span></div><b>'+(r&&r.diesel?lit(num2(r.diesel))+' لتر':'—')+(cm?'<br><small class="muted">'+costTxt(cm)+' د.ع</small>':'')+'</b>'+(r&&r.sig?'<span style="margin-right:8px">'+sigSvg(r.sig,26)+'</span>':'')+'</div>'});
   S.fuel.equip.filter(function(q){return q.active!==false||(erec(curDate,q.id,false)||{}).diesel}).forEach(function(q){var r=erec(curDate,q.id,false)||{};
-    h+='<div class="wk"><div class="nm"><b>'+esc(q.name)+'</b><span>معدّة</span></div><input type="number" inputmode="decimal" step="any" data-eq="'+q.id+'" value="'+esc(r.diesel||"")+'" placeholder="لتر" style="max-width:100px">'+
+    var ce=costOf(FF,"e",q.id,curDate);
+    h+='<div class="wk"><div class="nm"><b>'+esc(q.name)+'</b><span>معدّة'+(ce?' · '+costTxt(ce)+' د.ع':'')+'</span></div><input type="number" inputmode="decimal" step="any" data-eq="'+q.id+'" value="'+esc(r.diesel||"")+'" placeholder="لتر" style="max-width:100px">'+
       '<button class="tbtn '+(r.sig?'ok':'')+'" data-eqsig="'+q.id+'" style="min-width:70px">'+(r.sig?sigSvg(r.sig,26):'✍️')+'<small>'+(r.sig?'موقّع':'توقيع')+'</small></button></div>'});
   if(!S.fuel.equip.length)h+='<p class="muted">ضيف المعدات من تحت (مولدة، كمبريسر...)</p>';
   h+='</div>';
@@ -473,6 +515,8 @@ function renderFuel(app){
     '<div class="row"><label>إلى تاريخ</label><input type="date" id="fTo" value="'+fTo+'"></div>'+
     '<button class="big" data-pvid="fPrint" style="margin-bottom:8px">👁 معاينة قبل الطباعة</button><div class="two"><button class="big ok" id="fPrint">🖨 طباعة</button><button class="big pri" id="fPdf">📄 إرسال PDF</button></div></div>';
   h+='<div class="box"><h2>الرصيد الافتتاحي</h2><div class="row"><label>المازوت بالخزان قبل أول تسجيل (لتر)</label><input type="number" inputmode="decimal" step="any" id="fOpen" value="'+esc(S.fuel.opening||"")+'"></div>'+
+    (S.fuel.openLayers&&S.fuel.openLayers.length?'<p class="hint">سعر هالرصيد محسوب من السجل اللي انمسح: '+S.fuel.openLayers.map(function(x){return lit(Math.round(x.q*100)/100)+' لتر × '+(x.p?lit(x.p):'بدون سعر')}).join(' ، ')+'</p>':
+      '<div class="row"><label>سعر لتر الرصيد الافتتاحي (دينار)</label><input type="number" inputmode="decimal" step="any" id="fOpenP" value="'+esc(S.fuel.openPrice||"")+'"></div>')+
     '<p class="hint">بتحطه مرة وحدة لما تبلّش تستعمل الصفحة.</p></div>'+
     '<div class="box"><h2>مسح سجل المازوت القديم 🔒</h2><p class="muted" style="margin-top:0">بيمسح الوارد وصرف المعدات قبل التاريخ اللي بتختاره. الباقي بالخزان ما بيتغيّر.</p>'+
     '<div class="row"><label>امسح كل شي قبل</label><input type="date" id="fcDate"></div><button class="big dan" id="fcBtn">🗑 مسح سجل المازوت</button>'+
@@ -534,20 +578,23 @@ function renderFuel(app){
     for(var k in S.days){if(k<d&&S.days[k].erecs){var any=false;for(var e in S.days[k].erecs){var q=num2(S.days[k].erecs[e].diesel);if(q){eqQ+=q;any=true}}if(any)eqDays++}}
     if(!ins.length&&!eqDays){openModal('<h3>ما في سجل مازوت قبل '+fmtDate(d)+'</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal;return}
     confirmBox("رح ينمسح "+ins.length+" وارد ("+lit(inQ)+" لتر) وصرف المعدات بـ "+eqDays+" يوم ("+lit(eqQ)+" لتر) قبل "+fmtDate(d)+". الباقي بالخزان بيضل متل ما هو. أكيد؟","امسح",function(){
+      S.fuel.openLayers=layersAt(d,"m");
       S.fuel.opening=num2(S.fuel.opening)+inQ-eqQ;
       S.fuel.ins=S.fuel.ins.filter(function(x){return x.date>=d});
       for(var k in S.days){if(k<d&&S.days[k].erecs){delete S.days[k].erecs;var D=S.days[k];if(!Object.keys(D.recs||{}).length&&!(D.mrecs&&Object.keys(D.mrecs).length)&&!D.block)delete S.days[k]}}
       save();render();openModal('<h3>انمسح سجل المازوت القديم ✓</h3><div class="acts"><button id="mN">تمام</button></div>');document.getElementById("mN").onclick=closeModal})}
-  document.getElementById("fOpen").onchange=function(e){S.fuel.opening=num2(e.target.value);save();render()};
+  document.getElementById("fOpen").onchange=function(e){S.fuel.opening=num2(e.target.value);delete S.fuel.openLayers;save();render()};
+  var fop=document.getElementById("fOpenP");if(fop)fop.onchange=function(e){S.fuel.openPrice=num2(e.target.value);save();render()};
 }
 function fuelPages(from,to){
   if(from>to){var t=from;from=to;to=t}
   var prev=parseIso(from);prev.setDate(prev.getDate()-1);
   var open=balanceAt(isoDate(prev)),inQ=sumIn(from,to),c=consumers(from,to),outQ=sumOut(from,to),close=open+inQ-outQ;
   var ins=S.fuel.ins.filter(function(x){return x.date>=from&&x.date<=to}).sort(function(a,b){return a.date<b.date?-1:1});
-  var cons=[];S.machines.forEach(function(m){if(c.m[m.id])cons.push([m.name,c.m[m.id]])});
-  for(var k in c.m){if(!machineById(+k))cons.push(["آلية محذوفة",c.m[k]])}
-  S.fuel.equip.forEach(function(q){if(c.e[q.id])cons.push([q.name,c.e[q.id]])});
+  var FF=fifoRun(),cons=[];S.machines.forEach(function(m){if(c.m[m.id])cons.push([m.name,c.m[m.id],sumCost(FF,from,to,"m",m.id)])});
+  for(var k in c.m){if(!machineById(+k))cons.push(["آلية محذوفة",c.m[k],sumCost(FF,from,to,"m",k)])}
+  S.fuel.equip.forEach(function(q){if(c.e[q.id])cons.push([q.name,c.e[q.id],sumCost(FF,from,to,"e",q.id)])});
+  var cT=sumCost(FF,from,to);
   var nRows=ins.length+cons.length+4,rh=Math.max(18,Math.min(34,Math.floor((PAGE_H-250)/Math.max(nRows,8))));
   var td='style="height:'+rh+'px"';
   var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+headTable("تقرير المازوت","Diesel Report",'من '+fmtDate(from)+' &nbsp; إلى '+fmtDate(to),["Period","الفترة"])+
@@ -559,19 +606,21 @@ function fuelPages(from,to){
   ins.forEach(function(x){var pr=num2(x.price),am=num2(x.qty)*pr;if(pr){amT+=am;qP+=num2(x.qty)}
     h+='<tr '+td+'><td>'+fmtDate(x.date)+'</td><td>'+lit(num2(x.qty))+'</td><td>'+(pr?lit(pr):'')+'</td><td>'+(pr?lit(am):'')+'</td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td></tr>'});
   h+='<tr '+td+' style="font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(inQ)+'</td><td>'+(qP?'المعدّل '+lit(Math.round(amT/qP*100)/100):'')+'</td><td>'+(amT?lit(amT):'')+'</td><td colspan="2"></td></tr></table>'+
-    '<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="flex:1"><tr><th colspan="2">الصرف (لتر)</th></tr><tr><th>الآلية / المعدّة</th><th>الكمية</th></tr>';
-  if(!cons.length)h+='<tr '+td+'><td colspan="2">ما في صرف</td></tr>';
-  cons.forEach(function(x){h+='<tr '+td+'><td>'+esc(x[0])+'</td><td>'+lit(x[1])+'</td></tr>'});
-  h+='<tr '+td+' style="font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(outQ)+'</td></tr></table></div></div>';
+    '<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="flex:1"><tr><th colspan="3">الصرف (لتر)</th></tr><tr><th>الآلية / المعدّة</th><th>الكمية</th><th>الكلفة (د.ع)</th></tr>';
+  if(!cons.length)h+='<tr '+td+'><td colspan="3">ما في صرف</td></tr>';
+  cons.forEach(function(x){h+='<tr '+td+'><td>'+esc(x[0])+'</td><td>'+lit(x[1])+'</td><td>'+iqd(x[2].cost)+(x[2].miss?'*':'')+'</td></tr>'});
+  h+='<tr '+td+' style="font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(outQ)+'</td><td>'+iqd(cT.cost)+(cT.miss?'*':'')+'</td></tr></table></div>'+
+    '<p style="font-size:12px;margin:6px 0 0" dir="rtl">الكلفة محسوبة على طريقة الأقدم أول: كل لتر بسعر الحمولة اللي إجا منها.'+(cT.miss?' * فيها '+lit(cT.miss)+' لتر من حمولات بدون سعر.':'')+'</p></div>';
   return[h];
 }
 function fuelDayPages(date){
   var prev=parseIso(date);prev.setDate(prev.getDate()-1);
   var open=balanceAt(isoDate(prev)),inQ=sumIn(date,date),outQ=sumOut(date,date),close=open+inQ-outQ;
   var ins=S.fuel.ins.filter(function(x){return x.date===date});
-  var rows=[];
-  dayMachines(date).forEach(function(m){var r=mrec(date,m.id,false)||{};rows.push({n:m.name,t:"آلية",who:r.driver||"",q:r.diesel,sig:r.sig})});
-  S.fuel.equip.forEach(function(q){var r=erec(date,q.id,false)||{};if(q.active===false&&!num2(r.diesel))return;rows.push({n:q.name,t:"معدّة",who:"",q:r.diesel,sig:r.sig})});
+  var rows=[],FF=fifoRun(),cDay={cost:0,miss:0};
+  dayMachines(date).forEach(function(m){var r=mrec(date,m.id,false)||{};rows.push({n:m.name,t:"آلية",who:r.driver||"",q:r.diesel,sig:r.sig,c:costOf(FF,"m",m.id,date)})});
+  S.fuel.equip.forEach(function(q){var r=erec(date,q.id,false)||{};if(q.active===false&&!num2(r.diesel))return;rows.push({n:q.name,t:"معدّة",who:"",q:r.diesel,sig:r.sig,c:costOf(FF,"e",q.id,date)})});
+  rows.forEach(function(x){if(x.c){cDay.cost+=x.c.cost;cDay.miss+=x.c.miss}});
   var n=ins.length+rows.length,rh=Math.max(26,Math.min(44,Math.floor((PAGE_H-260)/Math.max(n+3,8))));
   var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+headTable("مازوت يومي","Daily Diesel",dayName(date)+' &nbsp; '+fmtDate(date))+
     '<table dir="rtl" style="margin-top:-1px"><tr style="height:34px"><td class="blue">رقم البلوك</td><td><b>'+esc(blockFor(date))+'</b></td><td class="blue">رصيد أول اليوم</td><td><b>'+lit(open)+'</b></td><td class="blue">الوارد</td><td><b>'+lit(inQ)+'</b></td><td class="blue">الصرف</td><td><b>'+lit(outQ)+'</b></td><td class="blue">الباقي آخر اليوم</td><td><b>'+lit(close)+'</b></td></tr></table>'+
@@ -580,9 +629,10 @@ function fuelDayPages(date){
   var amT=0;
   ins.forEach(function(x,i){var pr=num2(x.price),am=num2(x.qty)*pr;amT+=am;h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+lit(num2(x.qty))+'</b></td><td>'+(pr?lit(pr):'')+'</td><td><b>'+(pr?lit(am):'')+'</b></td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
   if(ins.length>1||amT)h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(inQ)+'</td><td></td><td>'+(amT?lit(amT):'')+'</td><td colspan="3"></td></tr>';
-  h+='</table><table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="6">الصرف (لتر)</th></tr><tr><th style="width:8%">العدد</th><th style="width:20%">الآلية / المعدّة</th><th style="width:10%">النوع</th><th style="width:20%">اسم السائق</th><th style="width:12%">الكمية</th><th>التوقيع</th></tr>';
-  rows.forEach(function(x,i){h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+esc(x.n)+'</b></td><td>'+x.t+'</td><td>'+esc(x.who)+'</td><td><b>'+(num2(x.q)?lit(num2(x.q)):'')+'</b></td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
-  h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="4">المجموع</td><td>'+lit(outQ)+'</td><td></td></tr></table></div>';
+  h+='</table><table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="7">الصرف (لتر)</th></tr><tr><th style="width:6%">العدد</th><th style="width:18%">الآلية / المعدّة</th><th style="width:8%">النوع</th><th style="width:17%">اسم السائق</th><th style="width:10%">الكمية</th><th style="width:16%">الكلفة (د.ع)</th><th>التوقيع</th></tr>';
+  rows.forEach(function(x,i){var pt=partsTxt(x.c);h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+esc(x.n)+'</b></td><td>'+x.t+'</td><td>'+esc(x.who)+'</td><td><b>'+(num2(x.q)?lit(num2(x.q)):'')+'</b></td><td><b>'+costTxt(x.c)+'</b>'+(pt?'<div style="font-size:10px;line-height:11px">'+pt+'</div>':'')+'</td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
+  h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="4">المجموع</td><td>'+lit(outQ)+'</td><td>'+(cDay.cost||cDay.miss?iqd(cDay.cost)+(cDay.miss?'*':''):'')+'</td><td></td></tr></table>'+
+    (cDay.miss?'<p style="font-size:12px;margin:4px 0 0" dir="rtl">* فيها '+lit(cDay.miss)+' لتر من حمولات بدون سعر</p>':'')+'</div>';
   return[h];
 }
 function fuelDayPdf(date){pdfPages(function(){return fuelDayPages(date)},"fuel_"+date+".pdf","مازوت "+fmtDate(date))}
@@ -662,6 +712,7 @@ function renderSettings(app){
     old.sort();
     confirmBox("رح ينمسح "+old.length+" يوم (من "+fmtDate(old[0])+" لـ "+fmtDate(old[old.length-1])+"). ما فيك ترجعهم. أكيد؟","امسح",function(){
       var ins=S.fuel.ins.filter(function(x){return x.date<d});
+      S.fuel.openLayers=layersAt(d,null);
       S.fuel.opening=num2(S.fuel.opening)+sumIn(null,d,true)-sumOut(null,d,true);
       S.fuel.ins=S.fuel.ins.filter(function(x){return x.date>=d});
       old.forEach(function(k){delete S.days[k]});save();
@@ -748,7 +799,7 @@ function renderMonth(app){
   S.machines.forEach(function(m){var R=mRange(m.id),st=machineRange(m.id,R.f,R.t);if(!st.days&&m.active===false)return;
     h+='<div class="box"><h2>'+esc(m.name)+'</h2>'+
       '<div class="two" style="margin-bottom:8px"><div><label class="muted" style="font-size:13px">من تاريخ</label><input type="date" data-mrf="'+m.id+'" value="'+R.f+'" style="width:100%"></div><div><label class="muted" style="font-size:13px">إلى تاريخ</label><input type="date" data-mrt="'+m.id+'" value="'+R.t+'" style="width:100%"></div></div>'+
-      '<div class="stat"><div><b>'+st.days+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div></div>'+
+      '<div class="stat"><div><b>'+st.days+'</b><span>أيام عمل</span></div><div><b>'+dur(st.min)+'</b><span>مجموع الساعات</span></div><div><b>'+st.diesel+'</b><span>مازوت (لتر)</span></div><div><b>'+iqd(st.cost)+(st.miss?'*':'')+'</b><span>كلفة المازوت (د.ع)</span></div></div>'+
       (st.days?'<button class="big" data-pvm="'+m.id+'" style="margin-top:10px">👁 معاينة قبل الطباعة</button><div class="two" style="margin-top:8px"><button class="ok" data-mpr="'+m.id+'">🖨 طباعة</button><button class="pri" data-mpdf="'+m.id+'">📄 PDF</button></div>':'')+'</div>'});
   app.innerHTML=h;
   document.getElementById("back").onclick=function(){view="day";render()};
@@ -833,7 +884,8 @@ function machineRange(mid,from,to){var days=0,min=0,dsl=0,blocks=[],drivers=[];
   Object.keys(S.days).filter(function(d){return d>=from&&d<=to}).sort().forEach(function(d){var r=S.days[d].mrecs&&S.days[d].mrecs[mid];
     if(!r)return;dsl+=parseFloat(r.diesel)||0;if(!r.in)return;days++;var wk=worked(r);if(wk)min+=wk;
     var bl=blockFor(d);if(bl&&blocks.indexOf(bl)<0)blocks.push(bl);if(r.driver&&drivers.indexOf(r.driver)<0)drivers.push(r.driver)});
-  return{days:days,min:min,diesel:Math.round(dsl*100)/100,blocks:blocks,drivers:drivers,from:from,to:to}}
+  var c=sumCost(fifoRun(),from,to,"m",mid);
+  return{days:days,min:min,diesel:Math.round(dsl*100)/100,cost:c.cost,miss:c.miss,blocks:blocks,drivers:drivers,from:from,to:to}}
 function machinePages(mid,from,to){var m=machineById(mid),st=machineRange(mid,from,to);
   function row(ar,en,v){return '<tr style="height:50px"><td style="font-size:14px;font-weight:700;width:30%" class="blue">'+en+'</td><td style="font-size:20px;font-weight:700">'+v+'</td><td style="font-size:15px;font-weight:700;width:30%" class="blue" dir="rtl">'+ar+'</td></tr>'}
   var h='<div class="sheet page" style="width:'+PAGE_W+'px"><table dir="ltr">'+
@@ -847,7 +899,8 @@ function machinePages(mid,from,to){var m=machineById(mid),st=machineRange(mid,fr
    row("عدد أيام العمل","Working days",st.days)+
    row("مجموع الساعات","Total hours",dur(st.min))+
    row("مجموع المازوت (لتر)","Total diesel (L)",st.diesel)+
-   '</table></div>';
+   row("كلفة المازوت (دينار)","Diesel cost (IQD)",iqd(st.cost)+(st.miss?'*':''))+
+   '</table>'+(st.miss?'<p style="font-size:13px" dir="rtl">* فيها '+lit(st.miss)+' لتر من حمولات بدون سعر</p>':'')+'</div>';
   return[h]}
 function machinePdf(mid,from,to){var m=machineById(mid);pdfPages(function(){return machinePages(mid,from,to)},"machine_"+from+"_"+to+".pdf","ملخص "+m.name)}
 function dayPdf(date){pdfPages(function(){return dayPages(date)},"attendance_"+date+".pdf","دوام "+fmtDate(date))}
@@ -981,6 +1034,7 @@ var st={cache:true,err:"",lastOk:0};
 function flat(s){var o={},k,d,D;
   for(k in s.settings)if(s.settings[k]!=null)o["c~"+k]=JSON.stringify(s.settings[k]);
   o["f~opening"]=JSON.stringify(+s.fuel.opening||0);
+  ["openPrice","lastPrice","openLayers"].forEach(function(k){if(s.fuel[k]!=null)o["f~"+k]=JSON.stringify(s.fuel[k])});
   s.workers.forEach(function(x){o["w~"+x.id]=JSON.stringify(x)});
   s.machines.forEach(function(x){o["m~"+x.id]=JSON.stringify(x)});
   s.fuel.equip.forEach(function(x){o["q~"+x.id]=JSON.stringify(x)});
@@ -1105,7 +1159,7 @@ startSync();
 var UKEY="satcon_attend_unlk"+SLOT,UNLOCK_MS=60*60000;
 var DAY_SEL="#dBlock,#allIn,#advDay,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fP,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-fprice],[data-eq],[data-eqsig]";
 /* lists (workers, machines, fuel equipment, opening balance): always closed for supervisors */
-var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd,#wN,#wJ,#wAdd,[data-ed],[data-act],[data-del],[data-eqed],[data-eqact],[data-eqdel],#eqNew,#eqAdd,#fOpen";
+var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd,#wN,#wJ,#wAdd,[data-ed],[data-act],[data-del],[data-eqed],[data-eqact],[data-eqdel],#eqNew,#eqAdd,#fOpen,#fOpenP";
 function unl(){var u={};try{u=JSON.parse(localStorage.getItem(UKEY))||{}}catch(e){}var n=Date.now(),k;for(k in u)if(u[k]<=n)delete u[k];return u}
 function setUnl(k,v){var u=unl();if(v)u[k]=v;else delete u[k];try{localStorage.setItem(UKEY,JSON.stringify(u))}catch(e){}}
 /* "now" can't go back: take the newest of the phone clock and the last server time seen */
