@@ -165,8 +165,8 @@ var STR={
 "No income recorded yet.":["No income recorded yet.","لم يُسجَّل أي وارد بعد."],
 "No expenses recorded yet.":["No expenses recorded yet.","لم يُسجَّل أي صادر بعد."],
 "No advances recorded yet.":["No advances recorded yet.","لم تُسجَّل أي سلف بعد."],
-"Advances by Worker":["Advances by Worker","السلف حسب العامل"],
-"🔍 Search worker name":["🔍 Search worker name","🔍 ابحث باسم العامل"],
+"Advances by Worker":["Advances by Employee","السلف حسب الموظف"],
+"🔍 Search worker name":["🔍 Search employee name","🔍 ابحث باسم الموظف"],
 "Recent Advances":["Recent Advances","آخر السلف"],
 "{n} advance":["{n} advance","{n} سلفة"],
 "{n} advances":["{n} advances","{n} سلف"],
@@ -193,7 +193,7 @@ var STR={
 "New Expense":["New Expense","صادر جديد"],
 "New Advance":["New Advance","سلفة جديدة"],
 "Type":["Type","النوع"],
-"Worker":["Worker","العامل"],
+"Worker":["Employee","الموظف"],
 "Building":["Building","البناية"],
 "General":["General","عام"],
 "Currency":["Currency","العملة"],
@@ -206,12 +206,12 @@ var STR={
 "Add the building numbers under ⚙ Settings.":["Add the building numbers under ⚙ Settings.","أضف أرقام البنايات من ⚙ الإعدادات."],
 "Enter the amount.":["Enter the amount.","أدخل المبلغ."],
 "Select the date.":["Select the date.","اختر التاريخ."],
-"Enter the worker's name.":["Enter the worker's name.","أدخل اسم العامل."],
+"Enter the worker's name.":["Enter the employee's name.","أدخل اسم الموظف."],
 "Select the building (or General for site-wide expenses).":["Select the building (or General for site-wide expenses).","اختر البناية (أو عام للمصاريف العامة)."],
 "Receipt No. {rc} is already used ({d} · {desc} · {amt} {sym}).":["Receipt No. {rc} is already used ({d} · {desc} · {amt} {sym}).","رقم الوصل {rc} مستخدم سابقاً ({d} · {desc} · {amt} {sym})."],
 "Delete this transaction?":["Delete this transaction?","حذف هذه الحركة؟"],
 "Records":["Records","السجلات"],
-"Search: receipt, invoice, description, worker":["Search: receipt, invoice, description, worker","بحث: الوصل، الفاتورة، الشرح، العامل"],
+"Search: receipt, invoice, description, worker":["Search: receipt, invoice, description, employee","بحث: الوصل، الفاتورة، الشرح، الموظف"],
 "All currencies":["All currencies","كل العملات"],
 "All buildings":["All buildings","كل البنايات"],
 "Total {what} ({c})":["Total {what} ({c})","مجموع {what} ({c})"],
@@ -232,7 +232,7 @@ var STR={
 "🖨 Print Buildings Summary":["🖨 Print Buildings Summary","🖨 طباعة ملخص البنايات"],
 "Print":["Print","طباعة"],
 "Full Statement":["Full Statement","كشف كامل"],
-"All workers":["All workers","كل العمال"],
+"All workers":["All employees","كل الموظفين"],
 "Daily subtotal under each day":["Daily subtotal under each day","مجموع يومي تحت كل يوم"],
 "🖨 Print":["🖨 Print","🖨 طباعة"],
 "👁 Preview":["👁 Preview","👁 معاينة"],
@@ -273,7 +273,7 @@ var STR={
 "Income USD":["Income USD","الوارد USD"],
 "Expense USD":["Expense USD","الصادر USD"],
 "Balance USD":["Balance USD","الرصيد USD"],
-"Totals by Worker":["Totals by Worker","المجموع حسب العامل"],
+"Totals by Worker":["Totals by Employee","المجموع حسب الموظف"],
 "Totals by Building":["Totals by Building","المجموع حسب البناية"],
 "Subtotal for {d}":["Subtotal for {d}","مجموع {d}"],
 "No {x} in this period":["No {x} in this period","لا يوجد {x} في هذه الفترة"],
@@ -638,14 +638,15 @@ function formView(tx,newType){
   }
   document.getElementById("tIn").onclick=function(){f.type="in";paint()};
   document.getElementById("tOut").onclick=function(){f.type="out";paint()};
-  document.getElementById("tAdv").onclick=function(){f.type="adv";paint()};
+  document.getElementById("tAdv").onclick=function(){f.type="adv";paint();var w=document.getElementById("fWk");if(!w.value)w.focus()};
   Array.prototype.forEach.call(document.querySelectorAll("#fB button"),function(x){x.onclick=function(){f.bld=x.getAttribute("data-b");paint()}});
   document.getElementById("cIQD").onclick=function(){f.cur="IQD";paint()};
   document.getElementById("cUSD").onclick=function(){f.cur="USD";paint()};
   document.getElementById("fAmt").oninput=paint;
   document.getElementById("fCancel").onclick=function(){history.back()};
   paint();
-  if(!ed)setTimeout(function(){document.getElementById("fAmt").focus()},50);
+  /* the cursor starts where typing begins: the name for an advance, the amount otherwise */
+  if(!ed)setTimeout(function(){document.getElementById(f.type==="adv"?"fWk":"fAmt").focus()},50);
   document.getElementById("fSave").onclick=function(){
     var err=document.getElementById("fErr");err.textContent="";
     ["fAmt","fRc","fDate","fWk"].forEach(function(id){document.getElementById(id).classList.remove("bad")});
