@@ -445,11 +445,13 @@ function renderFuel(app){
   var ins=S.fuel.ins.filter(function(x){return x.date===curDate});
   h+='<div class="box"><h2>الوارد (حمولة جديدة)</h2>'+
     '<div class="row"><label>الكمية (لتر)</label><input type="number" inputmode="decimal" step="any" id="fQ"></div>'+
+    '<div class="row"><label>سعر اللتر (دينار)</label><input type="number" inputmode="decimal" step="any" id="fP" value="'+esc(S.fuel.lastPrice||"")+'"></div>'+
+    '<p class="hint" id="fAmt" style="margin:-4px 0 8px;font-weight:700"></p>'+
     '<div class="row"><label>المورّد / السائق</label><input type="text" id="fS"></div>'+
     '<div class="row"><label>رقم الوصل</label><input type="text" id="fR"></div>'+
     '<button class="big pri" id="fAdd">+ تسجيل الوارد</button>';
   if(ins.length){h+='<div class="done-list" style="margin-top:8px">';ins.forEach(function(x){
-    h+='<div class="it"><span><b>'+lit(num2(x.qty))+' لتر</b><br><span class="muted">'+esc(x.supplier||"")+(x.receipt?' · وصل '+esc(x.receipt):'')+'</span></span><span style="display:flex;gap:6px;align-items:center"><button class="tbtn '+(x.sig?'ok':'')+'" data-insig="'+x.id+'" style="min-width:70px">'+(x.sig?sigSvg(x.sig,26):'✍️')+'<small>'+(x.sig?'موقّع':'توقيع')+'</small></button><button class="small dan" data-fdel="'+x.id+'">حذف</button></span></div>'});h+='</div>'}
+    h+='<div class="it"><span><b>'+lit(num2(x.qty))+' لتر</b> <button class="small" data-fprice="'+x.id+'" style="padding:2px 8px;margin-inline-start:4px">'+(num2(x.price)?'× '+lit(num2(x.price))+' = <b>'+lit(num2(x.qty)*num2(x.price))+'</b> د.ع':'+ سعر اللتر')+'</button><br><span class="muted">'+esc(x.supplier||"")+(x.receipt?' · وصل '+esc(x.receipt):'')+'</span></span><span style="display:flex;gap:6px;align-items:center"><button class="tbtn '+(x.sig?'ok':'')+'" data-insig="'+x.id+'" style="min-width:70px">'+(x.sig?sigSvg(x.sig,26):'✍️')+'<small>'+(x.sig?'موقّع':'توقيع')+'</small></button><button class="small dan" data-fdel="'+x.id+'">حذف</button></span></div>'});h+='</div>'}
   h+='</div>';
   /* consumption of the day */
   h+='<div class="box"><h2>الصرف</h2>';
@@ -483,8 +485,19 @@ function renderFuel(app){
   document.getElementById("next").onclick=function(){var d=parseIso(curDate);d.setDate(d.getDate()+1);setDate(isoDate(d))};
   document.getElementById("fdPrint").onclick=function(){printPages(fuelDayPages(curDate),"fuel_"+curDate,function(){fuelDayPdf(curDate)})};
   document.getElementById("fdPdf").onclick=function(){fuelDayPdf(curDate)};
-  document.getElementById("fAdd").onclick=function(){var q=num2(document.getElementById("fQ").value);if(!q){document.getElementById("fQ").style.borderColor="#d64545";return}
-    S.fuel.ins.push({id:newId(),date:curDate,qty:q,supplier:document.getElementById("fS").value.trim(),receipt:document.getElementById("fR").value.trim()});save();render()};
+  function fAmt(){var q=num2(document.getElementById("fQ").value),pr=num2(document.getElementById("fP").value);document.getElementById("fAmt").textContent=q&&pr?"المبلغ: "+lit(q)+" × "+lit(pr)+" = "+lit(q*pr)+" دينار":""}
+  document.getElementById("fQ").oninput=fAmt;document.getElementById("fP").oninput=fAmt;fAmt();
+  document.getElementById("fAdd").onclick=function(){var q=num2(document.getElementById("fQ").value),pr=num2(document.getElementById("fP").value);
+    document.getElementById("fQ").style.borderColor=q?"":"#d64545";document.getElementById("fP").style.borderColor=pr>0?"":"#d64545";
+    if(!q||!(pr>0)){document.getElementById("fAmt").textContent=!q?"اكتب الكمية":"اكتب سعر اللتر";document.getElementById("fAmt").style.color="#d64545";return}
+    S.fuel.lastPrice=pr;
+    S.fuel.ins.push({id:newId(),date:curDate,qty:q,price:pr,supplier:document.getElementById("fS").value.trim(),receipt:document.getElementById("fR").value.trim()});save();render()};
+  /* price of a delivery already recorded (older ones have none) */
+  app.querySelectorAll("[data-fprice]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-fprice"),x=null;S.fuel.ins.forEach(function(y){if(y.id===id)x=y});if(!x)return;
+    openModal('<h3>سعر اللتر - '+lit(num2(x.qty))+' لتر</h3><div class="row"><input type="number" inputmode="decimal" step="any" id="mPr" value="'+esc(x.price||S.fuel.lastPrice||"")+'" style="width:100%"></div><p class="hint" id="mAm"></p><div class="acts"><button id="mS" class="pri">حفظ</button><button id="mN">إلغاء</button></div>');
+    var i=document.getElementById("mPr");function am(){var v=num2(i.value);document.getElementById("mAm").textContent=v?"المبلغ: "+lit(num2(x.qty)*v)+" دينار":""}i.oninput=am;am();
+    document.getElementById("mN").onclick=closeModal;
+    document.getElementById("mS").onclick=function(){var v=num2(i.value);if(!(v>0)){i.style.borderColor="#d64545";return}x.price=v;closeModal();save();render()}}});
   app.querySelectorAll("[data-insig]").forEach(function(b){b.onclick=function(){var id=+b.getAttribute("data-insig"),x=null;S.fuel.ins.forEach(function(y){if(y.id===id)x=y});
     function pad(){sigPad("توقيع المورّد"+(x.supplier?" - "+x.supplier:"")+" ("+lit(num2(x.qty))+" لتر)",function(sig){x.sig=sig;x.sigFor=inSigKey(x);save();render()})}
     if(x.sig){openModal('<h3>توقيع المورّد</h3><div style="text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px">'+sigSvg(x.sig,120)+'</div><div class="acts"><button id="mS" class="pri">توقيع جديد</button><button id="mD" class="dan">مسح التوقيع</button><button id="mN">إغلاق</button></div>');
@@ -540,10 +553,12 @@ function fuelPages(from,to){
   var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+headTable("تقرير المازوت","Diesel Report",'من '+fmtDate(from)+' &nbsp; إلى '+fmtDate(to),["Period","الفترة"])+
     '<table dir="rtl" style="margin-top:-1px"><tr style="height:34px"><td class="blue">رصيد أول الفترة</td><td><b>'+lit(open)+'</b></td><td class="blue">الوارد</td><td><b>'+lit(inQ)+'</b></td><td class="blue">الصرف</td><td><b>'+lit(outQ)+'</b></td><td class="blue">الباقي آخر الفترة</td><td><b>'+lit(close)+'</b></td></tr></table>'+
     '<div style="display:flex;gap:10px;margin-top:10px;align-items:flex-start">'+
-    '<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="flex:1"><tr><th colspan="4">الوارد (لتر)</th></tr><tr><th>التاريخ</th><th>الكمية</th><th>المورّد / السائق</th><th>رقم الوصل</th></tr>';
-  if(!ins.length)h+='<tr '+td+'><td colspan="4">ما في وارد</td></tr>';
-  ins.forEach(function(x){h+='<tr '+td+'><td>'+fmtDate(x.date)+'</td><td>'+lit(num2(x.qty))+'</td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td></tr>'});
-  h+='<tr '+td+' style="font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(inQ)+'</td><td colspan="2"></td></tr></table>'+
+    '<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="flex:1.6"><tr><th colspan="6">الوارد (لتر)</th></tr><tr><th>التاريخ</th><th>الكمية</th><th>سعر اللتر</th><th>المبلغ (د.ع)</th><th>المورّد / السائق</th><th>رقم الوصل</th></tr>';
+  if(!ins.length)h+='<tr '+td+'><td colspan="6">ما في وارد</td></tr>';
+  var amT=0,qP=0;
+  ins.forEach(function(x){var pr=num2(x.price),am=num2(x.qty)*pr;if(pr){amT+=am;qP+=num2(x.qty)}
+    h+='<tr '+td+'><td>'+fmtDate(x.date)+'</td><td>'+lit(num2(x.qty))+'</td><td>'+(pr?lit(pr):'')+'</td><td>'+(pr?lit(am):'')+'</td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td></tr>'});
+  h+='<tr '+td+' style="font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(inQ)+'</td><td>'+(qP?'المعدّل '+lit(Math.round(amT/qP*100)/100):'')+'</td><td>'+(amT?lit(amT):'')+'</td><td colspan="2"></td></tr></table>'+
     '<table class="grid'+(rh<26?' tight':'')+'" dir="rtl" style="flex:1"><tr><th colspan="2">الصرف (لتر)</th></tr><tr><th>الآلية / المعدّة</th><th>الكمية</th></tr>';
   if(!cons.length)h+='<tr '+td+'><td colspan="2">ما في صرف</td></tr>';
   cons.forEach(function(x){h+='<tr '+td+'><td>'+esc(x[0])+'</td><td>'+lit(x[1])+'</td></tr>'});
@@ -560,9 +575,11 @@ function fuelDayPages(date){
   var n=ins.length+rows.length,rh=Math.max(26,Math.min(44,Math.floor((PAGE_H-260)/Math.max(n+3,8))));
   var h='<div class="sheet page" style="width:'+PAGE_W+'px">'+headTable("مازوت يومي","Daily Diesel",dayName(date)+' &nbsp; '+fmtDate(date))+
     '<table dir="rtl" style="margin-top:-1px"><tr style="height:34px"><td class="blue">رقم البلوك</td><td><b>'+esc(blockFor(date))+'</b></td><td class="blue">رصيد أول اليوم</td><td><b>'+lit(open)+'</b></td><td class="blue">الوارد</td><td><b>'+lit(inQ)+'</b></td><td class="blue">الصرف</td><td><b>'+lit(outQ)+'</b></td><td class="blue">الباقي آخر اليوم</td><td><b>'+lit(close)+'</b></td></tr></table>'+
-    '<table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="5">الوارد (لتر)</th></tr><tr><th style="width:8%">العدد</th><th style="width:12%">الكمية</th><th style="width:20%">المورّد / السائق</th><th style="width:20%">رقم الوصل</th><th>توقيع المورّد</th></tr>';
-  if(!ins.length)h+='<tr style="height:'+rh+'px"><td colspan="5">ما في وارد اليوم</td></tr>';
-  ins.forEach(function(x,i){h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+lit(num2(x.qty))+'</b></td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
+    '<table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="7">الوارد (لتر)</th></tr><tr><th style="width:6%">العدد</th><th style="width:10%">الكمية</th><th style="width:10%">سعر اللتر</th><th style="width:13%">المبلغ (د.ع)</th><th style="width:18%">المورّد / السائق</th><th style="width:14%">رقم الوصل</th><th>توقيع المورّد</th></tr>';
+  if(!ins.length)h+='<tr style="height:'+rh+'px"><td colspan="7">ما في وارد اليوم</td></tr>';
+  var amT=0;
+  ins.forEach(function(x,i){var pr=num2(x.price),am=num2(x.qty)*pr;amT+=am;h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+lit(num2(x.qty))+'</b></td><td>'+(pr?lit(pr):'')+'</td><td><b>'+(pr?lit(am):'')+'</b></td><td>'+esc(x.supplier||"")+'</td><td>'+esc(x.receipt||"")+'</td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
+  if(ins.length>1||amT)h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td>المجموع</td><td>'+lit(inQ)+'</td><td></td><td>'+(amT?lit(amT):'')+'</td><td colspan="3"></td></tr>';
   h+='</table><table class="grid" dir="rtl" style="margin-top:10px"><tr><th colspan="6">الصرف (لتر)</th></tr><tr><th style="width:8%">العدد</th><th style="width:20%">الآلية / المعدّة</th><th style="width:10%">النوع</th><th style="width:20%">اسم السائق</th><th style="width:12%">الكمية</th><th>التوقيع</th></tr>';
   rows.forEach(function(x,i){h+='<tr style="height:'+rh+'px"><td>'+(i+1)+'</td><td><b>'+esc(x.n)+'</b></td><td>'+x.t+'</td><td>'+esc(x.who)+'</td><td><b>'+(num2(x.q)?lit(num2(x.q)):'')+'</b></td><td style="padding:1px">'+sigSvg(x.sig,rh-6)+'</td></tr>'});
   h+='<tr style="height:'+rh+'px;font-weight:700;background:#dde8f6"><td colspan="4">المجموع</td><td>'+lit(outQ)+'</td><td></td></tr></table></div>';
@@ -1086,7 +1103,7 @@ startSync();
    Unlocking with the admin password opens it on THIS device only, for 10 minutes.
    The machines list is always closed unless unlocked the same way. */
 var UKEY="satcon_attend_unlk"+SLOT,UNLOCK_MS=60*60000;
-var DAY_SEL="#dBlock,#allIn,#advDay,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-eq],[data-eqsig]";
+var DAY_SEL="#dBlock,#allIn,#advDay,[data-in],[data-out],[data-abs],[data-note],[data-min],[data-mout],[data-msig],[data-mnote],[data-mdrv],[data-mdsl],#fQ,#fP,#fS,#fR,#fAdd,[data-insig],[data-fdel],[data-fprice],[data-eq],[data-eqsig]";
 /* lists (workers, machines, fuel equipment, opening balance): always closed for supervisors */
 var MACH_SEL="[data-med],[data-mact],[data-mdel],#mNew,#mNewD,#mAdd,#wN,#wJ,#wAdd,[data-ed],[data-act],[data-del],[data-eqed],[data-eqact],[data-eqdel],#eqNew,#eqAdd,#fOpen";
 function unl(){var u={};try{u=JSON.parse(localStorage.getItem(UKEY))||{}}catch(e){}var n=Date.now(),k;for(k in u)if(u[k]<=n)delete u[k];return u}
